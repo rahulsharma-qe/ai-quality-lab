@@ -1,0 +1,8 @@
+# QA-of-AI toolkit — pinned for reproducibility (eval tooling churns fast)
+anthropic
+ragas>=0.2,<0.3
+langchain-anthropic
+langchain-huggingface
+sentence-transformers
+datasets
+numpy
