@@ -23,6 +23,8 @@ cover both halves of modern quality engineering.
 | **RAG evaluation** | `rag_eval.py` | *Is the agent accurate and grounded?* Scores a policy-RAG with **RAGAS** — context precision/recall (retrieval) and faithfulness/answer-relevancy (generation), judged by Claude, embedded locally (no OpenAI). |
 | **Red-teaming** | `red_team.py`, `red_team_v2.py` | *Can I break it?* OWASP-LLM-mapped attacks — prompt injection (direct & indirect), jailbreak, data-leak, excessive agency — plus strengthened vectors (obfuscation, multi-turn, poisoned knowledge base). |
 | **The fix** | `guardrail_fix.py` | *How do I close a breach?* A deterministic **policy-of-record at the execution gate** — money decisions live in code, not in the model. |
+| **Agentic testing** | `aeroassist_agent.py`, `trajectory_eval.py`, `consistency_check.py` | *Is the agent's whole journey right, not just its answer?* A tool-using agent that emits a **trajectory**, graded on tool choice, arguments, termination and **multi-intent completeness** — run N times to measure a reliability rate (a probabilistic agent isn't certified by a single pass). |
+| **Completeness fix** | `completeness_guardrail.py` | *How do I stop a silently dropped intent?* A code-owned **intent checklist** that re-asks for any missed request. Before/after: fully-complete rate `80% → 100%`. |
 
 ---
 
@@ -55,6 +57,10 @@ python rag_eval.py            # evaluate the RAG with RAGAS
 python red_team.py            # baseline red-team (OWASP-mapped)
 python red_team_v2.py         # strengthened attacks (finds the real breach)
 python guardrail_fix.py       # the fix: breach closed, legit refunds still work
+
+python trajectory_eval.py     # grade the agent's trajectory (tool/args/termination/completeness)
+python consistency_check.py   # N-run completeness rate (catches silent multi-intent drops)
+python completeness_guardrail.py  # the completeness fix: before/after rate
 ```
 
 Each file is self-contained and also runs cell-by-cell in a notebook. The API key is read
