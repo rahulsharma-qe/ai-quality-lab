@@ -25,6 +25,7 @@ cover both halves of modern quality engineering.
 | **The fix** | `guardrail_fix.py` | *How do I close a breach?* A deterministic **policy-of-record at the execution gate** — money decisions live in code, not in the model. |
 | **Agentic testing** | `aeroassist_agent.py`, `trajectory_eval.py`, `consistency_check.py` | *Is the agent's whole journey right, not just its answer?* A tool-using agent that emits a **trajectory**, graded on tool choice, arguments, termination and **multi-intent completeness** — run N times to measure a reliability rate (a probabilistic agent isn't certified by a single pass). |
 | **Completeness fix** | `completeness_guardrail.py` | *How do I stop a silently dropped intent?* A code-owned **intent checklist** that re-asks for any missed request. Before/after: fully-complete rate `80% → 100%`. |
+| **Eval harness / CI gate** | `eval_harness.py`, `.github/workflows/eval-gate.yml` | *How do I stop a regression shipping?* A metric **registry** with per-metric thresholds + direction and a build-failing **exit code** — evals become a **gate**, not a report. Key-free **mock judge** runs on every PR (deterministic, no API key); live judge is nightly. Demo: healthy outputs PASS (exit 0), a seeded regression FAILS (exit 1). |
 
 ---
 
@@ -61,6 +62,9 @@ python guardrail_fix.py       # the fix: breach closed, legit refunds still work
 python trajectory_eval.py     # grade the agent's trajectory (tool/args/termination/completeness)
 python consistency_check.py   # N-run completeness rate (catches silent multi-intent drops)
 python completeness_guardrail.py  # the completeness fix: before/after rate
+
+python eval_harness.py            # CI GATE: healthy outputs -> PASS (exit 0)
+python eval_harness.py regressed  # CI GATE: seeded regression -> FAIL (exit 1)
 ```
 
 Each file is self-contained and also runs cell-by-cell in a notebook. The API key is read
@@ -71,7 +75,7 @@ Data is privacy-safe synthetic only (no real PII).
 
 ## Roadmap (QA-of-AI stack, growing)
 
-- [ ] **Eval harness** — run the full golden set in CI with score thresholds that *fail the build* (an eval you run by hand is a report; wired into CI it's a gate), with judge-call retries + pinned, containerized deps.
+- [x] **Eval harness (done)** — run the full golden set in CI with score thresholds that *fail the build* (an eval you run by hand is a report; wired into CI it's a gate), with judge-call retries + pinned, containerized deps.
 - [ ] **Runtime guardrails gateway** — the four guardrail layers enforced live on every request/response, not just at test time.
 - [ ] **Observability loop** — trace every run; track hallucination-rate, guardrail-breach-rate, cost, latency; detect drift.
 

@@ -1,0 +1,38 @@
+# Eval gate — runs the quality checks on every PR and fails the build on a regression.
+# Two arms (the key-free / live split):
+#   eval-gate : code metrics + mock judge -> deterministic, no API key -> every PR
+#   eval-live : real LLM judge -> needs a secret -> manual / nightly only
+name: eval-gate
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  eval-gate:                       # the cheap, deterministic arm — gates every PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run the eval gate (mock judge, no API key)
+        run: python eval_harness.py        # exit 1 on any failed threshold -> build goes red
+
+  eval-live:                       # the expensive, real-judge arm — not on every PR
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run with the live LLM judge
+        env:
+          LLM_PROVIDER: anthropic
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python eval_harness.py
+
+# Schedule the live arm nightly (optional):
+#   add  `schedule: [{cron: "0 2 * * *"}]`  to the `on:` block above.
