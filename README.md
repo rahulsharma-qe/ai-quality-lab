@@ -26,6 +26,7 @@ cover both halves of modern quality engineering.
 | **Agentic testing** | `aeroassist_agent.py`, `trajectory_eval.py`, `consistency_check.py` | *Is the agent's whole journey right, not just its answer?* A tool-using agent that emits a **trajectory**, graded on tool choice, arguments, termination and **multi-intent completeness** — run N times to measure a reliability rate (a probabilistic agent isn't certified by a single pass). |
 | **Completeness fix** | `completeness_guardrail.py` | *How do I stop a silently dropped intent?* A code-owned **intent checklist** that re-asks for any missed request. Before/after: fully-complete rate `80% → 100%`. |
 | **Eval harness / CI gate** | `eval_harness.py`, `.github/workflows/eval-gate.yml` | *How do I stop a regression shipping?* A metric **registry** with per-metric thresholds + direction and a build-failing **exit code** — evals become a **gate**, not a report. Key-free **mock judge** runs on every PR (deterministic, no API key); live judge is nightly. Demo: healthy outputs PASS (exit 0), a seeded regression FAILS (exit 1). |
+| **Observability** | `observability/tracing.py`, `observability/monitor.py`, `observability/pii_guardrail.py` | *Is it still safe in production?* A structured per-run **trace** (evidence log), a **dashboard** (breach/refusal rate, latency, cost), a baseline-vs-recent **drift alert**, and a **triage→fix** loop. Before/after: PII breach-rate `1.7% → 0%` (fake PII only). |
 
 ---
 
@@ -77,7 +78,7 @@ Data is privacy-safe synthetic only (no real PII).
 
 - [x] **Eval harness (done)** — run the full golden set in CI with score thresholds that *fail the build* (an eval you run by hand is a report; wired into CI it's a gate), with judge-call retries + pinned, containerized deps.
 - [ ] **Runtime guardrails gateway** — the four guardrail layers enforced live on every request/response, not just at test time.
-- [ ] **Observability loop** — trace every run; track hallucination-rate, guardrail-breach-rate, cost, latency; detect drift.
+- [x] **Observability loop (done)** — trace every run; track hallucination-rate, guardrail-breach-rate, cost, latency; detect drift.
 
 ---
 
