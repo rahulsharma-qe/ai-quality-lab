@@ -25,7 +25,10 @@ cover both halves of modern quality engineering.
 | **The fix** | `guardrail_fix.py` | *How do I close a breach?* A deterministic **policy-of-record at the execution gate** — money decisions live in code, not in the model. |
 | **Agentic testing** | `aeroassist_agent.py`, `trajectory_eval.py`, `consistency_check.py` | *Is the agent's whole journey right, not just its answer?* A tool-using agent that emits a **trajectory**, graded on tool choice, arguments, termination and **multi-intent completeness** — run N times to measure a reliability rate (a probabilistic agent isn't certified by a single pass). |
 | **Completeness fix** | `completeness_guardrail.py` | *How do I stop a silently dropped intent?* A code-owned **intent checklist** that re-asks for any missed request. Before/after: fully-complete rate `80% → 100%`. |
-| **Eval harness / CI gate** | `eval_harness.py`, `.github/workflows/eval-gate.yml` | *How do I stop a regression shipping?* A metric **registry** with per-metric thresholds + direction and a build-failing **exit code** — evals become a **gate**, not a report. Key-free **mock judge** runs on every PR (deterministic, no API key); live judge is nightly. Demo: healthy outputs PASS (exit 0), a seeded regression FAILS (exit 1). |
+| **Eval harness / CI gate** | `eval_harness.py`, `.github/workflows/eval-gate.yml` | *How do I stop a regression shipping?* A metric **registry** with per-metric thresholds + direction and a build-failing **exit code** — evals become a **gate**, not a report. Key-free **mock judge** runs on every PR (deterministic, no API key); the **live judge** runs on demand, and may only block a release once it has qualified against human labels (otherwise it's advisory). Demo: healthy outputs PASS (exit 0), a seeded regression FAILS (exit 1). |
+| **Model layer** | `llm.py` | *Can I switch models without touching every file?* One place for model clients: provider and model are settings (`LLM_PROVIDER`, `AGENT_MODEL`, `JUDGE_MODEL`); the judge uses a different, stronger model than the agent, so nothing grades its own work. |
+| **Judge validation** | `answer_judge.py`, `build_label_set.py`, `judge_labels.json`, `judge_validation.py`, `judge_validation_results.jsonl` | *Can I trust the AI judge that gates my releases?* Thirty answers labelled blind by a person, split into a tuning half and a held-back half; two numbers against the human labels — **catches real failures** and **leaves good answers alone**; per-category breakdown; results saved per judge version. A judge that hasn't qualified runs in **advisory mode**. |
+| **Tests for the test tools** | `test_judge_validation.py` | *Do the evaluation tools themselves work?* Key-free unit tests (fake judges, no network) run on every PR. |
 | **Observability** | `observability/tracing.py`, `observability/monitor.py`, `observability/pii_guardrail.py` | *Is it still safe in production?* A structured per-run **trace** (evidence log), a **dashboard** (breach/refusal rate, latency, cost), a baseline-vs-recent **drift alert**, and a **triage→fix** loop. Before/after: PII breach-rate `1.7% → 0%` (fake PII only). |
 
 ---
@@ -49,6 +52,47 @@ Full walkthrough: [`docs/red_team_walkthrough.md`](docs/red_team_walkthrough.md)
 
 ---
 
+## The second finding: check the examiner
+
+The release gate trusts an AI judge to decide whether an answer is good. So before letting it
+gate, I measured it against my own labels — the way a chief examiner re-marks a sample of a new
+examiner's papers.
+
+**The set-up.** Thirty answers: fifteen from the agent and fifteen deliberately broken (wrong
+fact, missing condition, invented rule, wrong refusal, unsafe agreement, long-but-wrong). I
+labelled all thirty **blind** — not knowing which were which — then split them into a **tuning
+half** (to improve the judge) and a **held-back half** (measured once, never tuned on).
+
+| Run | Judge | Catches real failures | Leaves good answers alone |
+|---|---|---|---|
+| Tuning half | v1 | 6 / 10 = 60% | 3 / 5 = 60% |
+| Tuning half | v2 (one rubric rule added) | 12 / 12 = 100% | 3 / 3 = 100% |
+| **Held-back half (run once)** | **v2, frozen** | **7 / 7 = 100%** | **5 / 8 = 62%** |
+
+**Verdict: not qualified** (bars: catches ≥ 85%, leaves good answers alone ≥ 80%) — so the
+pipeline runs it in **advisory mode**: it reports, and what it fails goes to a person, but it
+can't block a release.
+
+**What I learned**
+1. **The first judge was lenient for a fixable reason.** My standard — an escalation that hints an
+   exception might be possible ("a manager may review your situation") is a failure — wasn't
+   written into the rubric. One rule fixed it. The fix was the standard, not the model.
+2. **Tuning scores mean little.** 100% on the half you tuned on is expected; only the held-back
+   half counts.
+3. **The judge checked me too.** All three held-back disagreements were answers I had passed that
+   broke my own written rule — two left out a condition the customer needed, one refused when
+   the policy had the answer. People catch loud errors and miss quiet omissions; judges miss
+   nuance. Run both: the judge on everything, people on a sample and on every disagreement.
+4. **Disagreements can expose the policy.** Two tuning disagreements came down to a policy that
+   doesn't say whether a deadline boundary is inclusive. Anything ambiguous: fix the policy, or
+   hand over — never guess.
+5. **Trust is per version.** A new judge model or rubric is unvalidated until it passes again.
+   Re-running the same judge twice gave identical verdicts on every case.
+
+*Small sample, one labeller: the numbers are a direction, not a verdict.*
+
+---
+
 ## Run it
 
 ```bash
@@ -66,7 +110,15 @@ python completeness_guardrail.py  # the completeness fix: before/after rate
 
 python eval_harness.py            # CI GATE: healthy outputs -> PASS (exit 0)
 python eval_harness.py regressed  # CI GATE: seeded regression -> FAIL (exit 1)
+
+python build_label_set.py                                  # 15 agent + 15 seeded answers to label
+python judge_validation.py --judge llm --split tune        # improve the judge on the tuning half
+python judge_validation.py --judge llm --split holdout     # measure once; exit 0 = qualified to gate
+python -m pytest -q                                        # key-free tests for the tools themselves
 ```
+
+In Colab, run `build_label_set.main()` and `judge_validation.main()` inside the notebook (not
+with `!python`) so the Colab secret is available.
 
 Each file is self-contained and also runs cell-by-cell in a notebook. The API key is read
 from the environment (`ANTHROPIC_API_KEY`) — it is never hard-coded, and `.env` is gitignored.
@@ -79,6 +131,10 @@ Data is privacy-safe synthetic only (no real PII).
 - [x] **Eval harness (done)** — run the full golden set in CI with score thresholds that *fail the build* (an eval you run by hand is a report; wired into CI it's a gate), with judge-call retries + pinned, containerized deps.
 - [ ] **Runtime guardrails gateway** — the four guardrail layers enforced live on every request/response, not just at test time.
 - [x] **Observability loop (done)** — trace every run; track hallucination-rate, guardrail-breach-rate, cost, latency; detect drift.
+- [x] **Judge validation (done, round 1)** — human labels, tuning and held-back halves, two numbers, advisory mode until qualified.
+- [ ] **Judge validation, round 2** — a labelling guide with quiet-failure examples, a second labeller, narrower single-purpose judges, and a fresh held-back set with the bars set beforehand.
+- [ ] **One model layer for every judge** — move the RAGAS, red-team and completeness judges onto `llm.py`.
+- [ ] **Clearer policy boundaries** — state whether each deadline is inclusive.
 
 ---
 

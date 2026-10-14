@@ -8,6 +8,7 @@ on:
   pull_request:
   push:
     branches: [ main ]
+  workflow_dispatch:               # lets the live arm be run by hand from the Actions tab
 
 jobs:
   eval-gate:                       # the cheap, deterministic arm — gates every PR
@@ -17,6 +18,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Test the testing tools (no API key)
+        run: |
+          pip install pytest
+          python -m pytest -q
       - name: Run the eval gate (mock judge, no API key)
         run: python eval_harness.py        # exit 1 on any failed threshold -> build goes red
 
@@ -28,6 +33,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install the model client
+        run: pip install anthropic
+      - name: Re-check the judge against human labels (held-back half)
+        continue-on-error: true    # a judge that doesn't qualify isn't a failed build — the
+                                   # next step then runs it in ADVISORY mode (reports, can't block)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python judge_validation.py --judge llm --split holdout
       - name: Run with the live LLM judge
         env:
           LLM_PROVIDER: anthropic
