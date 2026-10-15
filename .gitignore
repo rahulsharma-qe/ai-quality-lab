@@ -3,3 +3,9 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 .DS_Store
+
+# aiquality
+aiquality-runs/
+*.egg-info/
+build/
+.venv/

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aiquality"
+version = "0.1.0"
+description = "A self-serve quality platform for AI agents: evaluation, attack tests, a release gate and reports, driven by configuration."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# Read golden sets from Excel files.
+excel = ["openpyxl>=3.1"]
+# Call a real language model (live judge, live agents).
+live = ["anthropic"]
+# Run the AeroAssist demo agent live (retrieval needs an embedding model).
+aeroassist = ["anthropic", "numpy", "langchain-huggingface", "sentence-transformers"]
+# Everything needed to run the tests and examples.
+dev = ["pytest>=7", "openpyxl>=3.1"]
+
+[tool.setuptools.packages.find]
+include = ["aiquality*"]
+
+[tool.setuptools.package-data]
+aiquality = ["config/*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "test_judge_validation.py"]

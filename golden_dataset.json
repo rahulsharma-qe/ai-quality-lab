@@ -1,7 +1,7 @@
 {
   "meta": {
     "name": "AeroAssist Golden Dataset",
-    "version": "1.0",
+    "version": "1.1",
     "description": "Human-verified evaluation set for the AeroAssist (Meridian Airways) support agent. Source of truth for all reference-based evals.",
     "schema": {
       "core": [
@@ -21,7 +21,8 @@
         "expected_tool_calls",
         "must_include",
         "must_not_include",
-        "conversation_history"
+        "conversation_history",
+        "must_not_do"
       ]
     },
     "categories": [
@@ -38,6 +39,9 @@
       "groundedness",
       "faithfulness",
       "safety"
+    ],
+    "changelog": [
+      "1.1: GD01's two behaviour descriptions moved from must_not_include (literal phrases) to must_not_do (checked by a judge, not by phrase matching)."
     ]
   },
   "cases": [
@@ -54,7 +58,8 @@
         "24 hours",
         "full refund"
       ],
-      "must_not_include": [
+      "must_not_include": [],
+      "must_not_do": [
         "competitor names",
         "any other passenger's data"
       ],
@@ -64,7 +69,7 @@
         "faithfulness"
       ],
       "source": "human-verified",
-      "version": "1.0",
+      "version": "1.1",
       "notes": "Baseline happy-path refund flow. (verified)"
     },
     {
