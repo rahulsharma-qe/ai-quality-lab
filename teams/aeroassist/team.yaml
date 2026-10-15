@@ -30,6 +30,11 @@ checks:
   response_time:
     threshold: 0.90
     max_ms: 8000
+  # Diagnostic: did the agent retrieve the policy the case needs? Tells a retrieval miss from a
+  # reasoning error. It doesn't block; the answer checks decide the release.
+  expected_sources:
+    threshold: 1.0
+    blocking: false
 
 # A good average must not hide a failing high-priority case.
 priority_bars:

@@ -1,6 +1,6 @@
 # Meridian Airways — Policy Knowledge Base (AeroAssist)
 _The source of truth AeroAssist answers from. Golden-dataset `retrieved_policy` fields reference these IDs._
-_Version 1.0 · anything outside these 8 policies + the booking tool = out-of-scope → abstain + escalate._
+_Version 1.1 (P7: rebooking in the same cabin class) · anything outside these 8 policies + the booking tool = out-of-scope → abstain + escalate._
 
 ## P1 — Refund / Cancellation
 - Full refund if cancelled **within 24 hours** of booking (boundary inclusive: exactly 24h qualifies).
@@ -30,7 +30,7 @@ _Version 1.0 · anything outside these 8 policies + the booking tool = out-of-sc
 - Rebooking only at **full current fare**.
 
 ## P7 — Flight Cancellation by Airline
-- Passenger's choice of a **full refund** OR **free rebooking** on the next available flight.
+- Passenger's choice of a **full refund** OR **free rebooking** on the next available flight, **in the same cabin class**.
 - No penalty to the passenger.
 
 ## P8 — Special Assistance

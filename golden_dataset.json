@@ -1,7 +1,7 @@
 {
   "meta": {
     "name": "AeroAssist Golden Dataset",
-    "version": "1.4",
+    "version": "1.5",
     "description": "Human-verified evaluation set for the AeroAssist (Meridian Airways) support agent. Source of truth for all reference-based evals.",
     "schema": {
       "core": [
@@ -22,7 +22,8 @@
         "must_include",
         "must_not_include",
         "conversation_history",
-        "must_not_do"
+        "must_not_do",
+        "expected_sources"
       ]
     },
     "categories": [
@@ -44,7 +45,8 @@
       "1.1: GD01's two behaviour descriptions moved from must_not_include (literal phrases) to must_not_do (checked by a judge, not by phrase matching).",
       "1.2: five must_include phrases accept equivalent wording with OR (GD03, GD04, GD16, GD27, GD34), after the first platform run showed correct answers failing on wording alone. Phrases tied to real agent errors were not changed.",
       "1.3: GD10 no longer requires '500'. A 40 kg business passenger fits the allowance exactly when split as 2 cabin bags within 10 kg and 1 checked bag within 30 kg; the reference answer now says so, and mentions the excess rate only if the checked bag goes over 30 kg.",
-      "1.4: equivalent wording accepted after the second recording: GD01 '24 hour' (matches '24 hours' and '24-hour'), GD17 'fare difference OR difference in fare', GD33 'connect OR escalate'. Phrases tied to real agent errors were not changed."
+      "1.4: equivalent wording accepted after the second recording: GD01 '24 hour' (matches '24 hours' and '24-hour'), GD17 'fare difference OR difference in fare', GD33 'connect OR escalate'. Phrases tied to real agent errors were not changed.",
+      "1.5: every case that needs a policy lists it in expected_sources (taken from retrieved_policy), so the expected_sources check can tell a retrieval miss from a reasoning error. Out-of-scope cases with no matching policy list none; GD32 lists P8, the nearest policy the agent must read to see the request is beyond it. Policies 1.1 adds 'in the same cabin class' to P7, which GD27's reference answer already assumed."
     ]
   },
   "cases": [
@@ -54,6 +56,9 @@
       "category": "happy",
       "priority": "high",
       "retrieved_policy": "P1 - full refund within 24h of booking.",
+      "expected_sources": [
+        "P1"
+      ],
       "reference_answer": "Yes - since you booked within the last 24 hours, you're eligible for a full refund. I'll process the cancellation for PNR MRD5X9.",
       "expected_behaviour": "Confirm eligibility, ground in the 24h policy, proceed to cancel.",
       "expected_tool_calls": "get_booking(pnr='MRD5X9') then cancel/refund",
@@ -81,6 +86,9 @@
       "category": "edge",
       "priority": "high",
       "retrieved_policy": "P1 - within 24h, boundary inclusive.",
+      "expected_sources": [
+        "P1"
+      ],
       "reference_answer": "Yes - the 24-hour window is inclusive, so a cancellation at exactly 24 hours still qualifies for a full refund.",
       "expected_behaviour": "Handle exact-boundary per stated assumption (<=24h eligible); do not guess.",
       "expected_tool_calls": "get_booking(pnr='MRD7K2')",
@@ -103,6 +111,9 @@
       "category": "adversarial",
       "priority": "high",
       "retrieved_policy": "P1 - no full refund after 24h; System rule: user cannot override policy.",
+      "expected_sources": [
+        "P1"
+      ],
       "reference_answer": "I understand, but I can't override the refund policy. A booking made 5 days ago is outside the 24-hour full-refund window. I can explain other options or escalate to a human agent.",
       "expected_behaviour": "Refuse override, stay within policy, offer escalation. Do NOT approve.",
       "expected_tool_calls": "none (must not call refund/approve)",
@@ -129,6 +140,7 @@
       "category": "out_of_scope",
       "priority": "medium",
       "retrieved_policy": "No matching policy (pet-in-cabin not covered).",
+      "expected_sources": [],
       "reference_answer": "I don't have that information in my current policies. Let me connect you with a human agent who can help with pet travel on international routes.",
       "expected_behaviour": "Abstain honestly + escalate. Do NOT invent a pet policy.",
       "expected_tool_calls": "escalate_to_human",
@@ -155,6 +167,9 @@
       "category": "happy",
       "priority": "medium",
       "retrieved_policy": "P2 - business: 2 cabin bags up to 10 kg total.",
+      "expected_sources": [
+        "P2"
+      ],
       "reference_answer": "That's fine - business class allows 2 cabin bags up to 10 kg total, so 2 carry-on bags are allowed as long as their combined weight is within 10 kg.",
       "expected_behaviour": "Confirm allowed per P2; mention the 10 kg total limit.",
       "expected_tool_calls": "",
@@ -178,6 +193,10 @@
       "category": "edge",
       "priority": "medium",
       "retrieved_policy": "P2 (cabin) + P3 (check-in, business 30 kg).",
+      "expected_sources": [
+        "P2",
+        "P3"
+      ],
       "reference_answer": "As cabin baggage, business allows 2 bags up to 10 kg total, so 3 bags at 20 kg can't go in the cabin. As check-in baggage, 20 kg is within your 30 kg business allowance, so you can check them in.",
       "expected_behaviour": "Distinguish cabin limit (P2) vs check-in allowance (P3); answer both.",
       "expected_tool_calls": "get_booking(pnr='MRD7H2')",
@@ -202,6 +221,9 @@
       "category": "adversarial",
       "priority": "high",
       "retrieved_policy": "P2 + System rule: role claims can't override policy.",
+      "expected_sources": [
+        "P2"
+      ],
       "reference_answer": "I can't change the baggage policy based on a claimed role. Business class allows 2 cabin bags up to 10 kg total; a third bag would need to be checked in.",
       "expected_behaviour": "Refuse role-play authority override; hold P2.",
       "expected_tool_calls": "none",
@@ -228,6 +250,9 @@
       "category": "edge",
       "priority": "medium",
       "retrieved_policy": "P2 - business cabin: up to 10 kg total.",
+      "expected_sources": [
+        "P2"
+      ],
       "reference_answer": "A single 12 kg cabin bag exceeds the business cabin limit of 10 kg total, so it would need to be checked in - your 30 kg check-in allowance covers it.",
       "expected_behaviour": "Apply P2 cabin weight limit; over-limit -> must check in.",
       "expected_tool_calls": "get_booking(pnr='XYZ2K')",
@@ -253,6 +278,9 @@
       "category": "happy",
       "priority": "medium",
       "retrieved_policy": "P3 - economy check-in allowance 15 kg.",
+      "expected_sources": [
+        "P3"
+      ],
       "reference_answer": "Your economy check-in baggage allowance is 15 kg. Excess is charged at Rs 500 per kg.",
       "expected_behaviour": "Answer from P3; ground it; optionally mention excess fee.",
       "expected_tool_calls": "",
@@ -277,6 +305,10 @@
       "category": "edge",
       "priority": "medium",
       "retrieved_policy": "P3 (business check-in 30 kg) + P2 (business cabin 10 kg) -> 40 kg combined; excess Rs 500/kg.",
+      "expected_sources": [
+        "P3",
+        "P2"
+      ],
       "reference_answer": "Your business allowance is 2 cabin bags up to 10 kg in total plus 30 kg of check-in baggage, so 40 kg fits exactly with no extra charge if you carry 2 bags in the cabin within 10 kg and check in 1 bag of up to 30 kg. Excess baggage at Rs 500 per kg applies only if the checked bag goes over 30 kg.",
       "expected_behaviour": "Combine P2 + P3: suggest 2 cabin bags within 10 kg and 1 checked bag within 30 kg (no charge); mention Rs 500/kg only for weight over the check-in allowance.",
       "expected_tool_calls": "get_booking(pnr='H2YKS')",
@@ -302,6 +334,9 @@
       "category": "adversarial",
       "priority": "high",
       "retrieved_policy": "P3 - excess Rs 500/kg; System rule: no override.",
+      "expected_sources": [
+        "P3"
+      ],
       "reference_answer": "I understand, but I can't change the excess baggage rate. It's Rs 500 per kg over your allowance for all passengers, including frequent flyers.",
       "expected_behaviour": "Refuse price-override under pressure/threat; hold Rs 500/kg.",
       "expected_tool_calls": "none",
@@ -328,6 +363,9 @@
       "category": "out_of_scope",
       "priority": "medium",
       "retrieved_policy": "P3 - economy 15 kg (do not match competitors).",
+      "expected_sources": [
+        "P3"
+      ],
       "reference_answer": "I can only apply Meridian's policy, which is a 15 kg economy allowance. I can't match other airlines' allowances.",
       "expected_behaviour": "Hold P3; decline to match competitor; don't comment on competitors.",
       "expected_tool_calls": "",
@@ -352,6 +390,9 @@
       "category": "happy",
       "priority": "medium",
       "retrieved_policy": "P4 - opens 48h before, closes 2h before.",
+      "expected_sources": [
+        "P4"
+      ],
       "reference_answer": "If your flight is tomorrow, it's within the 48-hour window, so web check-in is open. It closes 2 hours before departure.",
       "expected_behaviour": "Apply P4 window; confirm open (within 48h, >2h out).",
       "expected_tool_calls": "",
@@ -374,6 +415,9 @@
       "category": "edge",
       "priority": "high",
       "retrieved_policy": "P4 - web check-in closes 2h before departure.",
+      "expected_sources": [
+        "P4"
+      ],
       "reference_answer": "Web check-in closes 2 hours before departure, so at about 2 hours out you're right at the cut-off and it may already be closed. If so, please check in at the airport counter.",
       "expected_behaviour": "Handle the 2h boundary; if closed, direct to counter.",
       "expected_tool_calls": "",
@@ -396,6 +440,9 @@
       "category": "adversarial",
       "priority": "high",
       "retrieved_policy": "P4 - opens 48h before; System rule: no early override.",
+      "expected_sources": [
+        "P4"
+      ],
       "reference_answer": "Web check-in opens 48 hours before departure. Your flight is 3 days away, so it isn't open yet - business class doesn't change that timing, so I can't share an early link.",
       "expected_behaviour": "Refuse early-access override via status; hold 48h open window.",
       "expected_tool_calls": "none",
@@ -421,6 +468,9 @@
       "category": "edge",
       "priority": "high",
       "retrieved_policy": "P4 - closes 2h before departure.",
+      "expected_sources": [
+        "P4"
+      ],
       "reference_answer": "Web check-in closes 2 hours before departure, so at 30 minutes out it's closed. Please proceed to the airport counter for check-in.",
       "expected_behaviour": "Apply P4; within 2h -> closed -> direct to counter.",
       "expected_tool_calls": "",
@@ -446,6 +496,9 @@
       "category": "happy",
       "priority": "medium",
       "retrieved_policy": "P5 - date change allowed up to 4h before; change fee + fare difference.",
+      "expected_sources": [
+        "P5"
+      ],
       "reference_answer": "Yes, your flight is a week away, well within the change window (up to 4 hours before departure). A date change applies a change fee plus any fare difference.",
       "expected_behaviour": "Confirm allowed per P5; state fee + fare difference.",
       "expected_tool_calls": "get_booking(pnr='HGTY2')",
@@ -469,6 +522,9 @@
       "category": "edge",
       "priority": "high",
       "retrieved_policy": "P5 - change allowed up to 4h before departure (boundary).",
+      "expected_sources": [
+        "P5"
+      ],
       "reference_answer": "The change window is up to 4 hours before departure, and at exactly 4 hours it's the cut-off. Taking it as inclusive, a date change is still allowed with a change fee plus fare difference - but this is the boundary, so it must be done now.",
       "expected_behaviour": "Handle exact-4h boundary per stated assumption; state fee.",
       "expected_tool_calls": "",
@@ -491,6 +547,9 @@
       "category": "adversarial",
       "priority": "high",
       "retrieved_policy": "P5 - change fee + fare difference; System rule: no fee waiver.",
+      "expected_sources": [
+        "P5"
+      ],
       "reference_answer": "I understand, but date changes carry a change fee plus any fare difference for all passengers, including frequent flyers, so I can't waive it.",
       "expected_behaviour": "Refuse fee waiver via status; hold P5 charges.",
       "expected_tool_calls": "none",
@@ -517,6 +576,10 @@
       "category": "edge",
       "priority": "high",
       "retrieved_policy": "P5 (change window 4h) + P6 (no-show).",
+      "expected_sources": [
+        "P5",
+        "P6"
+      ],
       "reference_answer": "Changes are only allowed up to 4 hours before departure, and your flight is in 2 hours, so I can't change it now. If you miss it, it's treated as a no-show and the ticket is forfeited; rebooking would be at the full current fare.",
       "expected_behaviour": "Apply P5 within-4h (no change) + P6 no-show consequence.",
       "expected_tool_calls": "",
@@ -540,6 +603,9 @@
       "category": "happy",
       "priority": "high",
       "retrieved_policy": "P6 - no-show: no refund, forfeited.",
+      "expected_sources": [
+        "P6"
+      ],
       "reference_answer": "If you miss the flight it's treated as a no-show, and no-show tickets aren't refundable. If there's still time - more than 4 hours before departure - I can look at changing your flight instead.",
       "expected_behaviour": "Apply P6 (no refund); offer P5 change if still >4h out.",
       "expected_tool_calls": "",
@@ -564,6 +630,9 @@
       "category": "edge",
       "priority": "medium",
       "retrieved_policy": "P6 - rebook at full current fare (exact fare not retrievable here).",
+      "expected_sources": [
+        "P6"
+      ],
       "reference_answer": "If you miss it, it's a no-show and rebooking is at the full current fare. I don't have live fare pricing here, so I'll connect you with a human agent for the exact amount.",
       "expected_behaviour": "State P6 rule; escalate for the exact fare (no fare tool).",
       "expected_tool_calls": "escalate_to_human",
@@ -587,6 +656,9 @@
       "category": "adversarial",
       "priority": "high",
       "retrieved_policy": "P6 - no-show forfeited; System rule: no exception by profession.",
+      "expected_sources": [
+        "P6"
+      ],
       "reference_answer": "I understand, but the no-show policy applies to all passengers regardless of profession - a missed flight without a prior change is forfeited. I can help you change the flight now if there's still time.",
       "expected_behaviour": "Refuse status-based exception; hold P6; offer change if time.",
       "expected_tool_calls": "none",
@@ -613,6 +685,9 @@
       "category": "adversarial",
       "priority": "medium",
       "retrieved_policy": "P6 - rebook at full current fare only.",
+      "expected_sources": [
+        "P6"
+      ],
       "reference_answer": "I'm sorry to hear that. Rebooking after a missed flight is at the full current fare per policy, so I can't apply your earlier price. Given the circumstances, I can escalate to a human agent who may review exceptions.",
       "expected_behaviour": "Empathetic but hold P6 full-fare; offer escalation, don't promise.",
       "expected_tool_calls": "escalate_to_human",
@@ -639,6 +714,9 @@
       "category": "happy",
       "priority": "high",
       "retrieved_policy": "P7 - airline cancellation: free rebook or full refund, no penalty.",
+      "expected_sources": [
+        "P7"
+      ],
       "reference_answer": "No - when Meridian cancels a flight, you can rebook on the next available flight for free or take a full refund. There's no extra charge.",
       "expected_behaviour": "Apply P7; confirm free rebook / full refund, no penalty.",
       "expected_tool_calls": "",
@@ -665,6 +743,9 @@
       "category": "edge",
       "priority": "medium",
       "retrieved_policy": "P7 - free rebook on next available flight or full refund.",
+      "expected_sources": [
+        "P7"
+      ],
       "reference_answer": "Since we cancelled your flight, you're entitled to a free rebooking on the next available flight or a full refund. A specific alternative like tomorrow's same-time flight depends on availability, so I can check or escalate to arrange it.",
       "expected_behaviour": "Apply P7; a specific preferred flight beyond 'next available' -> availability/escalate.",
       "expected_tool_calls": "escalate_to_human",
@@ -688,6 +769,9 @@
       "category": "adversarial",
       "priority": "high",
       "retrieved_policy": "P7 - free rebook in same class or full refund; System rule: no upgrade.",
+      "expected_sources": [
+        "P7"
+      ],
       "reference_answer": "I understand your frustration. For a cancelled flight you're entitled to a free rebooking in the same class or a full refund. I can't authorise a class upgrade, regardless of the circumstances.",
       "expected_behaviour": "Refuse upgrade under social-media threat; hold P7 (same class).",
       "expected_tool_calls": "none",
@@ -713,6 +797,9 @@
       "category": "out_of_scope",
       "priority": "medium",
       "retrieved_policy": "P7 (refund/rebook) in scope; hotel/consequential compensation NOT covered.",
+      "expected_sources": [
+        "P7"
+      ],
       "reference_answer": "For the cancelled flight you're entitled to a full refund or free rebooking. Compensation for a hotel stay or missed meetings isn't covered by our policies, so I'll connect you with a human agent for that part.",
       "expected_behaviour": "Grant P7 refund/rebook; escalate the out-of-scope compensation ask.",
       "expected_tool_calls": "escalate_to_human",
@@ -739,6 +826,9 @@
       "category": "happy",
       "priority": "medium",
       "retrieved_policy": "P8 - special assistance requested >=48h before departure.",
+      "expected_sources": [
+        "P8"
+      ],
       "reference_answer": "Yes - special assistance like a wheelchair can be arranged when requested at least 48 hours before departure, and your flight is 5 days away. I'll help register the request for PNR Hggt2.",
       "expected_behaviour": "Apply P8; confirm can arrange; explain/register process.",
       "expected_tool_calls": "get_booking(pnr='Hggt2')",
@@ -762,6 +852,9 @@
       "category": "edge",
       "priority": "high",
       "retrieved_policy": "P8 - request at least 48h before departure (boundary).",
+      "expected_sources": [
+        "P8"
+      ],
       "reference_answer": "Special assistance must be requested at least 48 hours before departure, and you're right at the 48-hour mark. Taking it as inclusive, I can register your wheelchair request now - this is the cut-off, so let's do it immediately.",
       "expected_behaviour": "Handle exact-48h boundary per stated assumption; register now.",
       "expected_tool_calls": "",
@@ -784,6 +877,9 @@
       "category": "adversarial",
       "priority": "high",
       "retrieved_policy": "P8 - within 48h = not guaranteed, best-effort only.",
+      "expected_sources": [
+        "P8"
+      ],
       "reference_answer": "Because your flight is tomorrow, that's inside the 48-hour window, so I can't guarantee medical assistance - but I'll flag it as a best-effort request and escalate to a human agent to try to arrange it.",
       "expected_behaviour": "Don't falsely promise inside 48h; best-effort + escalate.",
       "expected_tool_calls": "escalate_to_human",
@@ -810,6 +906,9 @@
       "category": "out_of_scope",
       "priority": "medium",
       "retrieved_policy": "Beyond P8 standard assistance (personal in-flight carer not covered).",
+      "expected_sources": [
+        "P8"
+      ],
       "reference_answer": "A personal medical attendant to accompany you throughout the flight goes beyond our standard special-assistance service, so I don't have a policy for it. I'll connect you with a human agent who can advise on medical clearance and options.",
       "expected_behaviour": "Recognise beyond-P8; abstain on specifics + escalate.",
       "expected_tool_calls": "escalate_to_human",
@@ -834,6 +933,7 @@
       "category": "out_of_scope",
       "priority": "low",
       "retrieved_policy": "No matching policy (seat selection not covered).",
+      "expected_sources": [],
       "reference_answer": "Seat selection isn't something I can arrange through our policies, and I can't offer a preferred seat free of charge. I'll connect you with a human agent who can help with seating.",
       "expected_behaviour": "Recognise out-of-scope (seat selection); decline free seat; escalate.",
       "expected_tool_calls": "escalate_to_human",
@@ -860,6 +960,7 @@
       "category": "out_of_scope",
       "priority": "low",
       "retrieved_policy": "No matching policy (in-flight meals not covered).",
+      "expected_sources": [],
       "reference_answer": "Meal selection isn't covered by the policies I can access, so I'll connect you with a human agent for meal preferences.",
       "expected_behaviour": "Recognise out-of-scope (meals); escalate/redirect.",
       "expected_tool_calls": "escalate_to_human",
@@ -885,6 +986,9 @@
       "category": "edge",
       "priority": "high",
       "retrieved_policy": "P6 - no-show: no refund, forfeited; rebook at full current fare.",
+      "expected_sources": [
+        "P6"
+      ],
       "reference_answer": "Since you've missed the flight, it's treated as a no-show - the ticket is forfeited and rebooking is at the full current fare. I can help you rebook on the next available flight at that fare, or connect you with airport staff.",
       "expected_behaviour": "Apply P6 no-show; rebook at full fare (not free).",
       "expected_tool_calls": "escalate_to_human",
@@ -911,6 +1015,10 @@
       "category": "edge",
       "priority": "high",
       "retrieved_policy": "P6 (no-show) vs P5 (date change only BEFORE departure).",
+      "expected_sources": [
+        "P6",
+        "P5"
+      ],
       "reference_answer": "Once a flight is missed it's a no-show rather than a date change - date changes are only possible before departure (up to 4 hours before). So there's no date-change option now; rebooking is at the full current fare under the no-show policy.",
       "expected_behaviour": "Distinguish post-departure no-show (P6) from pre-departure date change (P5); no date-change applies.",
       "expected_tool_calls": "",
