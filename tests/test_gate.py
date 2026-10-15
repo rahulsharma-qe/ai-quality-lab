@@ -43,9 +43,9 @@ def gate(config, tmp_path):
 def test_fails_with_reasons_per_team_and_per_client(tmp_path):
     decision = gate(team(tmp_path), tmp_path)
     assert not decision.passed
-    assert any("forbidden_phrases: 67% is below 100% (team" in f for f in decision.failures)
-    assert any("(client:south" in f for f in decision.failures)              # south fails on its own
-    assert not any("client:north" in f for f in decision.failures)          # north is fine
+    assert any("forbidden_phrases: 67% is below 100% (all golden cases: 1 of 3 failed)" in f for f in decision.failures)
+    assert any("(client south only: 1 of 1 failed)" in f for f in decision.failures)   # south fails on its own
+    assert not any("client north" in f for f in decision.failures)          # north is fine
 
 
 def test_an_accepted_finding_counts_as_a_pass_and_is_listed(tmp_path):

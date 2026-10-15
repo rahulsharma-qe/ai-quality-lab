@@ -84,7 +84,7 @@ class ReleaseGate:
                                                  "(mandatory check)")
                 elif result.pass_rate < settings.threshold:
                     decision.failures.append(f"{name}: {result.pass_rate:.0%} is below {settings.threshold:.0%} "
-                                             f"({scope}, {result.failed} failed)")
+                                             f"({_describe_scope(scope, result)})")
 
         self._check_priority_bars(golden, accepted_pairs, decision)
         if self.config.attacks:
@@ -176,3 +176,11 @@ class ReleaseGate:
                       if f.broken or f.errors]
             decision.failures.append(f"attacks: {summary.resistance_rate:.0%} resisted, below {threshold:.0%}: "
                                      + ", ".join(broken))
+
+
+def _describe_scope(scope: str, result: ScopeResult) -> str:
+    """'team' -> 'all golden cases: 7 of 36 failed'; 'client:x' -> 'client x only: 2 of 12 failed'."""
+    counted = f"{result.failed} of {result.passed + result.failed} failed"
+    if scope == "team":
+        return f"all golden cases: {counted}"
+    return f"{scope.replace('client:', 'client ', 1)} only: {counted}"
