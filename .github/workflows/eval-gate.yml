@@ -25,7 +25,8 @@ jobs:
       - name: Test the testing tools (no API key)
         run: python -m pytest -q
       - name: Run every platform example (no API key)
-        run: for example in examples/[0-9][0-9]_*.py; do echo "== $example"; python "$example"; done
+        # Without GITHUB_STEP_SUMMARY, so example reports don't appear on the run page beside the real gates.
+        run: for example in examples/[0-9][0-9]_*.py; do echo "== $example"; env -u GITHUB_STEP_SUMMARY python "$example"; done
       - name: Release gate must PASS on the good demo agent
         run: aiquality gate --team examples/gate_demo/good_team
       - name: Release gate must FAIL (exit 1) on the regressed demo agent
