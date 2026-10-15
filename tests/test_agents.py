@@ -108,3 +108,21 @@ def test_replay_tells_apart_multi_turn_cases_with_the_same_last_question(tmp_pat
     replay = RecordedResponsesAgent(path)
     assert replay.answer("Yes, please", first.conversation_history).answer_text == "done: Change my seat?"
     assert replay.answer("Yes, please", second.conversation_history).answer_text == "done: Cancel my booking?"
+
+
+def test_prepare_runs_once_before_any_question(tmp_path):
+    agent_file = tmp_path / "agent.py"
+    agent_file.write_text("import time\nREADY = []\n"
+                          "def prepare():\n    time.sleep(0.2)\n    READY.append(True)\n"
+                          "def answer(q):\n    return 'ready' if READY else 'cold'\n")
+    agent = PythonFunctionAgent.from_file(agent_file, "answer")
+    response = agent.answer("hi")
+    assert response.answer_text == "ready" and response.latency_ms < 150   # start-up not counted
+
+
+def test_failed_prepare_is_a_setup_error(tmp_path):
+    agent_file = tmp_path / "agent.py"
+    agent_file.write_text("def prepare():\n    raise RuntimeError('ANTHROPIC_API_KEY is not set')\n"
+                          "def answer(q):\n    return 'x'\n")
+    with pytest.raises(AgentConnectionError, match="API_KEY is not set"):
+        PythonFunctionAgent.from_file(agent_file, "answer")

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from aiquality.contracts import AgentResponse, AgentUnderTest
-from aiquality.errors import ConfigError
+from aiquality.errors import AgentConnectionError, ConfigError
 
 
 class PythonFunctionAgent(AgentUnderTest):
@@ -38,7 +38,12 @@ class PythonFunctionAgent(AgentUnderTest):
     @classmethod
     def from_file(cls, file_path: Path, function_name: str, name: Optional[str] = None,
                   version: str = "unversioned") -> "PythonFunctionAgent":
-        """Load a function from a .py file, e.g. a team's agent.py."""
+        """Load a function from a .py file, e.g. a team's agent.py.
+
+        Optional in that file: AGENT_VERSION (recorded in every run), and prepare(),
+        called once before any question so slow start-up (loading a model) is not
+        counted in the first answer's response time.
+        """
         file_path = Path(file_path)
         if not file_path.is_file():
             raise ConfigError(str(file_path), [f"agent file not found: {file_path}"])
@@ -48,6 +53,12 @@ class PythonFunctionAgent(AgentUnderTest):
         function = getattr(module, function_name, None)
         if function is None or not callable(function):
             raise ConfigError(str(file_path), [f"no function named '{function_name}' in {file_path.name}"])
+        prepare = getattr(module, "prepare", None)
+        if callable(prepare):
+            try:
+                prepare()  # load models and clients now, so the first answer's time isn't inflated
+            except Exception as error:  # e.g. a missing API key: a setup problem, not a quality result
+                raise AgentConnectionError(f"prepare() in {file_path.name} failed: {type(error).__name__}: {error}")
         version = getattr(module, "AGENT_VERSION", version)
         return cls(function, name=name or file_path.parent.name, version=version)
 

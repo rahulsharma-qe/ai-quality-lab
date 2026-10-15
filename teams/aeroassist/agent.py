@@ -3,7 +3,8 @@
 It wraps the policy-retrieval agent (AeroAssistRAG in rag_eval.py) with the same settings
 used to build the judge-validation answers: the agent model from llm.py, top 2 policies.
 Needs:  pip install "aiquality[aeroassist]"  and ANTHROPIC_API_KEY (Colab secret or environment).
-The agent is built on the first question, so importing this file costs nothing.
+Importing this file costs nothing; the platform calls prepare() once before the first
+question, so loading the embedding model isn't counted in the first answer's time.
 """
 
 import sys
@@ -19,6 +20,11 @@ AGENT_VERSION = f"aeroassist-rag:{AGENT_MODEL}:top2"
 POLICIES_PATH = REPO_ROOT / "policies.md"
 
 _agent = None
+
+
+def prepare() -> None:
+    """Build the agent (model client + embeddings) before timing starts."""
+    _get_agent()
 
 
 def answer(question: str) -> dict:
