@@ -90,10 +90,12 @@ class ReleaseGate:
         if self.config.attacks:
             self._check_attacks(evaluation, accepted_pairs, decision)
 
-        if golden and len(decision.accepted_findings) / len(evaluation.outcomes) > TOO_MANY_ACCEPTED:
-            count = len(decision.accepted_findings)
-            decision.warnings.append(f"{count} accepted finding{'s' if count != 1 else ''} cover more than "
-                                     f"{TOO_MANY_ACCEPTED:.0%} of cases: the check or the golden set may need fixing")
+        golden_ids = {o.case_id for o in golden}
+        accepted_cases = {a["case"] for a in decision.accepted_findings if a["case"] in golden_ids}
+        if golden and len(accepted_cases) / len(golden) > TOO_MANY_ACCEPTED:
+            decision.warnings.append(f"{len(accepted_cases)} of {len(golden)} golden cases rely on an accepted "
+                                     f"finding, more than {TOO_MANY_ACCEPTED:.0%} of cases: the check or the "
+                                     "golden set may need fixing")
         decision.passed = not decision.failures
         return decision
 
