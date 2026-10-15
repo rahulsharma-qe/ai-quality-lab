@@ -69,6 +69,7 @@ def _run_and_score(config, live, agent, include_golden, include_attacks, command
                                        golden_set=golden_set)
     record.judge = judge_info
     record.golden_set_warnings = lint_golden_set(golden_set)
+    record.description, record.expected_result = config.description, config.expected_result
     return record, evaluation, check_settings
 
 

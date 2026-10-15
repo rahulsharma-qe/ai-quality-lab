@@ -1,6 +1,8 @@
 # The current store agent. The release gate should PASS (exit 0).
 team: demo_should_pass
 client: sample-store
+description: "Gate self-test: the store demo agent answering correctly. The gate must PASS."
+expected_result: PASS
 agent:
   adapter: python_function
   file: ../agents.py

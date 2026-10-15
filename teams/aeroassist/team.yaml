@@ -2,7 +2,7 @@
 
 team: aeroassist
 client: meridian-airways
-description: Answers passenger questions from eight airline policies, or hands over to a person.
+description: "The real agent under test: answers airline passenger questions from eight policies, or hands over to a person. Open problems and history: docs/quality-log.md"
 
 # Default agent: replays answers recorded from the live agent, so CI needs no API key.
 # Every run made this way is marked run_mode "recorded" in its run record.

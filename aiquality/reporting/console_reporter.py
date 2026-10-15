@@ -33,7 +33,7 @@ def render_console_report(record: RunRecord) -> str:
         for row in check_rows(record):
             rate = "-" if row["pass_rate"] is None else f"{row['pass_rate']:.0%}"
             note = f"   {row['gate_rate']:.0%} with {row['accepted']} accepted" if row["accepted"] else ""
-            note += "" if row["blocking"] else "   diagnostic, doesn't block"
+            note += "" if row["blocking"] else f"   {row['label'].removeprefix(row['check']).strip(' ()')}"
             lines.append(f"{row['check']:<22}{rate:>10}{row['threshold']:>11.0%}  {result_text(row):<8}"
                          f"{row['passed']:>6}{row['failed']:>6}{row['not_applicable']:>6}{row['errors']:>7}{note}")
 

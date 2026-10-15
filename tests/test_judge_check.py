@@ -89,7 +89,8 @@ def test_reports_name_the_judge_and_its_status(tmp_path, monkeypatch, capsys):
     gate_team(judged_team(tmp_path), output_dir=tmp_path / "runs", today=TODAY)
     console = capsys.readouterr().out
     assert "judge llm_answer_judge:" in console and "unvalidated · advisory · recorded" in console
-    assert "answer_judge (diagnostic)" in (tmp_path / "runs" / "test_team-summary.md").read_text()
+    summary = (tmp_path / "runs" / "test_team-summary.md").read_text()
+    assert "| answer_judge (advisory) |" in summary and "AI judge (advisory, unvalidated)" in summary
 
 
 def test_the_judge_check_needs_a_judge_block(tmp_path):

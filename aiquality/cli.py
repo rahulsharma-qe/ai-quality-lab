@@ -125,6 +125,12 @@ def _lint(args) -> int:
     return EXIT_OK
 
 
+def _ci_summary(args) -> int:
+    from aiquality.reporting.ci_summary import render_ci_summary
+    print(render_ci_summary(args.output_dir))
+    return EXIT_OK
+
+
 def _list_judges(args) -> int:
     for kind in available_judges():
         print(kind)
@@ -228,6 +234,10 @@ def _build_parser() -> argparse.ArgumentParser:
     lint = commands.add_parser("lint", help="check the team's golden set for mistakes that cause false alarms")
     add_team_arguments(lint)
     lint.set_defaults(handler=_lint)
+
+    ci_summary = commands.add_parser("ci-summary", help="one run page: an overview of every team's gate, then each team")
+    ci_summary.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="where the run records are")
+    ci_summary.set_defaults(handler=_ci_summary)
 
     list_judges = commands.add_parser("list-judges", help="show the judge kinds a team can use")
     list_judges.set_defaults(handler=_list_judges)

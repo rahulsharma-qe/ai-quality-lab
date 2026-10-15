@@ -140,6 +140,11 @@ Reports, chosen under `reports:` in the config: `console`, `html` (one file to k
 artifact), `junit_xml` (CI test views), `github_summary` (the Actions run page). They are written
 to `aiquality-runs/`, next to `run_records.jsonl`, and all read the same run record.
 
+In CI, `aiquality ci-summary --output-dir aiquality-runs >> "$GITHUB_STEP_SUMMARY"` puts every team's
+gate on one run page: an overview table first, then each team led by its answer (PASS, PASS with open
+problems, or FAIL) and four numbers, with the detail folded underneath. A team that exists to test the
+gate itself sets `expected_result: FAIL` (or `PASS`), and the page says whether the gate gave it.
+
 ## 8. Accept a reviewed finding (for a limited time)
 
 When a person has read an answer and agrees a finding is a false alarm (for example "not

@@ -125,7 +125,7 @@ def render_comparison(comparison: RunComparison) -> str:
              f"before: run {before.run_id} · {before.agent_version} · golden set {version_text(before.golden_set_version)}",
              f"after:  run {after.run_id} · {after.agent_version} · golden set {version_text(after.golden_set_version)}"]
     lines += [f"warning: {w}" for w in comparison.warnings]
-    labels = [c.check + ("" if c.blocking else " (diagnostic)") for c in comparison.checks]
+    labels = [c.check + ("" if c.blocking else " (doesn't block)") for c in comparison.checks]
     width = max([len(label) for label in labels] + [len("attacks resisted")]) + 2
     lines += ["", f"{'check':<{width}}{'before':>8}{'after':>8}{'change':>9}{'bar':>7}"]
     for label, c in zip(labels, comparison.checks):
@@ -151,7 +151,7 @@ def render_comparison_markdown(comparison: RunComparison) -> str:
     lines += [f"> {w}" for w in comparison.warnings] + ([""] if comparison.warnings else [])
     lines += ["| Check | Before | After | Change | Bar |", "|---|---|---|---|---|"]
     for c in comparison.checks:
-        label = c.check + ("" if c.blocking else " (diagnostic)")
+        label = c.check + ("" if c.blocking else " (doesn't block)")
         lines.append(f"| {label} | {percent(c.before_rate)} | {percent(c.after_rate)} | {_points(c.points)} | "
                      f"{percent(c.threshold)} |")
     if before.attacks or after.attacks:

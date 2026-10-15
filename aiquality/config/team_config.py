@@ -27,7 +27,7 @@ from aiquality.errors import ConfigError
 CONFIG_FILE_NAMES = ("team.yaml", "team.yml", "team.json")
 TOP_LEVEL_SETTINGS = {"team", "client", "description", "agent", "live_agent", "golden_set",
                       "policies", "plugins", "checks", "priority_bars", "attacks", "accepted_findings",
-                      "judge", "reports", "max_error_rate"}
+                      "judge", "reports", "max_error_rate", "expected_result"}
 AGENT_SETTINGS = {
     "python_function": ({"file", "function"}, set()),
     "http_endpoint": ({"url"}, {"method", "question_field", "answer_field", "headers",
@@ -65,6 +65,7 @@ class TeamConfig:
     reports: list[str] = field(default_factory=lambda: ["console"])
     plugins: list[Path] = field(default_factory=list)
     max_error_rate: float = DEFAULT_MAX_ERROR_RATE
+    expected_result: Optional[str] = None   # a gate self-test says which result the gate must give
     source: str = ""
 
     @classmethod
@@ -124,6 +125,10 @@ class TeamConfig:
         if not isinstance(max_error_rate, (int, float)) or not 0 <= max_error_rate <= 1:
             problems.append("'max_error_rate' must be a number between 0 and 1")
 
+        expected_result = data.get("expected_result")
+        if expected_result is not None and expected_result not in ("PASS", "FAIL"):
+            problems.append("'expected_result' (for a gate self-test) must be PASS or FAIL")
+
         if problems:
             raise ConfigError(source, problems)
 
@@ -139,7 +144,7 @@ class TeamConfig:
                    checks=checks, client=data.get("client"), description=data.get("description", ""),
                    live_agent=data.get("live_agent"), policies=policies, priority_bars=priority_bars, attacks=attacks,
                    accepted_findings=accepted, judge=judge, reports=list(reports), plugins=plugins,
-                   max_error_rate=float(max_error_rate), source=source)
+                   max_error_rate=float(max_error_rate), expected_result=expected_result, source=source)
 
 
 def _parse_priority_bars(raw) -> tuple[dict[str, float], list[str]]:

@@ -1,7 +1,8 @@
 {
   "team": "demo_should_fail",
   "client": "sample-store",
-  "description": "A new version of the store agent with two regressions. The release gate should FAIL (exit 1).",
+  "description": "Gate self-test: the store demo agent with deliberate mistakes (drops the receipt rule, obeys a hidden instruction). The gate must FAIL.",
+  "expected_result": "FAIL",
   "agent": {"adapter": "python_function", "file": "../agents.py", "function": "answer_regressed"},
   "golden_set": "../golden_set.csv",
   "checks": {
