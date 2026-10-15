@@ -5,6 +5,7 @@ asks the agent every case, scores the answers with pluggable checks, and writes 
 RunRecord that every report reads. See docs/onboarding.md.
 """
 
+from aiquality.adapters import HttpEndpointAgent, PythonFunctionAgent, RecordedResponsesAgent, build_agent
 from aiquality.contracts import AgentResponse, AgentUnderTest, SupportsDocumentInjection, ToolCall
 from aiquality.errors import ConfigError, GoldenSetError, SetupError
 from aiquality.test_data import GoldenCase, GoldenCaseBuilder, GoldenSet, load_golden_set
@@ -13,5 +14,6 @@ __version__ = "0.1.0"
 
 __all__ = [
     "AgentResponse", "AgentUnderTest", "ConfigError", "GoldenCase", "GoldenCaseBuilder", "GoldenSet",
-    "GoldenSetError", "SetupError", "SupportsDocumentInjection", "ToolCall", "load_golden_set",
+    "GoldenSetError", "HttpEndpointAgent", "PythonFunctionAgent", "RecordedResponsesAgent", "SetupError",
+    "SupportsDocumentInjection", "ToolCall", "build_agent", "load_golden_set",
 ]
