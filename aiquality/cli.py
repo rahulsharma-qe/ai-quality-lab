@@ -5,6 +5,7 @@
   aiquality gate     --team aeroassist          evaluate, then PASS (exit 0) or FAIL (exit 1)
   aiquality evaluate --team aeroassist --live   use the live agent instead of recorded answers
   aiquality record   --team aeroassist          record the live agent's answers for replay
+  aiquality record   --team aeroassist --judge  record the live judge's verdicts on those answers
   aiquality compare  history/before.jsonl aiquality-runs   what got fixed, what newly fails
   aiquality validate-judge --team aeroassist --split holdout   measure the judge against people's labels
   aiquality new-team claims_assist --format json
@@ -23,7 +24,7 @@ from pathlib import Path
 from aiquality.attacks import describe_attacks
 from aiquality.checks import describe_checks
 from aiquality.commands import (DEFAULT_OUTPUT_DIR, attack_team, create_team_scaffold, evaluate_team, gate_team,
-                                record_team)
+                                record_judge_verdicts, record_team)
 from aiquality.config import TeamConfig
 from aiquality.errors import SetupError
 from aiquality.judges import available_judges
@@ -69,6 +70,12 @@ def _attack(args) -> int:
 
 def _record(args) -> int:
     config = TeamConfig.load(_team_path(args.team, args.teams_dir))
+    if args.judge:
+        path, summary = record_judge_verdicts(config)
+        print(f"recorded {summary.written} judge verdicts to {path}")
+        for case_id, reason in summary.failed.items():
+            print(f"  not recorded {case_id}: {reason}")
+        return EXIT_OK if not summary.failed else EXIT_SETUP_ERROR
     path, summary = record_team(config, Path(args.output) if args.output else None)
     print(f"recorded {summary.written} answers to {path}")
     for case_id, reason in summary.failed.items():
@@ -157,6 +164,8 @@ def _build_parser() -> argparse.ArgumentParser:
     record = commands.add_parser("record", help="record the live agent's answers for key-free replay")
     add_team_arguments(record)
     record.add_argument("--output", help="file to write (default: the team's recorded answers file)")
+    record.add_argument("--judge", action="store_true",
+                        help="record the live judge's verdicts on the current answers instead (judge.recorded)")
     record.set_defaults(handler=_record)
 
     compare = commands.add_parser("compare", help="compare two runs case by case: fixed, newly failing, still failing")

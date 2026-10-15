@@ -20,6 +20,15 @@ def version_text(version: str) -> str:
     return "no version" if version in ("", "unversioned") else f"version {version}"
 
 
+def judge_text(record: RunRecord):
+    """'judge <version> · not qualified · advisory · recorded', or None when no judge took part."""
+    judge = record.judge
+    if not judge:
+        return None
+    return (f"judge {judge['version']} · {judge['status'].replace('_', ' ')} · "
+            f"{'can block' if judge['blocking'] else 'advisory'} · {judge['mode']}")
+
+
 def percent(value) -> str:
     return "-" if value is None else f"{value:.0%}"
 

@@ -2,7 +2,7 @@
 
 from aiquality.checks.base import Check, CheckResult, CheckStatus, CheckSummary, summarise
 from aiquality.checks.registry import available_checks, create_check, describe_checks, register_check
-from aiquality.checks import personal_data_check, phrase_checks, source_checks  # noqa: F401  (register the built-in checks)
+from aiquality.checks import judge_check, personal_data_check, phrase_checks, source_checks  # noqa: F401  (register the built-in checks)
 
 __all__ = ["Check", "CheckResult", "CheckStatus", "CheckSummary", "summarise",
            "available_checks", "create_check", "describe_checks", "register_check"]

@@ -62,8 +62,12 @@ class GateDecision:
 
 
 class ReleaseGate:
-    def __init__(self, config: TeamConfig, mandatory_checks: list[str], today: Optional[date] = None):
+    def __init__(self, config: TeamConfig, mandatory_checks: list[str], today: Optional[date] = None,
+                 check_settings: Optional[dict] = None):
+        """check_settings: the settings the run actually used, when they differ from the config
+        (an unqualified judge's check is advisory whatever the config says)."""
         self.config = config
+        self.checks = check_settings if check_settings is not None else config.checks
         self.mandatory_checks = set(mandatory_checks)
         self.today = today or date.today()
 
@@ -72,7 +76,7 @@ class ReleaseGate:
         accepted_pairs = self._apply_acceptances(evaluation, decision)
 
         golden = [o for o in evaluation.outcomes if not o.is_attack]
-        for name, settings in self.config.checks.items():
+        for name, settings in self.checks.items():
             for scope, outcomes in self._scopes(golden):
                 result = self._score(name, outcomes, accepted_pairs, scope, settings)
                 decision.scopes.append(result)
@@ -141,7 +145,7 @@ class ReleaseGate:
         return ScopeResult(scope, check_name, passed, failed, settings.threshold, settings.blocking)
 
     def _check_priority_bars(self, golden, accepted_pairs: set, decision: GateDecision) -> None:
-        blocking = {name for name, settings in self.config.checks.items() if settings.blocking}
+        blocking = {name for name, settings in self.checks.items() if settings.blocking}
         for priority, bar in self.config.priority_bars.items():
             cases = [o for o in golden if o.priority == priority]
             if not cases:

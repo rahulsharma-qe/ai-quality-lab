@@ -112,6 +112,8 @@ class TeamConfig:
         problems += accepted_problems
         judge, judge_problems = parse_judge_settings(data.get("judge"), Path(folder), bool(data.get("policies")))
         problems += judge_problems
+        if "answer_judge" in checks and data.get("judge") is None:
+            problems.append("the answer_judge check needs a 'judge:' block (which judge, and its labels)")
 
         reports = data.get("reports") or ["console"]
         unknown_reports = [r for r in reports if r not in available_reporters()]

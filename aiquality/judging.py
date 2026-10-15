@@ -4,6 +4,7 @@ this exact judge version has earned the right to gate.
     judge = build_judge(config)                     # the judge the 'judge:' block describes
     run = validate_team_judge(config, "holdout")    # measured against labels, saved with its version
     team_judge_status(config, judge)                # 'qualified', 'not_qualified' or 'unvalidated'
+    judge, mode = judge_for_run(config, live=False) # recorded verdicts when configured, else the live judge
 """
 
 from typing import Optional
@@ -12,7 +13,9 @@ from aiquality.config import TeamConfig
 from aiquality.config.judge_settings import POLICY_JUDGE
 from aiquality.errors import ConfigError
 from aiquality.judges import create_judge
-from aiquality.judges.validation import ValidationRun, judge_status, load_labels, save_run, validate_judge
+from aiquality.judges.recorded import RecordedJudge
+from aiquality.judges.validation import (STATUS_QUALIFIED, ValidationRun, judge_status, load_labels, save_run,
+                                         validate_judge)
 
 
 def build_judge(config: TeamConfig, kind: Optional[str] = None, chat=None):
@@ -49,6 +52,22 @@ def validate_team_judge(config: TeamConfig, split: str = "tune", kind: Optional[
 
 def team_judge_status(config: TeamConfig, judge) -> str:
     return judge_status(judge.version, _judge_settings(config).results)
+
+
+def judge_for_run(config: TeamConfig, live: bool):
+    """(judge, mode) for an evaluation: the recorded verdicts when the team keeps them and the run is
+    not live, otherwise the live judge."""
+    settings = _judge_settings(config)
+    if settings.recorded and not live:
+        return RecordedJudge(settings.recorded), "recorded"
+    return build_judge(config), "live"
+
+
+def judge_summary(config: TeamConfig, judge, mode: str, configured_blocking: bool) -> dict:
+    """What a run record says about its judge, including whether it was allowed to block."""
+    status = team_judge_status(config, judge)
+    return {"check": "answer_judge", "version": judge.version, "mode": mode, "status": status,
+            "blocking": configured_blocking and status == STATUS_QUALIFIED}
 
 
 def _judge_settings(config: TeamConfig):

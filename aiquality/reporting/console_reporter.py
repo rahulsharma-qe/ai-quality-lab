@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from aiquality.reporting.report_data import check_rows, result_text, version_text
+from aiquality.reporting.report_data import check_rows, judge_text, result_text, version_text
 from aiquality.reporting.reporters import Reporter, register_reporter
 from aiquality.reporting.run_record import RunRecord
 
@@ -22,7 +22,7 @@ def render_console_report(record: RunRecord) -> str:
         f"aiquality {record.command} · team {record.team}" + (f" · client {record.client}" if record.client else ""),
         f"agent {record.agent_name} ({record.agent_version}) · mode {record.run_mode} · run {record.run_id}",
         f"golden set {record.golden_set_name} ({version_text(record.golden_set_version)})",
-    ]
+    ] + ([judge_text(record)] if record.judge else [])
     if golden_count:
         lines += [
             "",

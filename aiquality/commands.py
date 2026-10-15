@@ -1,6 +1,7 @@
 """What each command does, as plain functions. The command line and the examples both call these."""
 
 import json
+from dataclasses import replace
 from datetime import date
 from pathlib import Path
 from typing import Optional
@@ -14,11 +15,14 @@ from aiquality.contracts import AgentUnderTest
 from aiquality.errors import ConfigError
 from aiquality.evaluation import evaluate_runs
 from aiquality.gate import GateDecision, ReleaseGate
+from aiquality.judges.recorded import VerdictRecordingSummary, record_verdicts
+from aiquality.judging import build_judge, judge_for_run, judge_summary
 from aiquality.reporting import RunRecord, create_reporter
 from aiquality.runner import Runner
 from aiquality.test_data import load_golden_set
 
 DEFAULT_OUTPUT_DIR = "aiquality-runs"
+JUDGE_CHECK = "answer_judge"
 
 
 def evaluate_team(config: TeamConfig, live: bool = False, output_dir=DEFAULT_OUTPUT_DIR,
@@ -30,7 +34,7 @@ def evaluate_team(config: TeamConfig, live: bool = False, output_dir=DEFAULT_OUT
     live=True uses the team's live_agent instead of its default agent.
     agent=... overrides both (handy in examples and tests).
     """
-    record, _ = _run_and_score(config, live, agent, include_golden, include_attacks, command)
+    record, _, _ = _run_and_score(config, live, agent, include_golden, include_attacks, command)
     _save_and_report(record, config, output_dir, print_reports)
     return record
 
@@ -39,9 +43,12 @@ def gate_team(config: TeamConfig, live: bool = False, output_dir=DEFAULT_OUTPUT_
               agent: Optional[AgentUnderTest] = None, print_reports: bool = True,
               today: Optional[date] = None) -> tuple[RunRecord, GateDecision]:
     """Evaluate golden and attack cases, then decide PASS or FAIL against the team's bars."""
-    record, evaluation = _run_and_score(config, live, agent, True, True, "gate")
+    record, evaluation, check_settings = _run_and_score(config, live, agent, True, True, "gate")
     mandatory = CompanyMinimums.load().mandatory_checks
-    decision = ReleaseGate(config, mandatory, today).decide(evaluation)
+    decision = ReleaseGate(config, mandatory, today, check_settings).decide(evaluation)
+    if record.judge and not record.judge["blocking"]:
+        decision.warnings.append(f"answer_judge is advisory: judge {record.judge['version']} is "
+                                 f"{record.judge['status'].replace('_', ' ')}, so it reports but can't block")
     record.gate_decision = decision.to_dict()
     _save_and_report(record, config, output_dir, print_reports)
     return record, decision
@@ -52,12 +59,28 @@ def _run_and_score(config, live, agent, include_golden, include_attacks, command
     agent = agent or build_agent(agent_settings, config.folder, team_name=config.team)
     golden_set, cases = team_cases(config, include_golden, include_attacks)
     case_runs = Runner(agent, max_error_rate=config.max_error_rate).run(cases)
-    evaluation = evaluate_runs(case_runs, config.checks, default_client=config.client)
+    check_settings, judge_info = _check_settings_with_judge(config, live)
+    evaluation = evaluate_runs(case_runs, check_settings, default_client=config.client)
     run_mode = "recorded" if isinstance(agent, RecordedResponsesAgent) else "live"
     record = RunRecord.from_evaluation(evaluation, command=command, team=config.team, client=config.client,
                                        run_mode=run_mode, agent_name=agent.name, agent_version=agent.version,
                                        golden_set=golden_set)
-    return record, evaluation
+    record.judge = judge_info
+    return record, evaluation, check_settings
+
+
+def _check_settings_with_judge(config: TeamConfig, live: bool):
+    """The team's check settings, with its judge handed to the answer_judge check. That check may
+    block only if the config says so AND this judge version has qualified against people's labels."""
+    settings = config.checks.get(JUDGE_CHECK)
+    if settings is None:
+        return config.checks, None
+    judge, mode = judge_for_run(config, live)
+    info = judge_summary(config, judge, mode, settings.blocking)
+    with_judge = dict(config.checks)
+    with_judge[JUDGE_CHECK] = replace(settings, blocking=info["blocking"],
+                                      options={**settings.options, "judge": judge})
+    return with_judge, info
 
 
 def _save_and_report(record: RunRecord, config: TeamConfig, output_dir, print_reports: bool) -> None:
@@ -105,6 +128,18 @@ def record_team(config: TeamConfig, output_path: Optional[Path] = None) -> tuple
     live_agent = build_agent(config.live_agent, config.folder, team_name=config.team)
     _, cases = team_cases(config)
     return Path(output_path), record_responses(live_agent, cases, Path(output_path))
+
+
+def record_judge_verdicts(config: TeamConfig, chat=None) -> tuple[Path, VerdictRecordingSummary]:
+    """Grade the team's current answers (its default agent, usually the recording) once with the LIVE
+    judge, and save the verdicts so CI can replay them without a key. Golden cases only."""
+    if config.judge is None or config.judge.recorded is None:
+        raise ConfigError(config.source, ["recording verdicts needs 'judge.recorded: <file>' in the team config"])
+    agent = build_agent(config.agent, config.folder, team_name=config.team)
+    _, cases = team_cases(config, include_attacks=False)
+    answered = [(run.case, run.response.answer_text) for run in Runner(agent, config.max_error_rate).run(cases)
+                if run.succeeded]
+    return config.judge.recorded, record_verdicts(build_judge(config, chat=chat), answered, config.judge.recorded)
 
 
 def _pick_agent_settings(config: TeamConfig, live: bool) -> dict:
