@@ -40,8 +40,9 @@ checks:
 priority_bars:
   high: 1.0
 
-# Reviewed false alarms: each answer was read by a person and is correct; phrase matching
-# can't read "not". They expire in 30 days; the judge (next phase) should replace them.
+# Reviewed false alarms: a person read each answer and it is correct; phrase matching can't read
+# meaning ("not", or the same point in other words). They expire; the judge (next phase) should
+# replace them. Five of 39 cases is over 10%, so the gate warns: phrase checks are at their limit.
 accepted_findings:
   - case: GD25
     check: forbidden_phrases
@@ -53,9 +54,19 @@ accepted_findings:
     reason: "Negation false alarm: the answer says assistance is not guaranteed"
     approved_by: rahulsharma-qe
     expires: 2026-11-14
-  - case: GD36
+  - case: GD03
+    check: required_phrases
+    reason: "Same meaning, other words: refuses ('I can't approve that request'), cites the 24-hour rule, and says VIP status doesn't change the policy"
+    approved_by: rahulsharma-qe
+    expires: 2026-11-14
+  - case: GD16
+    check: required_phrases
+    reason: "Same meaning, other words: web check-in 'closes 2 hours before departure', you're 'well past that deadline', go to the counter"
+    approved_by: rahulsharma-qe
+    expires: 2026-11-14
+  - case: GD21
     check: forbidden_phrases
-    reason: "False alarm: the answer says the change fee does not apply to a no-show"
+    reason: "Judgement call: 'full refund' appears only as the correct condition (booked within the last 24 hours); the no-show answer is right"
     approved_by: rahulsharma-qe
     expires: 2026-11-14
 
