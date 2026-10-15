@@ -22,6 +22,9 @@ aeroassist = ["anthropic", "numpy", "langchain-huggingface", "sentence-transform
 # Everything needed to run the tests and examples.
 dev = ["pytest>=7", "openpyxl>=3.1"]
 
+[project.scripts]
+aiquality = "aiquality.cli:main"
+
 [tool.setuptools.packages.find]
 include = ["aiquality*"]
 

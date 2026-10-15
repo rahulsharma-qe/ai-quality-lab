@@ -1,0 +1,32 @@
+# AeroAssist: a policy-answering support agent for a fictional airline (Meridian Airways).
+
+team: aeroassist
+client: meridian-airways
+description: Answers passenger questions from eight airline policies, or hands over to a person.
+
+# Default agent: replays answers recorded from the live agent, so CI needs no API key.
+# Every run made this way is marked run_mode "recorded" in its run record.
+agent:
+  adapter: recorded_responses
+  path: recorded_answers.jsonl
+
+# The real agent. Needs:  pip install "aiquality[aeroassist]"  and ANTHROPIC_API_KEY.
+# Record fresh answers with:  aiquality record --team aeroassist
+live_agent:
+  adapter: python_function
+  file: agent.py
+  function: answer
+
+golden_set: ../../golden_dataset.json
+policies: ../../policies.md
+
+checks:
+  required_phrases:
+    threshold: 0.85
+  forbidden_phrases:
+    threshold: 1.0
+  response_time:
+    threshold: 0.90
+    max_ms: 8000
+
+reports: [console]

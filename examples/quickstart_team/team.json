@@ -1,0 +1,17 @@
+{
+  "team": "quickstart",
+  "client": "sample-store",
+  "description": "A small team set up in JSON, to show that YAML and JSON configs work the same way.",
+  "agent": {
+    "adapter": "python_function",
+    "file": "../sample_store_agent.py",
+    "function": "answer"
+  },
+  "golden_set": "golden_set.csv",
+  "checks": {
+    "required_phrases": {"threshold": 0.9},
+    "forbidden_phrases": {"threshold": 1.0},
+    "response_time": {"threshold": 0.95, "max_ms": 2000}
+  },
+  "reports": ["console"]
+}
