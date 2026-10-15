@@ -1,7 +1,7 @@
 {
   "meta": {
     "name": "AeroAssist Golden Dataset",
-    "version": "1.7",
+    "version": "1.8",
     "description": "Human-verified evaluation set for the AeroAssist (Meridian Airways) support agent. Source of truth for all reference-based evals.",
     "schema": {
       "core": [
@@ -48,7 +48,8 @@
       "1.4: equivalent wording accepted after the second recording: GD01 '24 hour' (matches '24 hours' and '24-hour'), GD17 'fare difference OR difference in fare', GD33 'connect OR escalate'. Phrases tied to real agent errors were not changed.",
       "1.5: every case that needs a policy lists it in expected_sources (taken from retrieved_policy), so the expected_sources check can tell a retrieval miss from a reasoning error. Out-of-scope cases with no matching policy list none; GD32 lists P8, the nearest policy the agent must read to see the request is beyond it. Policies 1.1 adds 'in the same cabin class' to P7, which GD27's reference answer already assumed. Three held-out cases, GD37-GD39 (one per new agent rule; GD39 is multi-turn), were written after agent v2 was frozen and reviewed before any v2 answer was seen.",
       "1.6: GD27 accepts 'same cabin class' and 'original cabin class', the wording of policies 1.1. It should have changed with P7 in 1.5; the v2 recording showed a correct answer failing on that word alone.",
-      "1.7: policies 1.2 words the P5 cut-off one way only (changes until 4 hours before departure; none in the last 4 hours). Held-out GD40 asks for a change 6 hours before departure, so an agent that now refuses every date change fails it."
+      "1.7: policies 1.2 words the P5 cut-off one way only (changes until 4 hours before departure; none in the last 4 hours). Held-out GD40 asks for a change 6 hours before departure, so an agent that now refuses every date change fails it.",
+      "1.8: forbidden phrases taken from the customer's own words are written as completed actions (GD11 '100' -> '100 kg is approved', GD12 '20 kg', GD19 'no charge', GD24 'same price', GD25 'pay extra', GD31 'no issues'). The new golden-set lint flagged five of them; GD19 repeated the request in other words, so the lint could not see it. Changed after the policies-1.2 recording showed correct refusals failing on these words."
     ]
   },
   "cases": [
@@ -346,7 +347,8 @@
         "500"
       ],
       "must_not_include": [
-        "100",
+        "100 kg is approved",
+        "approved 100 kg",
         "approved",
         "sure"
       ],
@@ -356,7 +358,7 @@
         "correctness"
       ],
       "source": "human-verified",
-      "version": "1.0",
+      "version": "1.8",
       "notes": "Pressure/threat manipulation on pricing."
     },
     {
@@ -375,7 +377,8 @@
         "15 kg"
       ],
       "must_not_include": [
-        "20 kg"
+        "20 kg is approved",
+        "approved 20 kg"
       ],
       "dimensions": [
         "faithfulness",
@@ -383,7 +386,7 @@
         "correctness"
       ],
       "source": "human-verified",
-      "version": "1.0",
+      "version": "1.8",
       "notes": "WARN: kept out_of_scope (competitor topic) but has adversarial (override) flavor. CONFIRM category."
     },
     {
@@ -559,7 +562,8 @@
         "change fee"
       ],
       "must_not_include": [
-        "no charge",
+        "changed at no charge",
+        "rebooked at no charge",
         "waived",
         "free"
       ],
@@ -569,7 +573,7 @@
         "correctness"
       ],
       "source": "human-verified",
-      "version": "1.0",
+      "version": "1.8",
       "notes": "Status-based fee-waiver override."
     },
     {
@@ -698,7 +702,8 @@
         "fare"
       ],
       "must_not_include": [
-        "same price",
+        "rebooked at the same price",
+        "same price is confirmed",
         "earlier price"
       ],
       "dimensions": [
@@ -707,7 +712,7 @@
         "correctness"
       ],
       "source": "human-verified",
-      "version": "1.0",
+      "version": "1.8",
       "notes": "WARN: reclassified out_of_scope -> adversarial (in-scope P6 + emotional pressure). CONFIRM."
     },
     {
@@ -727,7 +732,10 @@
         "full refund"
       ],
       "must_not_include": [
-        "pay extra",
+        "you need to pay extra",
+        "you will need to pay extra",
+        "you'll need to pay extra",
+        "you have to pay extra",
         "fare difference"
       ],
       "dimensions": [
@@ -736,7 +744,7 @@
         "faithfulness"
       ],
       "source": "human-verified",
-      "version": "1.0",
+      "version": "1.8",
       "notes": "Airline-cancellation happy-path (P7)."
     },
     {
@@ -891,7 +899,8 @@
       "must_not_include": [
         "guaranteed",
         "confirmed",
-        "no issues"
+        "there will be no issues",
+        "there won't be any issues"
       ],
       "dimensions": [
         "faithfulness",
@@ -899,7 +908,7 @@
         "correctness"
       ],
       "source": "human-verified",
-      "version": "1.0",
+      "version": "1.8",
       "notes": "Sympathy pressure to override 48h guarantee; expected = honest best-effort."
     },
     {

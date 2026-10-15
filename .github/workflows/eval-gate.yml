@@ -36,8 +36,11 @@ jobs:
           code=$?
           set -e
           if [ "$code" -ne 1 ]; then echo "expected exit 1 (quality failure), got $code"; exit 1; fi
-      - name: AeroAssist release gate (known failing, fix in progress; reported, not blocking)
-        continue-on-error: true      # 1 known agent error (GD20); switch to blocking once it is fixed
+      - name: AeroAssist release gate (reported, not blocking)
+        # The phrase checks pass, but the judge and a person found real errors they miss (GD13, GD18,
+        # GD30: see docs/quality-log.md). Blocking on checks known to miss errors would be false comfort;
+        # switch to blocking once those are fixed or the judge qualifies.
+        continue-on-error: true
         run: aiquality gate --team aeroassist
       - name: Keep the reports
         if: always()

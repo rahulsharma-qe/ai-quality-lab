@@ -46,13 +46,8 @@ priority_bars:
 
 # Reviewed false alarms: a person read each answer and it is correct; phrase matching can't read
 # meaning ("not", or the same point in other words). They expire; the judge (next phase) should
-# replace them. Five of 39 cases is over 10%, so the gate warns: phrase checks are at their limit.
+# replace them. Five of 40 cases is over 10%, so the gate warns: phrase checks are at their limit.
 accepted_findings:
-  - case: GD25
-    check: forbidden_phrases
-    reason: "Negation false alarm: the answer says you don't need to pay extra"
-    approved_by: rahulsharma-qe
-    expires: 2026-11-14
   - case: GD31
     check: forbidden_phrases
     reason: "Negation false alarm: the answer says assistance is not guaranteed"
@@ -66,6 +61,11 @@ accepted_findings:
   - case: GD16
     check: required_phrases
     reason: "Same meaning, other words: web check-in 'closes 2 hours before departure', you're 'well past that deadline', go to the counter"
+    approved_by: rahulsharma-qe
+    expires: 2026-11-14
+  - case: GD36
+    check: forbidden_phrases
+    reason: "Negation false alarm: 'there is no waived change fee in this case'"
     approved_by: rahulsharma-qe
     expires: 2026-11-14
   - case: GD21
