@@ -28,7 +28,9 @@ aiquality evaluate --team my_team                # pass rate per check, attacks 
 aiquality gate     --team examples/gate_demo/good_team       # PASS, exit 0
 aiquality gate     --team examples/gate_demo/regressed_team  # FAIL, exit 1, every reason listed
 aiquality compare  before.jsonl aiquality-runs        # what a change fixed, and what it newly broke
-aiquality list-checks && aiquality list-attacks
+aiquality validate-judge --team aeroassist --split holdout   # trust the AI judge only after it qualifies
+aiquality review   --team aeroassist                 # what a person should look at, and why
+aiquality list-checks && aiquality list-attacks && aiquality list-judges
 ```
 
 - **One contract** for every agent: a Python function, an HTTP endpoint, or answers recorded
@@ -38,6 +40,9 @@ aiquality list-checks && aiquality list-attacks
 - **Honest results:** cases a check can't judge are `NOT_APPLICABLE`, failed calls are `ERROR`,
   and neither is ever counted as a pass. A broken setup exits with code 2, never as a quality failure.
 - **Secrets stay out of configs:** they're read from environment variables named in the config.
+- **A judge for meaning, trusted per version:** an AI judge grades answers against the team's policy,
+  but it may block a release only after this exact version qualifies against people's labels;
+  until then it is advisory and feeds a **human review queue** of disagreements and doubts.
 - **Attack tests as data:** a team writes goals ("approve a full refund") and the phrases that would
   prove an attack worked; five attack families turn them into cases, scored per family.
 - **A release gate that really blocks:** every blocking check must meet its bar for the team and for
@@ -62,7 +67,7 @@ flowchart LR
     ATK["Attacks registry<br/>register_attack"]
     RUN["Runner"]
     CHK["Checks registry<br/>register_check"]
-    JDG["Judges<br/>AnswerJudge · JudgeValidator"]
+    JDG["Judges - register_judge<br/>policy_answer · phrase · validation"]
     MDL["ChatModel<br/>provider-neutral"]
     GATE["ReleaseGate<br/>PASS or FAIL<br/>+ advisory findings"]
     RR["RunRecord - JSONL<br/>personal data redacted"]
@@ -71,7 +76,7 @@ flowchart LR
   subgraph OUT["Outputs"]
     EXIT["Exit code<br/>CI blocks or passes"]
     REP["Reports - register_reporter<br/>console · HTML · JUnit XML · GitHub summary"]
-    HRQ["Human review queue<br/>advisory findings"]
+    HRQ["Human review queue<br/>aiquality review"]
     GV["Gate view<br/>static HTML"]
     OTEL["OpenTelemetry to Phoenix or Langfuse<br/>optional, off by default"]
   end
@@ -98,7 +103,7 @@ flowchart LR
   RR -->|"history"| MON
   MON --> OTEL
   classDef later stroke-dasharray: 5 5
-  class JDG,MDL,MON,HRQ,GV,OTEL later
+  class MON,GV,OTEL later
 ```
 
 Solid boxes are in the package today; dashed boxes are scripts in this repo moving into it, or
@@ -313,7 +318,8 @@ Data is privacy-safe synthetic only (no real PII).
 - [ ] **Clearer policy boundaries** — state whether each deadline is inclusive, and reword "up to 4 hours before departure" (P5), which reads two ways (GD20); check time limits in code.
 - [x] **Platform core (done)** — `aiquality` package: one agent contract, three adapters, team configs in YAML or JSON, golden sets from JSON/CSV/Excel, pluggable checks, a company floor, run records, a command line.
 - [x] **Release gate per team and client (done)** — attack tests as plugins, accepted findings with expiry, exit codes 0/1/2, HTML / JUnit XML / GitHub summary reports.
-- [ ] **Judges and monitoring in the platform** — live judge with per-version qualification, a human review queue, a second (fictional) team onboarded with configuration only, a reusable CI workflow.
+- [x] **Judges in the platform (done)** — judges registry, validation and status per version, an advisory-until-qualified judge check, recorded verdicts, a human review queue.
+- [ ] **A second team and monitoring in the platform** — a second (fictional) team onboarded with configuration only, a reusable CI workflow, monitoring moved into the package.
 - [ ] **Gate view and tracing export** — a static gate dashboard and OpenTelemetry export to an open-source tracing tool.
 - [x] **Quality loop on AeroAssist (done)** — retrieval checked on its own, run comparison case by case, agent v2 with general rules, held-out cases, no regressions.
 - [ ] **Parallel runs** — worker limit, rate-limit retries and a per-run budget cap.

@@ -154,7 +154,50 @@ again, acceptances that match nothing raise a warning, more than 10% of cases ac
 warning, and errors can never be accepted. Because the config lives in Git, every acceptance
 arrives through a reviewed pull request.
 
-## 9. Compare a change with a baseline
+## 9. Grade meaning with a judge (advisory until it qualifies)
+
+Phrase checks match words; a judge reads meaning. The `policy_answer` judge is an AI that grades each
+golden answer against your `policies:` file. Because a judge can be wrong too, it earns trust per
+version: measure it against answers your people have labelled PASS or FAIL.
+
+```yaml
+policies: policies.md
+judge:
+  kind: policy_answer            # aiquality list-judges
+  rubric: judge_rubric.md        # optional: your own instructions (a company-neutral one by default)
+  rubric_version: v1
+  labels: judge_labels.json      # people's labels, each answer with a 'split': tune or holdout
+  recorded: judge_verdicts.jsonl # optional: replay verdicts in CI without a key
+checks:
+  answer_judge: {threshold: 0.9}
+```
+
+```bash
+aiquality validate-judge --team my_team --split tune      # improve the rubric here
+aiquality validate-judge --team my_team --split holdout   # the real measurement, once
+aiquality record --team my_team --judge                   # record verdicts for CI (needs the key)
+```
+
+Two numbers decide: **catches real failures** (of answers people failed) and **leaves good answers
+alone** (of answers people passed), each with a bar. Until this exact judge version qualifies on the
+held-back half, `answer_judge` is advisory whatever the config says: it reports and fills the review
+queue, but it can't block. A new model or an edited rubric is a new version, so it is measured again
+(see `examples/15_validate_a_judge.py`).
+
+## 10. Review what needs a person
+
+```bash
+aiquality review --team my_team          # from the team's latest run
+```
+
+The queue lists where a check failed but the judge passed (possibly a false alarm), where the judge
+failed but every blocking check passed (possibly a hidden error), checks that doubt their own match,
+and acceptances about to expire. A likely false alarm comes with a ready-to-paste accepted finding; the
+decision goes into the team config through a reviewed pull request. The queue is also written as
+`<team>-review-queue.jsonl` (report `review_queue`) and shown in the HTML report under "Needs a person"
+(see `examples/16_review_queue.py`).
+
+## 11. Compare a change with a baseline
 
 Before you change the agent (a prompt, a model, a retrieval setting), keep the run records of the
 current version. After the change, compare case by case:
@@ -169,10 +212,11 @@ the ones **still failing**, and new cases separately, with each check's rate bef
 higher average can hide a new failure; this can't. By default it uses the last run in each file;
 pick others with `--before-run` and `--after-run` (see `examples/14_compare_two_runs.py`).
 
-## 10. Extend without forking
+## 12. Extend without forking
 
 Add a check: one class with `@register_check("name")` in a file in your team folder, list that
 file under `plugins:` in the config, and use the check's name under `checks:`
 (see `examples/09_add_your_own_check.py`). Add an attack family the same way with
-`@register_attack("name")` (`examples/10_add_your_own_attack.py`), and a report format with
+`@register_attack("name")` (`examples/10_add_your_own_attack.py`), a judge with
+`@register_judge("kind")` (`examples/16_review_queue.py`), and a report format with
 `@register_reporter("name")`.

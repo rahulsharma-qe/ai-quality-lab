@@ -4,9 +4,11 @@ import json
 
 import pytest
 
-from aiquality import ConfigError, TeamConfig
+from aiquality import ConfigError, GoldenCaseBuilder, TeamConfig
 from aiquality.cli import EXIT_OK, EXIT_QUALITY_FAILURE, main
-from aiquality.judges.validation import judge_status
+from aiquality.errors import SetupError
+from aiquality.judges import PhraseJudge
+from aiquality.judges.validation import LabelledAnswer, judge_status, validate_judge
 from aiquality.judging import build_judge, team_judge_status, validate_team_judge
 from aiquality.models import ChatModel
 
@@ -87,3 +89,9 @@ def test_no_judge_block_is_a_clear_config_error(tmp_path):
     config = TeamConfig.load(write_team(tmp_path / "t", dict(BASE_CONFIG), GOLDEN_ROWS, AGENT_CODE))
     with pytest.raises(ConfigError, match="no 'judge' block"):
         build_judge(config)
+
+
+def test_labelled_answers_need_their_own_ids():
+    case = GoldenCaseBuilder("L1", "q").build()
+    with pytest.raises(SetupError, match="repeated: L1"):
+        validate_judge(PhraseJudge(), [LabelledAnswer(case, "a", "PASS"), LabelledAnswer(case, "b", "FAIL")], "tune")

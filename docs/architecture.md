@@ -24,7 +24,7 @@ flowchart LR
     ATK["Attacks registry<br/>register_attack"]
     RUN["Runner"]
     CHK["Checks registry<br/>register_check"]
-    JDG["Judges<br/>AnswerJudge · JudgeValidator"]
+    JDG["Judges - register_judge<br/>policy_answer · phrase · validation"]
     MDL["ChatModel<br/>provider-neutral"]
     GATE["ReleaseGate<br/>PASS or FAIL<br/>+ advisory findings"]
     RR["RunRecord - JSONL<br/>personal data redacted"]
@@ -34,7 +34,7 @@ flowchart LR
     EXIT["Exit code<br/>CI blocks or passes"]
     REP["Reports - register_reporter<br/>console · HTML · JUnit XML · GitHub summary"]
     CMP["Compare two runs<br/>fixed · newly failing · still failing"]
-    HRQ["Human review queue<br/>advisory findings"]
+    HRQ["Human review queue<br/>aiquality review"]
     GV["Gate view<br/>static HTML"]
     OTEL["OpenTelemetry to Phoenix or Langfuse<br/>optional, off by default"]
   end
@@ -62,14 +62,15 @@ flowchart LR
   RR -->|"history"| MON
   MON --> OTEL
   classDef later stroke-dasharray: 5 5
-  class JDG,MDL,MON,HRQ,GV,OTEL later
+  class MON,GV,OTEL later
 ```
 
 | Part | Status |
 |---|---|
 | Contracts, adapters, team config, company minimums, test data, runner, checks registry, attacks registry, release gate (per team and client, accepted findings), RunRecord, console / HTML / JUnit XML / GitHub summary reports, run comparison, command line | In the package |
-| Judges, judge validation, model layer, monitoring | Standalone scripts in this repo (`answer_judge.py`, `judge_validation.py`, `llm.py`, `observability/`), moving into the package |
-| Human review queue, reusable CI workflow, gate view, tracing export | Planned |
+| Model layer, judges registry, judge validation and status per version, answer_judge check (advisory until qualified), recorded verdicts, human review queue | In the package (the old `llm.py`, `answer_judge.py` and `judge_validation.py` now wrap it) |
+| Monitoring | Standalone scripts in this repo (`observability/`), moving into the package |
+| Reusable CI workflow, gate view, tracing export | Planned |
 
 ## 2. One gate run, step by step
 

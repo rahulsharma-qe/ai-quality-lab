@@ -152,6 +152,10 @@ def qualifies(overall: dict) -> bool:
 
 
 def validate_judge(judge, items: list[LabelledAnswer], split: str, skipped_unlabelled: int = 0) -> ValidationRun:
+    ids = [item.id for item in items]
+    duplicates = sorted({case_id for case_id in ids if ids.count(case_id) > 1})
+    if duplicates:
+        raise SetupError(f"every labelled answer needs its own id; repeated: {', '.join(duplicates)}")
     verdicts, errored = run_judge(judge, items)
     overall = score(items, verdicts)
     return ValidationRun(judge_version=judge.version, split=split, overall=overall,
