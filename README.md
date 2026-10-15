@@ -151,6 +151,39 @@ for the right reason: a date change offered two hours before departure (GD20) is
 error. Known limit: AeroAssist's agent receives only the latest question, so the multi-turn attack
 family is effectively single-turn for it; passing the conversation to the agent is next.
 
+### Third run: one quality loop, v1 to v2
+
+Diagnose each error by layer, fix it with a general rule, then prove the fix on cases it never saw.
+
+1. **Diagnose.** A new `expected_sources` check showed retrieval found the needed policy in 31 of 33
+   cases; GD03 and GD20 never got it (a retrieval miss, not only a reasoning error). GD27 turned
+   out to be a gap in the policy: P7 never said "same cabin class", so a correct agent couldn't say it.
+2. **Fix, generally.** v2 retrieves 3 policies instead of 2, reads the earlier turns of a conversation,
+   and follows five general rules (check every limit before saying yes; don't stretch a policy, hand
+   over; when refusing, say what the passenger can do). A test fails if the rules mention any golden case.
+3. **Prove it.** Three held-out cases (GD37-GD39, one multi-turn) were written after v2 was frozen. Both
+   versions were recorded in one session with the same settings (golden set 1.5) and compared case by case
+   (`aiquality compare`; runs kept in `teams/aeroassist/history/`).
+
+| | v1 | v2 |
+|---|---|---|
+| Retrieval found the needed policy (diagnostic) | 94% | 100% |
+| Required phrases | 87% | 90% |
+| Forbidden phrases | 84% | 88% |
+| Attacks resisted | 16 of 16 | 16 of 16 |
+| Cases newly failing | | **none** |
+| Held-out cases GD37-GD39 | | **all pass** |
+
+What is left, honestly:
+
+- **GD20 is still wrong.** v2 says a date change is allowed "within the 4-hour window" with the flight
+  2 hours away. The policy says "allowed up to 4 hours before departure", which a person can also read
+  both ways, so the next step is a clearer policy and checking the time limit in code, not more prompt.
+  The release gate fails on this one case, and the AeroAssist gate stays non-blocking in CI until it's fixed.
+- **Phrase checks are at their limit.** GD03 and GD16 said the right thing in other words; GD21 mentioned a
+  full refund only as the correct condition. A person read and accepted them until 14 November, and the
+  gate now warns that 5 of 39 golden cases rely on an acceptance. Meaning needs a validated judge.
+
 ---
 
 ## What's inside
@@ -277,11 +310,12 @@ Data is privacy-safe synthetic only (no real PII).
 - [x] **Judge validation (done, round 1)** — human labels, tuning and held-back halves, two numbers, advisory mode until qualified.
 - [ ] **Judge validation, round 2** — a labelling guide with quiet-failure examples, a second labeller, narrower single-purpose judges, and a fresh held-back set with the bars set beforehand.
 - [ ] **One model layer for every judge** — move the RAGAS, red-team and completeness judges onto `llm.py`.
-- [ ] **Clearer policy boundaries** — state whether each deadline is inclusive.
+- [ ] **Clearer policy boundaries** — state whether each deadline is inclusive, and reword "up to 4 hours before departure" (P5), which reads two ways (GD20); check time limits in code.
 - [x] **Platform core (done)** — `aiquality` package: one agent contract, three adapters, team configs in YAML or JSON, golden sets from JSON/CSV/Excel, pluggable checks, a company floor, run records, a command line.
 - [x] **Release gate per team and client (done)** — attack tests as plugins, accepted findings with expiry, exit codes 0/1/2, HTML / JUnit XML / GitHub summary reports.
 - [ ] **Judges and monitoring in the platform** — live judge with per-version qualification, a human review queue, a second (fictional) team onboarded with configuration only, a reusable CI workflow.
 - [ ] **Gate view and tracing export** — a static gate dashboard and OpenTelemetry export to an open-source tracing tool.
+- [x] **Quality loop on AeroAssist (done)** — retrieval checked on its own, run comparison case by case, agent v2 with general rules, held-out cases, no regressions.
 - [ ] **Parallel runs** — worker limit, rate-limit retries and a per-run budget cap.
 
 ---

@@ -36,7 +36,7 @@ jobs:
           set -e
           if [ "$code" -ne 1 ]; then echo "expected exit 1 (quality failure), got $code"; exit 1; fi
       - name: AeroAssist release gate (known failing, fix in progress; reported, not blocking)
-        continue-on-error: true      # 3 known agent errors; switch to blocking once the agent is fixed
+        continue-on-error: true      # 1 known agent error (GD20); switch to blocking once it is fixed
         run: aiquality gate --team aeroassist
       - name: Keep the reports
         if: always()
