@@ -93,8 +93,26 @@ def render_html_report(record: RunRecord) -> str:
                   f"</blockquote></details>")
         finding_rows.append(f"<tr><td class='{status}'>{status}</td><td>{escape(outcome['case_id'])}</td>"
                             f"<td>{escape(result['check'])}</td><td>{escape(result['reason'])}{evidence}{answer}</td></tr>")
+    parts.append(_review_section(record))
     parts.append(f"<section><h2>Findings ({len(finding_rows)})</h2><table><tr><th>Status</th><th>Case</th>"
                  f"<th>Check</th><th>Detail</th></tr>{''.join(finding_rows)}</table></section>")
     parts.append("</main></body></html>")
     return "".join(parts)
+
+
+def _review_section(record: RunRecord) -> str:
+    from aiquality.review import build_review_queue          # the queue reads the reporting package
+    items = build_review_queue(record)
+    if not items:
+        return "<section><h2>Needs a person (0)</h2><p class='meta'>Nothing to review.</p></section>"
+    rows = "".join(
+        f"<tr><td>{escape(i.case_id)}</td><td>{escape(i.check)}</td><td>{escape(i.why)}"
+        f"<blockquote>{escape(i.finding)}</blockquote>"
+        + (f"<blockquote>judge {escape(i.judge)}</blockquote>" if i.judge else "")
+        + (f"<details><summary>accept it (paste into the team config)</summary><blockquote>"
+           f"{escape(i.accept_snippet)}</blockquote></details>" if i.accept_snippet else "")
+        + "</td></tr>" for i in items)
+    return (f"<section><h2>Needs a person ({len(items)})</h2><p class='meta'>Where a check and the judge disagree, "
+            f"or a check doubts its own match. A person decides; an acceptance goes into the team config through "
+            f"a reviewed pull request.</p><table><tr><th>Case</th><th>Check</th><th>Why</th></tr>{rows}</table></section>")
 

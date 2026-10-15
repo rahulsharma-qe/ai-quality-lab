@@ -53,6 +53,10 @@ def render_console_report(record: RunRecord) -> str:
             lines.append(f"{'':<{8 + id_width + 20}}in: \"{r['evidence']}\"")
     if len(findings) > MAX_FINDINGS_SHOWN:
         lines.append(f"  ... {len(findings) - MAX_FINDINGS_SHOWN} more in the run record")
+    from aiquality.review import build_review_queue          # the queue reads the reporting package
+    queue = build_review_queue(record)
+    if queue:
+        lines += ["", f"needs a person: {len(queue)} item(s) · see them with: aiquality review --team {record.team}"]
     if record.gate_decision:
         lines += _gate_lines(record.gate_decision)
     return "\n".join(lines)

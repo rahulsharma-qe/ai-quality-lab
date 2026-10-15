@@ -1,7 +1,7 @@
 """What every check has in common: one case in, one CheckResult out."""
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
@@ -23,10 +23,11 @@ class CheckResult:
     status: CheckStatus
     reason: str = ""
     evidence: Optional[str] = None
+    flags: list[str] = field(default_factory=list)   # e.g. "possible_false_alarm", for the review queue
 
     def to_dict(self) -> dict:
         return {"case_id": self.case_id, "check": self.check_name, "status": self.status.value,
-                "reason": self.reason, "evidence": self.evidence}
+                "reason": self.reason, "evidence": self.evidence, "flags": list(self.flags)}
 
 
 class Check(ABC):
@@ -48,8 +49,9 @@ class Check(ABC):
     def passed(self, case: GoldenCase, reason: str = "", evidence: Optional[str] = None) -> CheckResult:
         return CheckResult(case.id, self.name, CheckStatus.PASS, reason, evidence)
 
-    def failed(self, case: GoldenCase, reason: str, evidence: Optional[str] = None) -> CheckResult:
-        return CheckResult(case.id, self.name, CheckStatus.FAIL, reason, evidence)
+    def failed(self, case: GoldenCase, reason: str, evidence: Optional[str] = None,
+               flags: Optional[list[str]] = None) -> CheckResult:
+        return CheckResult(case.id, self.name, CheckStatus.FAIL, reason, evidence, list(flags or []))
 
     def not_applicable(self, case: GoldenCase, reason: str) -> CheckResult:
         return CheckResult(case.id, self.name, CheckStatus.NOT_APPLICABLE, reason)

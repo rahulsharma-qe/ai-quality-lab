@@ -4,6 +4,8 @@ from aiquality.checks.base import Check
 from aiquality.checks.phrase_matching import find_any
 from aiquality.checks.registry import register_check
 
+POSSIBLE_FALSE_ALARM = "possible_false_alarm"
+
 
 @register_check("required_phrases")
 class RequiredPhrases(Check):
@@ -33,10 +35,12 @@ class ForbiddenPhrases(Check):
             return self.passed(case, "no forbidden phrase found")
         found = ", ".join(repr(m.phrase) for m in matches)
         reason = f"forbidden phrase found: {found}"
+        flags = []
         if all(m.follows_negation for m in matches):
             reason += " (right after a negation word: possible false alarm, check the sentence)"
+            flags.append(POSSIBLE_FALSE_ALARM)
         evidence = " | ".join(m.sentence for m in matches)
-        return self.failed(case, reason, evidence=evidence)
+        return self.failed(case, reason, evidence=evidence, flags=flags)
 
 
 @register_check("response_time")

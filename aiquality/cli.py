@@ -8,6 +8,7 @@
   aiquality record   --team aeroassist --judge  record the live judge's verdicts on those answers
   aiquality compare  history/before.jsonl aiquality-runs   what got fixed, what newly fails
   aiquality validate-judge --team aeroassist --split holdout   measure the judge against people's labels
+  aiquality review   --team aeroassist          what a person should look at from the latest run, and why
   aiquality new-team claims_assist --format json
   aiquality list-checks
   aiquality list-attacks
@@ -100,6 +101,18 @@ def _validate_judge(args) -> int:
     run = validate_team_judge(config, args.split, kind=args.kind)
     print(render_validation(run))
     return EXIT_QUALITY_FAILURE if run.qualified is False else EXIT_OK
+
+
+def _review(args) -> int:
+    from aiquality.review import build_review_queue, last_run_for_team, render_review_queue, write_review_queue
+    config = TeamConfig.load(_team_path(args.team, args.teams_dir))
+    record = last_run_for_team(args.output_dir, config.team)
+    items = build_review_queue(record)
+    print(f"from run {record.run_id} ({record.created_at})")
+    print(render_review_queue(items, config.team))
+    path = write_review_queue(items, Path(args.output_dir) / f"{config.team}-review-queue.jsonl")
+    print(f"\nqueue written to {path}")
+    return EXIT_OK
 
 
 def _list_judges(args) -> int:
@@ -196,6 +209,11 @@ def _build_parser() -> argparse.ArgumentParser:
 
     list_attacks = commands.add_parser("list-attacks", help="show the attack families a team can use")
     list_attacks.set_defaults(handler=_list_attacks)
+
+    review = commands.add_parser("review", help="what a person should look at from the team's latest run, and why")
+    add_team_arguments(review)
+    review.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="where the run records are")
+    review.set_defaults(handler=_review)
 
     list_judges = commands.add_parser("list-judges", help="show the judge kinds a team can use")
     list_judges.set_defaults(handler=_list_judges)
