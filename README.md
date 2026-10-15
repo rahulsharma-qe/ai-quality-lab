@@ -27,6 +27,7 @@ aiquality new-team my_team                       # a starter team that already p
 aiquality evaluate --team my_team                # pass rate per check, attacks per family, every finding
 aiquality gate     --team examples/gate_demo/good_team       # PASS, exit 0
 aiquality gate     --team examples/gate_demo/regressed_team  # FAIL, exit 1, every reason listed
+aiquality compare  before.jsonl aiquality-runs        # what a change fixed, and what it newly broke
 aiquality list-checks && aiquality list-attacks
 ```
 

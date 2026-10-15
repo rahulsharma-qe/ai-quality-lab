@@ -5,6 +5,7 @@
   aiquality gate     --team aeroassist          evaluate, then PASS (exit 0) or FAIL (exit 1)
   aiquality evaluate --team aeroassist --live   use the live agent instead of recorded answers
   aiquality record   --team aeroassist          record the live agent's answers for replay
+  aiquality compare  history/before.jsonl aiquality-runs   what got fixed, what newly fails
   aiquality new-team claims_assist --format json
   aiquality list-checks
   aiquality list-attacks
@@ -24,6 +25,7 @@ from aiquality.commands import (DEFAULT_OUTPUT_DIR, attack_team, create_team_sca
                                 record_team)
 from aiquality.config import TeamConfig
 from aiquality.errors import SetupError
+from aiquality.reporting import compare_runs, pick_run, render_comparison, render_comparison_markdown
 
 EXIT_OK = 0
 EXIT_QUALITY_FAILURE = 1
@@ -69,6 +71,17 @@ def _record(args) -> int:
     for case_id, reason in summary.failed.items():
         print(f"  not recorded {case_id}: {reason}")
     return EXIT_OK if not summary.failed else EXIT_SETUP_ERROR
+
+
+def _compare(args) -> int:
+    comparison = compare_runs(pick_run(args.before, args.before_run), pick_run(args.after, args.after_run))
+    print(render_comparison(comparison))
+    if args.markdown:
+        Path(args.markdown).write_text(render_comparison_markdown(comparison) + "\n", encoding="utf-8")
+        print(f"\nmarkdown written to {args.markdown}")
+    if args.fail_on_new_failures and comparison.has_new_failures:
+        return EXIT_QUALITY_FAILURE
+    return EXIT_OK
 
 
 def _new_team(args) -> int:
@@ -128,6 +141,16 @@ def _build_parser() -> argparse.ArgumentParser:
     add_team_arguments(record)
     record.add_argument("--output", help="file to write (default: the team's recorded answers file)")
     record.set_defaults(handler=_record)
+
+    compare = commands.add_parser("compare", help="compare two runs case by case: fixed, newly failing, still failing")
+    compare.add_argument("before", help="run_records.jsonl (or its folder) holding the baseline run")
+    compare.add_argument("after", help="run_records.jsonl (or its folder) holding the new run")
+    compare.add_argument("--before-run", help="run id in the before file (default: its last run)")
+    compare.add_argument("--after-run", help="run id in the after file (default: its last run)")
+    compare.add_argument("--markdown", help="also write the comparison as Markdown to this file")
+    compare.add_argument("--fail-on-new-failures", action="store_true",
+                         help="exit 1 when a case that passed before fails now")
+    compare.set_defaults(handler=_compare)
 
     new_team = commands.add_parser("new-team", help="create a starter team folder that already runs")
     new_team.add_argument("name")

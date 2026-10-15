@@ -33,6 +33,7 @@ flowchart LR
   subgraph OUT["Outputs"]
     EXIT["Exit code<br/>CI blocks or passes"]
     REP["Reports - register_reporter<br/>console · HTML · JUnit XML · GitHub summary"]
+    CMP["Compare two runs<br/>fixed · newly failing · still failing"]
     HRQ["Human review queue<br/>advisory findings"]
     GV["Gate view<br/>static HTML"]
     OTEL["OpenTelemetry to Phoenix or Langfuse<br/>optional, off by default"]
@@ -54,6 +55,7 @@ flowchart LR
   GATE --> EXIT
   GATE --> RR
   RR --> REP
+  RR --> CMP
   RR --> HRQ
   RR --> GV
   RUN -.->|"traces"| MON
@@ -65,7 +67,7 @@ flowchart LR
 
 | Part | Status |
 |---|---|
-| Contracts, adapters, team config, company minimums, test data, runner, checks registry, attacks registry, release gate (per team and client, accepted findings), RunRecord, console / HTML / JUnit XML / GitHub summary reports, command line | In the package |
+| Contracts, adapters, team config, company minimums, test data, runner, checks registry, attacks registry, release gate (per team and client, accepted findings), RunRecord, console / HTML / JUnit XML / GitHub summary reports, run comparison, command line | In the package |
 | Judges, judge validation, model layer, monitoring | Standalone scripts in this repo (`answer_judge.py`, `judge_validation.py`, `llm.py`, `observability/`), moving into the package |
 | Human review queue, reusable CI workflow, gate view, tracing export | Planned |
 

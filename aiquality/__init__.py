@@ -11,7 +11,7 @@ from aiquality.commands import create_team_scaffold, evaluate_team, record_team
 from aiquality.config import CompanyMinimums, TeamConfig
 from aiquality.contracts import AgentResponse, AgentUnderTest, SupportsDocumentInjection, ToolCall
 from aiquality.errors import ConfigError, GoldenSetError, SetupError
-from aiquality.reporting import Reporter, RunRecord, register_reporter
+from aiquality.reporting import Reporter, RunRecord, compare_runs, pick_run, register_reporter
 from aiquality.runner import Runner
 from aiquality.test_data import GoldenCase, GoldenCaseBuilder, GoldenSet, load_golden_set
 
@@ -21,6 +21,6 @@ __all__ = [
     "AgentResponse", "AgentUnderTest", "Check", "CheckResult", "CheckStatus", "CompanyMinimums",
     "ConfigError", "GoldenCase", "GoldenCaseBuilder", "GoldenSet", "GoldenSetError", "HttpEndpointAgent",
     "PythonFunctionAgent", "RecordedResponsesAgent", "Reporter", "RunRecord", "Runner", "SetupError",
-    "SupportsDocumentInjection", "TeamConfig", "ToolCall", "build_agent", "create_team_scaffold",
-    "evaluate_team", "load_golden_set", "record_team", "register_check", "register_reporter",
+    "SupportsDocumentInjection", "TeamConfig", "ToolCall", "build_agent", "compare_runs", "create_team_scaffold",
+    "evaluate_team", "load_golden_set", "pick_run", "record_team", "register_check", "register_reporter",
 ]

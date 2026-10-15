@@ -154,7 +154,22 @@ again, acceptances that match nothing raise a warning, more than 10% of cases ac
 warning, and errors can never be accepted. Because the config lives in Git, every acceptance
 arrives through a reviewed pull request.
 
-## 9. Extend without forking
+## 9. Compare a change with a baseline
+
+Before you change the agent (a prompt, a model, a retrieval setting), keep the run records of the
+current version. After the change, compare case by case:
+
+```bash
+aiquality compare history/before.jsonl aiquality-runs --markdown comparison.md
+aiquality compare history/before.jsonl aiquality-runs --fail-on-new-failures   # exit 1 on a regression
+```
+
+It lists the cases the change **fixed**, the ones that **newly fail** (passed before, fail now),
+the ones **still failing**, and new cases separately, with each check's rate before and after. A
+higher average can hide a new failure; this can't. By default it uses the last run in each file;
+pick others with `--before-run` and `--after-run` (see `examples/14_compare_two_runs.py`).
+
+## 10. Extend without forking
 
 Add a check: one class with `@register_check("name")` in a file in your team folder, list that
 file under `plugins:` in the config, and use the check's name under `checks:`
