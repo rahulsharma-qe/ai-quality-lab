@@ -5,6 +5,8 @@ Rules, strictest reading first:
 - an ERROR counts as a failure (a call that failed may hide a real problem);
 - a mandatory check with no applicable case fails: there is no evidence it passes;
 - attack resistance (safety checks on attack cases) must meet the attacks threshold;
+- each priority with a bar (e.g. high: 1.0) needs that share of its cases to pass every blocking
+  check, so a good average can't hide a failing high-priority case;
 - a FAIL a person has accepted (see accepted_findings) counts as a pass until it expires.
   ERRORs can't be accepted. Every acceptance is listed in the decision.
 """
@@ -47,6 +49,7 @@ class GateDecision:
     warnings: list[str] = field(default_factory=list)
     scopes: list[ScopeResult] = field(default_factory=list)
     attacks: Optional[dict] = None
+    priorities: list[dict] = field(default_factory=list)
     accepted_findings: list[dict] = field(default_factory=list)   # acceptances that matched a FAIL
     expired_acceptances: list[dict] = field(default_factory=list)
 
@@ -54,6 +57,7 @@ class GateDecision:
         return {"passed": self.passed, "decision": "PASS" if self.passed else "FAIL",
                 "failures": self.failures, "warnings": self.warnings,
                 "scopes": [s.to_dict() for s in self.scopes], "attacks": self.attacks,
+                "priorities": self.priorities,
                 "accepted_findings": self.accepted_findings, "expired_acceptances": self.expired_acceptances}
 
 
@@ -82,6 +86,7 @@ class ReleaseGate:
                     decision.failures.append(f"{name}: {result.pass_rate:.0%} is below {settings.threshold:.0%} "
                                              f"({scope}, {result.failed} failed)")
 
+        self._check_priority_bars(golden, accepted_pairs, decision)
         if self.config.attacks:
             self._check_attacks(evaluation, accepted_pairs, decision)
 
@@ -132,6 +137,32 @@ class ReleaseGate:
                 elif r.status in (CheckStatus.FAIL, CheckStatus.ERROR):
                     failed += 1
         return ScopeResult(scope, check_name, passed, failed, settings.threshold, settings.blocking)
+
+    def _check_priority_bars(self, golden, accepted_pairs: set, decision: GateDecision) -> None:
+        blocking = {name for name, settings in self.config.checks.items() if settings.blocking}
+        for priority, bar in self.config.priority_bars.items():
+            cases = [o for o in golden if o.priority == priority]
+            if not cases:
+                decision.warnings.append(f"priority bar '{priority}' has no golden cases with that priority")
+                continue
+            failing = [o.case_id for o in cases if self._case_failed(o, blocking, accepted_pairs)]
+            rate = (len(cases) - len(failing)) / len(cases)
+            decision.priorities.append({"priority": priority, "cases": len(cases), "failed": failing,
+                                        "pass_rate": rate, "bar": bar})
+            if rate < bar:
+                decision.failures.append(f"{priority}-priority cases: {len(failing)} of {len(cases)} failed "
+                                         f"({', '.join(failing[:10])}), bar {bar:.0%}")
+
+    @staticmethod
+    def _case_failed(outcome, blocking_checks: set, accepted_pairs: set) -> bool:
+        for r in outcome.results:
+            if r.check_name not in blocking_checks:
+                continue
+            if r.status == CheckStatus.ERROR:
+                return True
+            if r.status == CheckStatus.FAIL and (r.case_id, r.check_name) not in accepted_pairs:
+                return True
+        return False
 
     def _check_attacks(self, evaluation: Evaluation, accepted_pairs: set, decision: GateDecision) -> None:
         threshold = self.config.attacks.threshold

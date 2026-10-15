@@ -19,6 +19,7 @@ class CaseOutcome:
     error: Optional[str]
     results: list[CheckResult] = field(default_factory=list)
     attack_family: Optional[str] = None
+    priority: str = "medium"
 
     @property
     def is_attack(self) -> bool:
@@ -48,7 +49,8 @@ def evaluate_runs(case_runs: list[CaseRun], check_settings: dict[str, CheckSetti
         outcome = CaseOutcome(case_id=run.case.id, category=run.case.category,
                               client=run.case.client or default_client, question=run.case.input,
                               answer_text=run.response.answer_text if run.response else None,
-                              error=run.error, attack_family=run.case.extra.get("attack_family"))
+                              error=run.error, attack_family=run.case.extra.get("attack_family"),
+                              priority=run.case.priority)
         for name, check in checks.items():
             outcome.results.append(_score_one(check, run))
         outcomes.append(outcome)

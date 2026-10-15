@@ -124,3 +124,22 @@ def test_cli_exit_codes(tmp_path, monkeypatch, capsys):
     assert main(["gate", "--team", "starter"]) == EXIT_OK
     assert "RELEASE GATE: PASS" in capsys.readouterr().out
     assert main(["gate", "--team", "missing"]) == EXIT_SETUP_ERROR
+
+
+def test_a_priority_bar_catches_what_a_good_average_hides(tmp_path):
+    rows = ("id,input,priority,must_include,must_not_include\n"
+            + "".join(f"L{i},What are your opening hours?,low,9 am,24/7\n" for i in range(9))
+            + "H1,Can I return an item?,high,receipt,no questions asked\n")       # the one that fails
+    config = dict(BASE_CONFIG, checks={"required_phrases": {"threshold": 0.85}, "forbidden_phrases": {"threshold": 1.0}})
+    folder = write_team(tmp_path / "t", config, rows, AGENT)
+    assert gate(TeamConfig.load(folder, today=TODAY), tmp_path).passed           # 90% average passes
+
+    folder = write_team(tmp_path / "t2", dict(config, priority_bars={"high": 1.0}), rows, AGENT)
+    decision = gate(TeamConfig.load(folder, today=TODAY), tmp_path)
+    assert not decision.passed
+    assert decision.failures == ["high-priority cases: 1 of 1 failed (H1), bar 100%"]
+
+
+def test_priority_bars_are_validated(tmp_path):
+    with pytest.raises(ConfigError, match="'priority_bars.high' must be a number from 0 to 1"):
+        team(tmp_path, priority_bars={"high": 5})

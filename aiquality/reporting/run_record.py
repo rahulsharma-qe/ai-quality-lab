@@ -48,7 +48,7 @@ class RunRecord:
         outcomes = []
         for o in evaluation.outcomes:
             outcomes.append({
-                "case_id": o.case_id, "category": o.category, "client": o.client,
+                "case_id": o.case_id, "category": o.category, "priority": o.priority, "client": o.client,
                 "attack_family": o.attack_family,
                 "question": redact_personal_data(o.question),
                 "answer_text": redact_personal_data(o.answer_text),

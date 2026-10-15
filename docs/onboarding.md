@@ -72,6 +72,14 @@ Every check is a pass rate from 0 to 1. Your threshold can be stricter than the 
 minimum (`aiquality/config/company_minimums.yaml`), never looser, and mandatory checks
 can't be removed.
 
+An average can hide a critical failure: 89% may pass an 85% bar while a high-priority case
+fails. Add a priority bar so cases of that priority must pass every blocking check:
+
+```yaml
+priority_bars:
+  high: 1.0        # every high-priority golden case must pass
+```
+
 ## 6. Add attack tests
 
 ```bash
@@ -105,7 +113,8 @@ aiquality gate     --team my_team     # the release gate: PASS (exit 0) or FAIL 
 ```
 
 The gate fails when any blocking check is below its bar for the team or for any client tag,
-when attack resistance is below its bar, or when a mandatory check had no applicable case.
+when a priority bar is missed, when attack resistance is below its bar, or when a mandatory
+check had no applicable case.
 Errors count as failures. Every reason is written down.
 
 Exit codes: 0 done or gate passed · 1 gate failed · 2 setup problem (fix the config, the file

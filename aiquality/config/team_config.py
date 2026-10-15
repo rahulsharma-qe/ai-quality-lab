@@ -25,8 +25,8 @@ from aiquality.errors import ConfigError
 
 CONFIG_FILE_NAMES = ("team.yaml", "team.yml", "team.json")
 TOP_LEVEL_SETTINGS = {"team", "client", "description", "agent", "live_agent", "golden_set",
-                      "policies", "plugins", "checks", "attacks", "accepted_findings", "reports",
-                      "max_error_rate"}
+                      "policies", "plugins", "checks", "priority_bars", "attacks", "accepted_findings",
+                      "reports", "max_error_rate"}
 AGENT_SETTINGS = {
     "python_function": ({"file", "function"}, set()),
     "http_endpoint": ({"url"}, {"method", "question_field", "answer_field", "headers",
@@ -57,6 +57,7 @@ class TeamConfig:
     description: str = ""
     live_agent: Optional[dict] = None
     policies: Optional[Path] = None
+    priority_bars: dict[str, float] = field(default_factory=dict)
     attacks: Optional[AttackSettings] = None
     accepted_findings: list[AcceptedFinding] = field(default_factory=list)
     reports: list[str] = field(default_factory=lambda: ["console"])
@@ -100,6 +101,8 @@ class TeamConfig:
         minimums = company_minimums or CompanyMinimums.load()
         if not check_problems:
             problems += minimums.problems_with(checks)
+        priority_bars, priority_problems = _parse_priority_bars(data.get("priority_bars"))
+        problems += priority_problems
         attacks, attack_problems = parse_attack_settings(data.get("attacks"), list(checks),
                                                          minimums.minimum_attack_resistance)
         problems += attack_problems
@@ -128,9 +131,20 @@ class TeamConfig:
 
         return cls(team=str(data["team"]), folder=folder, agent=data["agent"], golden_set=golden_set,
                    checks=checks, client=data.get("client"), description=data.get("description", ""),
-                   live_agent=data.get("live_agent"), policies=policies, attacks=attacks,
+                   live_agent=data.get("live_agent"), policies=policies, priority_bars=priority_bars, attacks=attacks,
                    accepted_findings=accepted, reports=list(reports), plugins=plugins,
                    max_error_rate=float(max_error_rate), source=source)
+
+
+def _parse_priority_bars(raw) -> tuple[dict[str, float], list[str]]:
+    """priority_bars: {high: 1.0} -> every high-priority golden case must pass every blocking check."""
+    if raw is None:
+        return {}, []
+    if not isinstance(raw, dict) or not raw:
+        return {}, ["'priority_bars' must map a priority to a share of cases, e.g. {high: 1.0}"]
+    problems = [f"'priority_bars.{name}' must be a number from 0 to 1" for name, bar in raw.items()
+                if not isinstance(bar, (int, float)) or not 0 <= bar <= 1]
+    return ({} if problems else {str(name): float(bar) for name, bar in raw.items()}), problems
 
 
 def _load_plugins(plugin_files, folder: Path, source: str) -> list[Path]:
