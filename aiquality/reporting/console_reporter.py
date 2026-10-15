@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from aiquality.reporting.report_data import version_text
+from aiquality.reporting.report_data import check_rows, result_text, version_text
 from aiquality.reporting.reporters import Reporter, register_reporter
 from aiquality.reporting.run_record import RunRecord
 
@@ -30,11 +30,11 @@ def render_console_report(record: RunRecord) -> str:
             f"{'check':<22}{'pass rate':>10}{'threshold':>11}  {'result':<8}{'pass':>6}{'fail':>6}{'n/a':>6}{'error':>7}",
             "-" * 78,
         ]
-        for s in record.summaries:
-            rate = "-" if s["pass_rate"] is None else f"{s['pass_rate']:.0%}"
-            verdict = {True: "MEETS", False: "BELOW", None: "NO DATA"}[s["meets_threshold"]]
-            lines.append(f"{s['check']:<22}{rate:>10}{s['threshold']:>11.0%}  {verdict:<8}"
-                         f"{s['passed']:>6}{s['failed']:>6}{s['not_applicable']:>6}{s['errors']:>7}")
+        for row in check_rows(record):
+            rate = "-" if row["pass_rate"] is None else f"{row['pass_rate']:.0%}"
+            note = f"   {row['gate_rate']:.0%} with {row['accepted']} accepted" if row["accepted"] else ""
+            lines.append(f"{row['check']:<22}{rate:>10}{row['threshold']:>11.0%}  {result_text(row):<8}"
+                         f"{row['passed']:>6}{row['failed']:>6}{row['not_applicable']:>6}{row['errors']:>7}{note}")
 
     if record.attacks:
         lines += _attack_lines(record.attacks)

@@ -69,3 +69,14 @@ def test_a_report_can_be_written_again_from_a_saved_record(tmp_path, monkeypatch
     record, _, _ = gated_record(tmp_path, monkeypatch)
     written = write_reports(record, ["html", "junit_xml"], tmp_path / "again")
     assert sorted(p.name for p in written) == ["test_team-junit.xml", "test_team-report.html"]
+
+
+def test_reports_show_the_rate_after_accepted_findings(tmp_path, monkeypatch, capsys):
+    gated_record(tmp_path, monkeypatch)
+    console = capsys.readouterr().out
+    summary = (tmp_path / "out" / "test_team-summary.md").read_text()
+    html = (tmp_path / "out" / "test_team-report.html").read_text()
+    # C2's forbidden_phrases failure was accepted: 1 of 2 measured, 2 of 2 for the gate.
+    assert "| forbidden_phrases | 50% → 100% (1 accepted) | 100% | MEETS |" in summary
+    assert "50% → 100% (1 accepted)" in html
+    assert "100% with 1 accepted" in console

@@ -24,6 +24,36 @@ def percent(value) -> str:
     return "-" if value is None else f"{value:.0%}"
 
 
+def check_rows(record: RunRecord) -> list[dict]:
+    """Each check's summary plus what the gate made of it.
+
+    When a person accepted some of a check's failures, 'gate_rate' is the pass rate with those
+    counted as passes, so a report never shows 86% against a 100% bar without saying why it passed.
+    """
+    accepted = accepted_pairs(record)
+    golden_ids = {o["case_id"] for o in record.outcomes if o.get("category") != "attack"}
+    rows = []
+    for summary in record.summaries:
+        count = sum(1 for case, check in accepted if check == summary["check"] and case in golden_ids)
+        row = dict(summary, accepted=count, gate_rate=summary["pass_rate"], gate_meets=summary["meets_threshold"])
+        if count and summary["pass_rate"] is not None:
+            row["gate_rate"] = (summary["passed"] + count) / (summary["passed"] + summary["failed"])
+            row["gate_meets"] = row["gate_rate"] >= summary["threshold"]
+        rows.append(row)
+    return rows
+
+
+def rate_text(row: dict) -> str:
+    """'89%', or '86% → 100% (3 accepted)' when accepted findings changed the rate."""
+    if row["accepted"]:
+        return f"{percent(row['pass_rate'])} → {percent(row['gate_rate'])} ({row['accepted']} accepted)"
+    return percent(row["pass_rate"])
+
+
+def result_text(row: dict) -> str:
+    return {True: "MEETS", False: "BELOW", None: "NO DATA"}[row["gate_meets"]]
+
+
 def verdict(record: RunRecord) -> str:
     if record.gate_decision:
         return record.gate_decision["decision"]

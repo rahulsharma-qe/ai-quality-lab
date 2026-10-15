@@ -3,7 +3,8 @@
 from html import escape
 from pathlib import Path
 
-from aiquality.reporting.report_data import accepted_pairs, findings, percent, verdict, version_text
+from aiquality.reporting.report_data import (accepted_pairs, check_rows, findings, percent, rate_text,
+                                             result_text, verdict, version_text)
 from aiquality.reporting.reporters import Reporter, register_reporter
 from aiquality.reporting.run_record import RunRecord
 
@@ -57,9 +58,9 @@ def render_html_report(record: RunRecord) -> str:
                      + "".join(f"<li>{escape(f)}</li>" for f in gate["failures"]) + "</ul></section>")
 
     rows = "".join(
-        f"<tr><td>{escape(s['check'])}</td><td>{percent(s['pass_rate'])}</td><td>{percent(s['threshold'])}</td>"
-        f"<td class='{_met(s)}'>{_met(s)}</td><td>{s['passed']}</td><td>{s['failed']}</td>"
-        f"<td>{s['not_applicable']}</td><td>{s['errors']}</td></tr>" for s in record.summaries)
+        f"<tr><td>{escape(row['check'])}</td><td>{escape(rate_text(row))}</td><td>{percent(row['threshold'])}</td>"
+        f"<td class='{result_text(row)}'>{result_text(row)}</td><td>{row['passed']}</td><td>{row['failed']}</td>"
+        f"<td>{row['not_applicable']}</td><td>{row['errors']}</td></tr>" for row in check_rows(record))
     parts.append("<section><h2>Golden cases</h2><table><tr><th>Check</th><th>Pass rate</th><th>Bar</th><th>Result</th>"
                  f"<th>Pass</th><th>Fail</th><th>N/A</th><th>Error</th></tr>{rows}</table></section>")
 
@@ -97,6 +98,3 @@ def render_html_report(record: RunRecord) -> str:
     parts.append("</main></body></html>")
     return "".join(parts)
 
-
-def _met(summary: dict) -> str:
-    return {True: "MEETS", False: "BELOW", None: "NO DATA"}[summary["meets_threshold"]]
