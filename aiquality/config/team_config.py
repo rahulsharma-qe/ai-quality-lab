@@ -11,19 +11,22 @@ import json
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from datetime import date
 from typing import Optional
 
 import yaml
 
 from aiquality.adapters import ADAPTER_NAMES
 from aiquality.checks import available_checks
+from aiquality.config.accepted_findings import AcceptedFinding, parse_accepted_findings
 from aiquality.config.attack_settings import AttackSettings, parse_attack_settings
 from aiquality.config.company_minimums import CompanyMinimums
 from aiquality.errors import ConfigError
 
 CONFIG_FILE_NAMES = ("team.yaml", "team.yml", "team.json")
 TOP_LEVEL_SETTINGS = {"team", "client", "description", "agent", "live_agent", "golden_set",
-                      "policies", "plugins", "checks", "attacks", "reports", "max_error_rate"}
+                      "policies", "plugins", "checks", "attacks", "accepted_findings", "reports",
+                      "max_error_rate"}
 AGENT_SETTINGS = {
     "python_function": ({"file", "function"}, set()),
     "http_endpoint": ({"url"}, {"method", "question_field", "answer_field", "headers",
@@ -55,21 +58,25 @@ class TeamConfig:
     live_agent: Optional[dict] = None
     policies: Optional[Path] = None
     attacks: Optional[AttackSettings] = None
+    accepted_findings: list[AcceptedFinding] = field(default_factory=list)
     reports: list[str] = field(default_factory=lambda: ["console"])
     plugins: list[Path] = field(default_factory=list)
     max_error_rate: float = DEFAULT_MAX_ERROR_RATE
     source: str = ""
 
     @classmethod
-    def load(cls, path, company_minimums: Optional[CompanyMinimums] = None) -> "TeamConfig":
+    def load(cls, path, company_minimums: Optional[CompanyMinimums] = None,
+             today: Optional[date] = None) -> "TeamConfig":
         """Load a config file, or a folder holding team.yaml / team.yml / team.json."""
         path = _find_config_file(Path(path))
         data = _read_config_file(path)
-        return cls.from_dict(data, folder=path.parent, source=str(path), company_minimums=company_minimums)
+        return cls.from_dict(data, folder=path.parent, source=str(path), company_minimums=company_minimums,
+                             today=today)
 
     @classmethod
     def from_dict(cls, data: dict, folder: Path, source: str = "config",
-                  company_minimums: Optional[CompanyMinimums] = None) -> "TeamConfig":
+                  company_minimums: Optional[CompanyMinimums] = None,
+                  today: Optional[date] = None) -> "TeamConfig":
         from aiquality.reporting import available_reporters  # imported here to avoid a cycle
 
         problems = []
@@ -96,6 +103,8 @@ class TeamConfig:
         attacks, attack_problems = parse_attack_settings(data.get("attacks"), list(checks),
                                                          minimums.minimum_attack_resistance)
         problems += attack_problems
+        accepted, accepted_problems = parse_accepted_findings(data.get("accepted_findings"), list(checks), today)
+        problems += accepted_problems
 
         reports = data.get("reports") or ["console"]
         unknown_reports = [r for r in reports if r not in available_reporters()]
@@ -120,7 +129,8 @@ class TeamConfig:
         return cls(team=str(data["team"]), folder=folder, agent=data["agent"], golden_set=golden_set,
                    checks=checks, client=data.get("client"), description=data.get("description", ""),
                    live_agent=data.get("live_agent"), policies=policies, attacks=attacks,
-                   reports=list(reports), plugins=plugins, max_error_rate=float(max_error_rate), source=source)
+                   accepted_findings=accepted, reports=list(reports), plugins=plugins,
+                   max_error_rate=float(max_error_rate), source=source)
 
 
 def _load_plugins(plugin_files, folder: Path, source: str) -> list[Path]:

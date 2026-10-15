@@ -1,6 +1,7 @@
 """What each command does, as plain functions. The command line and the examples both call these."""
 
 import json
+from datetime import date
 from pathlib import Path
 from typing import Optional
 
@@ -8,10 +9,11 @@ import yaml
 
 from aiquality.adapters import RecordedResponsesAgent, RecordingSummary, build_agent, record_responses
 from aiquality.attacks import build_attack_cases
-from aiquality.config import TeamConfig
+from aiquality.config import CompanyMinimums, TeamConfig
 from aiquality.contracts import AgentUnderTest
 from aiquality.errors import ConfigError
 from aiquality.evaluation import evaluate_runs
+from aiquality.gate import GateDecision, ReleaseGate
 from aiquality.reporting import RunRecord, create_reporter
 from aiquality.runner import Runner
 from aiquality.test_data import load_golden_set
@@ -28,20 +30,40 @@ def evaluate_team(config: TeamConfig, live: bool = False, output_dir=DEFAULT_OUT
     live=True uses the team's live_agent instead of its default agent.
     agent=... overrides both (handy in examples and tests).
     """
+    record, _ = _run_and_score(config, live, agent, include_golden, include_attacks, command)
+    _save_and_report(record, config, output_dir, print_reports)
+    return record
+
+
+def gate_team(config: TeamConfig, live: bool = False, output_dir=DEFAULT_OUTPUT_DIR,
+              agent: Optional[AgentUnderTest] = None, print_reports: bool = True,
+              today: Optional[date] = None) -> tuple[RunRecord, GateDecision]:
+    """Evaluate golden and attack cases, then decide PASS or FAIL against the team's bars."""
+    record, evaluation = _run_and_score(config, live, agent, True, True, "gate")
+    mandatory = CompanyMinimums.load().mandatory_checks
+    decision = ReleaseGate(config, mandatory, today).decide(evaluation)
+    record.gate_decision = decision.to_dict()
+    _save_and_report(record, config, output_dir, print_reports)
+    return record, decision
+
+
+def _run_and_score(config, live, agent, include_golden, include_attacks, command):
     agent_settings = _pick_agent_settings(config, live)
     agent = agent or build_agent(agent_settings, config.folder, team_name=config.team)
     golden_set, cases = team_cases(config, include_golden, include_attacks)
-
     case_runs = Runner(agent, max_error_rate=config.max_error_rate).run(cases)
     evaluation = evaluate_runs(case_runs, config.checks, default_client=config.client)
     run_mode = "recorded" if isinstance(agent, RecordedResponsesAgent) else "live"
     record = RunRecord.from_evaluation(evaluation, command=command, team=config.team, client=config.client,
                                        run_mode=run_mode, agent_name=agent.name, agent_version=agent.version,
                                        golden_set=golden_set)
+    return record, evaluation
+
+
+def _save_and_report(record: RunRecord, config: TeamConfig, output_dir, print_reports: bool) -> None:
     record.save(output_dir)
     if print_reports:
         write_reports(record, config.reports, output_dir)
-    return record
 
 
 def attack_team(config: TeamConfig, **options) -> RunRecord:

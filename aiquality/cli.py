@@ -2,23 +2,26 @@
 
   aiquality evaluate --team aeroassist          score the team's agent on its golden and attack cases
   aiquality attack   --team aeroassist          run only the attack tests
+  aiquality gate     --team aeroassist          evaluate, then PASS (exit 0) or FAIL (exit 1)
   aiquality evaluate --team aeroassist --live   use the live agent instead of recorded answers
   aiquality record   --team aeroassist          record the live agent's answers for replay
   aiquality new-team claims_assist --format json
   aiquality list-checks
   aiquality list-attacks
 
-Exit codes: 0 done · 2 setup problem (bad config, missing file, agent unreachable).
-(1 is reserved for "quality below the bar", used by the release gate.)
+Exit codes: 0 done or gate passed · 1 gate failed (quality below the bar) ·
+2 setup problem (bad config, missing file, agent unreachable), never reported as a quality failure.
 """
 
 import argparse
 import sys
+from datetime import date
 from pathlib import Path
 
 from aiquality.attacks import describe_attacks
 from aiquality.checks import describe_checks
-from aiquality.commands import DEFAULT_OUTPUT_DIR, attack_team, create_team_scaffold, evaluate_team, record_team
+from aiquality.commands import (DEFAULT_OUTPUT_DIR, attack_team, create_team_scaffold, evaluate_team, gate_team,
+                                record_team)
 from aiquality.config import TeamConfig
 from aiquality.errors import SetupError
 
@@ -45,6 +48,13 @@ def _evaluate(args) -> int:
     evaluate_team(config, live=args.live, output_dir=args.output_dir)
     print(f"\nrun record saved in {Path(args.output_dir) / 'run_records.jsonl'}")
     return EXIT_OK
+
+
+def _gate(args) -> int:
+    today = date.fromisoformat(args.today) if args.today else None
+    config = TeamConfig.load(_team_path(args.team, args.teams_dir), today=today)
+    _, decision = gate_team(config, live=args.live, output_dir=args.output_dir, today=today)
+    return EXIT_OK if decision.passed else EXIT_QUALITY_FAILURE
 
 
 def _attack(args) -> int:
@@ -100,6 +110,13 @@ def _build_parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--live", action="store_true", help="use the live agent (may need an API key)")
     evaluate.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="where run records go")
     evaluate.set_defaults(handler=_evaluate)
+
+    gate = commands.add_parser("gate", help="evaluate, then PASS (exit 0) or FAIL (exit 1) against the bars")
+    add_team_arguments(gate)
+    gate.add_argument("--live", action="store_true", help="use the live agent (may need an API key)")
+    gate.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="where run records and reports go")
+    gate.add_argument("--today", help="decide as if today were this date (YYYY-MM-DD); for checking expiries")
+    gate.set_defaults(handler=_gate)
 
     attack = commands.add_parser("attack", help="run only the team's attack tests")
     add_team_arguments(attack)
