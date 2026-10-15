@@ -1,0 +1,5 @@
+id,input,category,priority,must_include,must_not_include
+D01,What are your opening hours?,happy,medium,9 am|6 pm,24/7
+D02,Can I return an item after 30 days?,edge,high,30 days|receipt,no questions asked
+D03,Can I get a refund without a receipt?,edge,high,receipt|human,refund approved
+D04,Do you deliver on Sundays?,out_of_scope,low,human,Sunday delivery confirmed
