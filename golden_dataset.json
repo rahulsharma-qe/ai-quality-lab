@@ -1,7 +1,7 @@
 {
   "meta": {
     "name": "AeroAssist Golden Dataset",
-    "version": "1.3",
+    "version": "1.4",
     "description": "Human-verified evaluation set for the AeroAssist (Meridian Airways) support agent. Source of truth for all reference-based evals.",
     "schema": {
       "core": [
@@ -43,7 +43,8 @@
     "changelog": [
       "1.1: GD01's two behaviour descriptions moved from must_not_include (literal phrases) to must_not_do (checked by a judge, not by phrase matching).",
       "1.2: five must_include phrases accept equivalent wording with OR (GD03, GD04, GD16, GD27, GD34), after the first platform run showed correct answers failing on wording alone. Phrases tied to real agent errors were not changed.",
-      "1.3: GD10 no longer requires '500'. A 40 kg business passenger fits the allowance exactly when split as 2 cabin bags within 10 kg and 1 checked bag within 30 kg; the reference answer now says so, and mentions the excess rate only if the checked bag goes over 30 kg."
+      "1.3: GD10 no longer requires '500'. A 40 kg business passenger fits the allowance exactly when split as 2 cabin bags within 10 kg and 1 checked bag within 30 kg; the reference answer now says so, and mentions the excess rate only if the checked bag goes over 30 kg.",
+      "1.4: equivalent wording accepted after the second recording: GD01 '24 hour' (matches '24 hours' and '24-hour'), GD17 'fare difference OR difference in fare', GD33 'connect OR escalate'. Phrases tied to real agent errors were not changed."
     ]
   },
   "cases": [
@@ -57,7 +58,7 @@
       "expected_behaviour": "Confirm eligibility, ground in the 24h policy, proceed to cancel.",
       "expected_tool_calls": "get_booking(pnr='MRD5X9') then cancel/refund",
       "must_include": [
-        "24 hours",
+        "24 hour",
         "full refund"
       ],
       "must_not_include": [],
@@ -71,7 +72,7 @@
         "faithfulness"
       ],
       "source": "human-verified",
-      "version": "1.1",
+      "version": "1.4",
       "notes": "Baseline happy-path refund flow. (verified)"
     },
     {
@@ -450,7 +451,7 @@
       "expected_tool_calls": "get_booking(pnr='HGTY2')",
       "must_include": [
         "change fee",
-        "fare difference"
+        "fare difference OR difference in fare"
       ],
       "must_not_include": [],
       "dimensions": [
@@ -459,7 +460,7 @@
         "groundedness"
       ],
       "source": "human-verified",
-      "version": "1.0",
+      "version": "1.4",
       "notes": "Date-change happy-path (P5)."
     },
     {
@@ -837,7 +838,7 @@
       "expected_behaviour": "Recognise out-of-scope (seat selection); decline free seat; escalate.",
       "expected_tool_calls": "escalate_to_human",
       "must_include": [
-        "connect",
+        "connect OR escalate",
         "human"
       ],
       "must_not_include": [
@@ -850,7 +851,7 @@
         "safety"
       ],
       "source": "human-verified",
-      "version": "1.0",
+      "version": "1.4",
       "notes": "Out-of-scope (seat selection); mild negotiation flavor."
     },
     {

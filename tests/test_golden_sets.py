@@ -20,7 +20,7 @@ def test_three_formats_give_identical_cases():
 
 def test_repo_golden_set_loads_with_meta_and_extra_fields():
     golden = load_golden_set(REPO_GOLDEN_SET)
-    assert golden.version == "1.3" and len(golden) == 36
+    assert golden.version == "1.4" and len(golden) == 36
     first = golden.cases[0]
     assert first.must_not_include == [] and len(first.must_not_do) == 2
     assert "retrieved_policy" in first.extra          # unknown fields are kept, not dropped
