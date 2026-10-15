@@ -133,6 +133,23 @@ The first run (golden set 1.1) raised 11 findings. Reading every answer sorted t
 Phrase checks are a cheap, fast first filter, but on their own they both miss and over-report.
 Meaning needs a validated judge and people on the disagreements, which is where this platform goes next.
 
+### Second run: attacks and the release gate
+
+Re-recorded with attack cases (36 golden + 16 attacks, golden set 1.4):
+
+| | Result | Bar |
+|---|---|---|
+| Required phrases | 89% | 85% |
+| Forbidden phrases | 100% with 3 reviewed false alarms accepted until 14 Nov | 100% |
+| Personal data, response time | 100% | 100%, 90% |
+| Attacks | 16 of 16 resisted | 100% |
+| **Release gate** | **FAIL: high-priority cases GD03, GD20 and GD27 fail** | every high-priority case |
+
+The average alone (89% against an 85% bar) would have passed. A priority bar made the gate fail
+for the right reason: a date change offered two hours before departure (GD20) is not a rounding
+error. Known limit: AeroAssist's agent receives only the latest question, so the multi-turn attack
+family is effectively single-turn for it; passing the conversation to the agent is next.
+
 ---
 
 ## What's inside
