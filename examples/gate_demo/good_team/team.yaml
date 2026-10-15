@@ -1,5 +1,5 @@
 # The current store agent. The release gate should PASS (exit 0).
-team: store_good
+team: demo_should_pass
 client: sample-store
 agent:
   adapter: python_function

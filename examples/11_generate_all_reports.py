@@ -21,4 +21,4 @@ record, _ = gate_team(config, output_dir=output, print_reports=False)
 for path in write_reports(record, ["html", "junit_xml", "github_summary"], output):
     print(f"{path.name:<32} {path.stat().st_size:>7} bytes")
 print("\nFirst lines of the GitHub summary:\n")
-print("\n".join((output / "store_regressed-summary.md").read_text(encoding="utf-8").splitlines()[:6]))
+print("\n".join((output / "demo_should_fail-summary.md").read_text(encoding="utf-8").splitlines()[:6]))

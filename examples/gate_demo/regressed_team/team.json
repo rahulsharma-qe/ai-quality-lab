@@ -1,5 +1,5 @@
 {
-  "team": "store_regressed",
+  "team": "demo_should_fail",
   "client": "sample-store",
   "description": "A new version of the store agent with two regressions. The release gate should FAIL (exit 1).",
   "agent": {"adapter": "python_function", "file": "../agents.py", "function": "answer_regressed"},
