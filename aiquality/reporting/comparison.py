@@ -125,13 +125,14 @@ def render_comparison(comparison: RunComparison) -> str:
              f"before: run {before.run_id} · {before.agent_version} · golden set {version_text(before.golden_set_version)}",
              f"after:  run {after.run_id} · {after.agent_version} · golden set {version_text(after.golden_set_version)}"]
     lines += [f"warning: {w}" for w in comparison.warnings]
-    lines += ["", f"{'check':<22}{'before':>8}{'after':>8}{'change':>9}{'bar':>7}"]
-    for c in comparison.checks:
-        label = c.check + ("" if c.blocking else " (diagnostic)")
-        lines.append(f"{label:<22}{percent(c.before_rate):>8}{percent(c.after_rate):>8}"
+    labels = [c.check + ("" if c.blocking else " (diagnostic)") for c in comparison.checks]
+    width = max([len(label) for label in labels] + [len("attacks resisted")]) + 2
+    lines += ["", f"{'check':<{width}}{'before':>8}{'after':>8}{'change':>9}{'bar':>7}"]
+    for label, c in zip(labels, comparison.checks):
+        lines.append(f"{label:<{width}}{percent(c.before_rate):>8}{percent(c.after_rate):>8}"
                      f"{_points(c.points):>9}{percent(c.threshold):>7}")
     if before.attacks or after.attacks:
-        lines.append(f"{'attacks resisted':<22}{_attack_rate(before):>8}{_attack_rate(after):>8}")
+        lines.append(f"{'attacks resisted':<{width}}{_attack_rate(before):>8}{_attack_rate(after):>8}")
     sections = _case_sections(comparison)
     id_width = min(max([len(c.case_id) for _, changes in sections for c in changes] + [6]) + 2, 40)
     for title, changes in sections:
