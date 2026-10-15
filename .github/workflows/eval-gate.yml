@@ -18,10 +18,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install the aiquality platform with test tools
+        run: pip install -e ".[dev]"
       - name: Test the testing tools (no API key)
-        run: |
-          pip install pytest
-          python -m pytest -q
+        run: python -m pytest -q
+      - name: Run every platform example (no API key)
+        run: for example in examples/0*.py; do echo "== $example"; python "$example"; done
       - name: Run the eval gate (mock judge, no API key)
         run: python eval_harness.py        # exit 1 on any failed threshold -> build goes red
 

@@ -15,10 +15,95 @@ cover both halves of modern quality engineering.
 
 ---
 
+## The platform: `aiquality` — configuration, not code
+
+The scripts below proved each technique on one agent. `aiquality` packages them into a
+self-serve platform: a team connects its agent and brings one config file (YAML or JSON) and a
+golden set (JSON, CSV or Excel). No test code.
+
+```bash
+pip install -e ".[dev]"
+aiquality new-team my_team                       # a starter team that already runs
+aiquality evaluate --team my_team                # pass rate per check, every finding, a run record
+aiquality evaluate --team examples/quickstart_team
+aiquality list-checks
+```
+
+- **One contract** for every agent: a Python function, an HTTP endpoint, or answers recorded
+  from a live agent, so CI needs no API key. Every run record says `live` or `recorded`.
+- **Checks are plugins** (`@register_check`), each scored as a pass rate against a threshold;
+  a company-wide floor that teams can tighten, never loosen.
+- **Honest results:** cases a check can't judge are `NOT_APPLICABLE`, failed calls are `ERROR`,
+  and neither is ever counted as a pass. A broken setup exits with code 2, never as a quality failure.
+- **Secrets stay out of configs:** they're read from environment variables named in the config.
+- **One result format:** every run is a versioned RunRecord (personal data redacted) that every
+  report reads.
+
+```mermaid
+flowchart LR
+  subgraph TEAM["What a team brings - no test code"]
+    CFG["team.yaml or team.json"]
+    GS["Golden set<br/>JSON · CSV · Excel"]
+    POL["policies.md"]
+    AG["Their agent"]
+  end
+  subgraph CORE["aiquality package"]
+    TC["TeamConfig<br/>+ CompanyMinimums"]
+    TD["Test data<br/>load_golden_set · GoldenCaseBuilder"]
+    AD["Adapters<br/>PythonFunction · HttpEndpoint · RecordedResponses"]
+    ATK["Attacks registry<br/>register_attack"]
+    RUN["Runner"]
+    CHK["Checks registry<br/>register_check"]
+    JDG["Judges<br/>AnswerJudge · JudgeValidator"]
+    MDL["ChatModel<br/>provider-neutral"]
+    GATE["ReleaseGate<br/>PASS or FAIL<br/>+ advisory findings"]
+    RR["RunRecord - JSONL<br/>personal data redacted"]
+    MON["Monitoring<br/>tracing · drift"]
+  end
+  subgraph OUT["Outputs"]
+    EXIT["Exit code<br/>CI blocks or passes"]
+    REP["Reports - register_reporter<br/>console · HTML · JUnit XML · GitHub summary"]
+    HRQ["Human review queue<br/>advisory findings"]
+    GV["Gate view<br/>static HTML"]
+    OTEL["OpenTelemetry to Phoenix or Langfuse<br/>optional, off by default"]
+  end
+  CFG --> TC
+  GS --> TD
+  AG --> AD
+  POL --> JDG
+  TC --> RUN
+  TD --> RUN
+  ATK --> RUN
+  AD --> RUN
+  RUN --> CHK
+  CHK --> JDG
+  JDG --> MDL
+  CHK --> GATE
+  TC --> GATE
+  JDG -.->|"judge status per version"| GATE
+  GATE --> EXIT
+  GATE --> RR
+  RR --> REP
+  RR --> HRQ
+  RR --> GV
+  RUN -.->|"traces"| MON
+  RR -->|"history"| MON
+  MON --> OTEL
+  classDef later stroke-dasharray: 5 5
+  class ATK,JDG,MDL,GATE,MON,HRQ,GV,OTEL later
+```
+
+Solid boxes are in the package today; dashed boxes are scripts in this repo moving into it, or
+planned. Details: [`docs/architecture.md`](docs/architecture.md) ·
+onboarding: [`docs/onboarding.md`](docs/onboarding.md) · runnable examples: [`examples/`](examples/).
+
+---
+
 ## What's inside
 
 | Area | File | The quality question it answers |
 |---|---|---|
+| **Platform** | `aiquality/`, `teams/`, `examples/`, `tests/`, `docs/` | *Can another team use this without writing test code?* Agent adapters, team configs, golden sets from JSON/CSV/Excel, pluggable checks, a company floor, run records and a command line. See the section above. |
 | **Golden dataset** | `golden_dataset.json` | *What is the human-verified source of truth?* 36 labelled cases (happy / edge / adversarial / out-of-scope), with a schema validator (`loader_cell.py`). |
 | **RAG evaluation** | `rag_eval.py` | *Is the agent accurate and grounded?* Scores a policy-RAG with **RAGAS** — context precision/recall (retrieval) and faithfulness/answer-relevancy (generation), judged by Claude, embedded locally (no OpenAI). |
 | **Red-teaming** | `red_team.py`, `red_team_v2.py` | *Can I break it?* OWASP-LLM-mapped attacks — prompt injection (direct & indirect), jailbreak, data-leak, excessive agency — plus strengthened vectors (obfuscation, multi-turn, poisoned knowledge base). |
@@ -28,7 +113,7 @@ cover both halves of modern quality engineering.
 | **Eval harness / CI gate** | `eval_harness.py`, `.github/workflows/eval-gate.yml` | *How do I stop a regression shipping?* A metric **registry** with per-metric thresholds + direction and a build-failing **exit code** — evals become a **gate**, not a report. Key-free **mock judge** runs on every PR (deterministic, no API key); the **live judge** runs on demand, and may only block a release once it has qualified against human labels (otherwise it's advisory). Demo: healthy outputs PASS (exit 0), a seeded regression FAILS (exit 1). |
 | **Model layer** | `llm.py` | *Can I switch models without touching every file?* One place for model clients: provider and model are settings (`LLM_PROVIDER`, `AGENT_MODEL`, `JUDGE_MODEL`); the judge uses a different, stronger model than the agent, so nothing grades its own work. |
 | **Judge validation** | `answer_judge.py`, `build_label_set.py`, `judge_labels.json`, `judge_validation.py`, `judge_validation_results.jsonl` | *Can I trust the AI judge that gates my releases?* Thirty answers labelled blind by a person, split into a tuning half and a held-back half; two numbers against the human labels — **catches real failures** and **leaves good answers alone**; per-category breakdown; results saved per judge version. A judge that hasn't qualified runs in **advisory mode**. |
-| **Tests for the test tools** | `test_judge_validation.py` | *Do the evaluation tools themselves work?* Key-free unit tests (fake judges, no network) run on every PR. |
+| **Tests for the test tools** | `test_judge_validation.py`, `tests/` | *Do the evaluation tools themselves work?* Key-free tests (fake judges, local servers, no network) run on every PR. |
 | **Observability** | `observability/tracing.py`, `observability/monitor.py`, `observability/pii_guardrail.py` | *Is it still safe in production?* A structured per-run **trace** (evidence log), a **dashboard** (breach/refusal rate, latency, cost), a baseline-vs-recent **drift alert**, and a **triage→fix** loop. Before/after: PII breach-rate `1.7% → 0%` (fake PII only). |
 
 ---
@@ -115,6 +200,9 @@ python build_label_set.py                                  # 15 agent + 15 seede
 python judge_validation.py --judge llm --split tune        # improve the judge on the tuning half
 python judge_validation.py --judge llm --split holdout     # measure once; exit 0 = qualified to gate
 python -m pytest -q                                        # key-free tests for the tools themselves
+
+aiquality record   --team aeroassist     # record the live agent's answers (needs the key + the aeroassist extra)
+aiquality evaluate --team aeroassist     # replay them: key-free and repeatable
 ```
 
 In Colab, run `build_label_set.main()` and `judge_validation.main()` inside the notebook (not
@@ -135,6 +223,11 @@ Data is privacy-safe synthetic only (no real PII).
 - [ ] **Judge validation, round 2** — a labelling guide with quiet-failure examples, a second labeller, narrower single-purpose judges, and a fresh held-back set with the bars set beforehand.
 - [ ] **One model layer for every judge** — move the RAGAS, red-team and completeness judges onto `llm.py`.
 - [ ] **Clearer policy boundaries** — state whether each deadline is inclusive.
+- [x] **Platform core (done)** — `aiquality` package: one agent contract, three adapters, team configs in YAML or JSON, golden sets from JSON/CSV/Excel, pluggable checks, a company floor, run records, a command line.
+- [ ] **Release gate per team and client** — attack tests as plugins, blocking and advisory checks, exit codes 0/1/2, HTML / JUnit XML / GitHub summary reports.
+- [ ] **Judges and monitoring in the platform** — live judge with per-version qualification, a human review queue, a second (fictional) team onboarded with configuration only, a reusable CI workflow.
+- [ ] **Gate view and tracing export** — a static gate dashboard and OpenTelemetry export to an open-source tracing tool.
+- [ ] **Parallel runs** — worker limit, rate-limit retries and a per-run budget cap.
 
 ---
 
