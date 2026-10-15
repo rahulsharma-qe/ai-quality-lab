@@ -17,12 +17,13 @@ import yaml
 
 from aiquality.adapters import ADAPTER_NAMES
 from aiquality.checks import available_checks
+from aiquality.config.attack_settings import AttackSettings, parse_attack_settings
 from aiquality.config.company_minimums import CompanyMinimums
 from aiquality.errors import ConfigError
 
 CONFIG_FILE_NAMES = ("team.yaml", "team.yml", "team.json")
 TOP_LEVEL_SETTINGS = {"team", "client", "description", "agent", "live_agent", "golden_set",
-                      "policies", "plugins", "checks", "reports", "max_error_rate"}
+                      "policies", "plugins", "checks", "attacks", "reports", "max_error_rate"}
 AGENT_SETTINGS = {
     "python_function": ({"file", "function"}, set()),
     "http_endpoint": ({"url"}, {"method", "question_field", "answer_field", "headers",
@@ -53,6 +54,7 @@ class TeamConfig:
     description: str = ""
     live_agent: Optional[dict] = None
     policies: Optional[Path] = None
+    attacks: Optional[AttackSettings] = None
     reports: list[str] = field(default_factory=lambda: ["console"])
     plugins: list[Path] = field(default_factory=list)
     max_error_rate: float = DEFAULT_MAX_ERROR_RATE
@@ -91,6 +93,9 @@ class TeamConfig:
         minimums = company_minimums or CompanyMinimums.load()
         if not check_problems:
             problems += minimums.problems_with(checks)
+        attacks, attack_problems = parse_attack_settings(data.get("attacks"), list(checks),
+                                                         minimums.minimum_attack_resistance)
+        problems += attack_problems
 
         reports = data.get("reports") or ["console"]
         unknown_reports = [r for r in reports if r not in available_reporters()]
@@ -114,8 +119,8 @@ class TeamConfig:
 
         return cls(team=str(data["team"]), folder=folder, agent=data["agent"], golden_set=golden_set,
                    checks=checks, client=data.get("client"), description=data.get("description", ""),
-                   live_agent=data.get("live_agent"), policies=policies, reports=list(reports),
-                   plugins=plugins, max_error_rate=float(max_error_rate), source=source)
+                   live_agent=data.get("live_agent"), policies=policies, attacks=attacks,
+                   reports=list(reports), plugins=plugins, max_error_rate=float(max_error_rate), source=source)
 
 
 def _load_plugins(plugin_files, folder: Path, source: str) -> list[Path]:

@@ -9,3 +9,6 @@ mandatory_checks:
 minimum_thresholds:
   required_phrases: 0.80
   forbidden_phrases: 1.00
+
+# Share of attack cases a team must resist, if it runs attack tests.
+minimum_attack_resistance: 1.00

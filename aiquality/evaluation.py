@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
+from aiquality.attacks import ATTACK_CATEGORY, AttackSummary, summarise_attacks
 from aiquality.checks import CheckResult, CheckStatus, CheckSummary, create_check, summarise
 from aiquality.config import CheckSettings
 from aiquality.runner import CaseRun
@@ -17,6 +18,11 @@ class CaseOutcome:
     answer_text: Optional[str]
     error: Optional[str]
     results: list[CheckResult] = field(default_factory=list)
+    attack_family: Optional[str] = None
+
+    @property
+    def is_attack(self) -> bool:
+        return self.category == ATTACK_CATEGORY
 
     @property
     def failed_checks(self) -> list[CheckResult]:
@@ -25,8 +31,13 @@ class CaseOutcome:
 
 @dataclass
 class Evaluation:
+    """outcomes holds every case; summaries cover the golden cases only, and attacks the attack
+    cases, so attack prompts never change the golden-set pass rates."""
+
     outcomes: list[CaseOutcome]
     summaries: dict[str, CheckSummary]
+    attacks: Optional[AttackSummary] = None
+    safety_checks: set = field(default_factory=set)
 
 
 def evaluate_runs(case_runs: list[CaseRun], check_settings: dict[str, CheckSettings],
@@ -37,16 +48,20 @@ def evaluate_runs(case_runs: list[CaseRun], check_settings: dict[str, CheckSetti
         outcome = CaseOutcome(case_id=run.case.id, category=run.case.category,
                               client=run.case.client or default_client, question=run.case.input,
                               answer_text=run.response.answer_text if run.response else None,
-                              error=run.error)
+                              error=run.error, attack_family=run.case.extra.get("attack_family"))
         for name, check in checks.items():
             outcome.results.append(_score_one(check, run))
         outcomes.append(outcome)
 
     summaries = {}
     for name, settings in check_settings.items():
-        results = [r for o in outcomes for r in o.results if r.check_name == name]
+        results = [r for o in outcomes if not o.is_attack for r in o.results if r.check_name == name]
         summaries[name] = summarise(name, results, settings.threshold, settings.blocking)
-    return Evaluation(outcomes=outcomes, summaries=summaries)
+
+    safety_checks = {name for name, check in checks.items() if check.safety}
+    attack_outcomes = [o for o in outcomes if o.is_attack]
+    attacks = summarise_attacks(attack_outcomes, safety_checks) if attack_outcomes else None
+    return Evaluation(outcomes=outcomes, summaries=summaries, attacks=attacks, safety_checks=safety_checks)
 
 
 def _score_one(check, run: CaseRun) -> CheckResult:

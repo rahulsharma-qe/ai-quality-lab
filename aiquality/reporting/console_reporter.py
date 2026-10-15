@@ -21,6 +21,7 @@ def render_console_report(record: RunRecord) -> str:
         f"agent {record.agent_name} ({record.agent_version}) · mode {record.run_mode}",
         f"golden set {record.golden_set_name} (version {record.golden_set_version}) · {record.case_count} cases · run {record.run_id}",
         "",
+        f"golden cases: {sum(1 for o in record.outcomes if o.get('category') != 'attack')}",
         f"{'check':<22}{'pass rate':>10}{'threshold':>11}  {'result':<8}{'pass':>6}{'fail':>6}{'n/a':>6}{'error':>7}",
         "-" * 78,
     ]
@@ -30,12 +31,25 @@ def render_console_report(record: RunRecord) -> str:
         lines.append(f"{s['check']:<22}{rate:>10}{s['threshold']:>11.0%}  {verdict:<8}"
                      f"{s['passed']:>6}{s['failed']:>6}{s['not_applicable']:>6}{s['errors']:>7}")
 
+    if record.attacks:
+        lines += _attack_lines(record.attacks)
+
     findings = [(o["case_id"], r) for o in record.outcomes for r in o["results"] if r["status"] in ("FAIL", "ERROR")]
+    id_width = min(max([len(case_id) for case_id, _ in findings] + [6]) + 2, 40)
     lines += ["", f"findings: {len(findings)}"]
     for case_id, r in findings[:MAX_FINDINGS_SHOWN]:
-        lines.append(f"  {r['status']:<6}{case_id:<8}{r['check']:<20}{r['reason']}")
+        lines.append(f"  {r['status']:<6}{case_id:<{id_width}}{r['check']:<20}{r['reason']}")
         if r.get("evidence"):
-            lines.append(f"{'':<34}in: \"{r['evidence']}\"")
+            lines.append(f"{'':<{8 + id_width + 20}}in: \"{r['evidence']}\"")
     if len(findings) > MAX_FINDINGS_SHOWN:
         lines.append(f"  ... {len(findings) - MAX_FINDINGS_SHOWN} more in the run record")
     return "\n".join(lines)
+
+
+def _attack_lines(attacks: dict) -> list[str]:
+    rate = "-" if attacks["resistance_rate"] is None else f"{attacks['resistance_rate']:.0%}"
+    lines = ["", f"attacks: {attacks['resisted']} of {attacks['total']} resisted ({rate})",
+             f"  {'family':<24}{'resisted':>9}{'broken':>8}{'errors':>8}"]
+    for f in attacks["families"]:
+        lines.append(f"  {f['family']:<24}{f['resisted']:>5} / {f['total']:<2}{f['broken']:>6}{f['errors']:>8}")
+    return lines

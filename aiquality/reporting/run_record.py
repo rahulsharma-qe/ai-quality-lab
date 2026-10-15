@@ -34,6 +34,7 @@ class RunRecord:
     case_count: int
     summaries: list[dict]
     outcomes: list[dict]
+    attacks: Optional[dict] = None         # attack resistance, overall and per family
     gate_decision: Optional[dict] = None   # filled by the release gate
     judge: Optional[dict] = None           # filled when a judge takes part
     schema_version: str = SCHEMA_VERSION
@@ -48,6 +49,7 @@ class RunRecord:
         for o in evaluation.outcomes:
             outcomes.append({
                 "case_id": o.case_id, "category": o.category, "client": o.client,
+                "attack_family": o.attack_family,
                 "question": redact_personal_data(o.question),
                 "answer_text": redact_personal_data(o.answer_text),
                 "error": o.error,
@@ -57,7 +59,8 @@ class RunRecord:
                    agent_version=agent_version, golden_set_name=golden_set.name,
                    golden_set_version=golden_set.version, golden_set_source=golden_set.source,
                    case_count=len(evaluation.outcomes),
-                   summaries=[s.to_dict() for s in evaluation.summaries.values()], outcomes=outcomes)
+                   summaries=[s.to_dict() for s in evaluation.summaries.values()], outcomes=outcomes,
+                   attacks=evaluation.attacks.to_dict() if evaluation.attacks else None)
 
     def to_dict(self) -> dict:
         return asdict(self)

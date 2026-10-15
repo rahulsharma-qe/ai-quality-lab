@@ -7,6 +7,7 @@ from typing import Optional
 import yaml
 
 from aiquality.adapters import RecordedResponsesAgent, RecordingSummary, build_agent, record_responses
+from aiquality.attacks import build_attack_cases
 from aiquality.config import TeamConfig
 from aiquality.contracts import AgentUnderTest
 from aiquality.errors import ConfigError
@@ -19,31 +20,57 @@ DEFAULT_OUTPUT_DIR = "aiquality-runs"
 
 
 def evaluate_team(config: TeamConfig, live: bool = False, output_dir=DEFAULT_OUTPUT_DIR,
-                  agent: Optional[AgentUnderTest] = None, print_reports: bool = True) -> RunRecord:
-    """Ask the team's agent every golden case, score it, save a RunRecord and write the reports.
+                  agent: Optional[AgentUnderTest] = None, print_reports: bool = True,
+                  include_golden: bool = True, include_attacks: bool = True,
+                  command: str = "evaluate") -> RunRecord:
+    """Ask the team's agent its golden and attack cases, score them, save a RunRecord, write reports.
 
     live=True uses the team's live_agent instead of its default agent.
     agent=... overrides both (handy in examples and tests).
     """
     agent_settings = _pick_agent_settings(config, live)
     agent = agent or build_agent(agent_settings, config.folder, team_name=config.team)
-    golden_set = load_golden_set(config.golden_set)
+    golden_set, cases = team_cases(config, include_golden, include_attacks)
 
-    case_runs = Runner(agent, max_error_rate=config.max_error_rate).run(golden_set.cases)
+    case_runs = Runner(agent, max_error_rate=config.max_error_rate).run(cases)
     evaluation = evaluate_runs(case_runs, config.checks, default_client=config.client)
     run_mode = "recorded" if isinstance(agent, RecordedResponsesAgent) else "live"
-    record = RunRecord.from_evaluation(evaluation, command="evaluate", team=config.team, client=config.client,
+    record = RunRecord.from_evaluation(evaluation, command=command, team=config.team, client=config.client,
                                        run_mode=run_mode, agent_name=agent.name, agent_version=agent.version,
                                        golden_set=golden_set)
     record.save(output_dir)
     if print_reports:
-        for report_name in config.reports:
-            create_reporter(report_name).write(record, Path(output_dir))
+        write_reports(record, config.reports, output_dir)
     return record
 
 
+def attack_team(config: TeamConfig, **options) -> RunRecord:
+    """Run only the team's attack cases."""
+    if not config.attacks:
+        raise ConfigError(config.source, ["no 'attacks' block in the team config"])
+    return evaluate_team(config, include_golden=False, include_attacks=True, command="attack", **options)
+
+
+def team_cases(config: TeamConfig, include_golden: bool = True, include_attacks: bool = True):
+    """The golden set, and the list of cases to ask: golden cases, then attack cases."""
+    golden_set = load_golden_set(config.golden_set)
+    cases = list(golden_set.cases) if include_golden else []
+    if include_attacks and config.attacks:
+        cases += build_attack_cases(config.attacks.families, config.attacks.goals)
+    return golden_set, cases
+
+
+def write_reports(record: RunRecord, report_names: list[str], output_dir) -> list[Path]:
+    written = []
+    for report_name in report_names:
+        path = create_reporter(report_name).write(record, Path(output_dir))
+        if path is not None:
+            written.append(path)
+    return written
+
+
 def record_team(config: TeamConfig, output_path: Optional[Path] = None) -> tuple[Path, RecordingSummary]:
-    """Ask the team's LIVE agent every golden case once and save the answers for replay.
+    """Ask the team's LIVE agent every golden and attack case once and save the answers for replay.
 
     By default the answers go to the file the team's recorded_responses agent reads.
     """
@@ -54,8 +81,8 @@ def record_team(config: TeamConfig, output_path: Optional[Path] = None) -> tuple
             raise ConfigError(config.source, ["give an output path, or set agent.adapter to recorded_responses"])
         output_path = config.folder / config.agent["path"]
     live_agent = build_agent(config.live_agent, config.folder, team_name=config.team)
-    golden_set = load_golden_set(config.golden_set)
-    return Path(output_path), record_responses(live_agent, golden_set.cases, Path(output_path))
+    _, cases = team_cases(config)
+    return Path(output_path), record_responses(live_agent, cases, Path(output_path))
 
 
 def _pick_agent_settings(config: TeamConfig, live: bool) -> dict:

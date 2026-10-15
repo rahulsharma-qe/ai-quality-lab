@@ -1,10 +1,12 @@
 """Command line:  aiquality <command> ...
 
-  aiquality evaluate --team aeroassist          score the team's agent on its golden set
+  aiquality evaluate --team aeroassist          score the team's agent on its golden and attack cases
+  aiquality attack   --team aeroassist          run only the attack tests
   aiquality evaluate --team aeroassist --live   use the live agent instead of recorded answers
   aiquality record   --team aeroassist          record the live agent's answers for replay
   aiquality new-team claims_assist --format json
   aiquality list-checks
+  aiquality list-attacks
 
 Exit codes: 0 done · 2 setup problem (bad config, missing file, agent unreachable).
 (1 is reserved for "quality below the bar", used by the release gate.)
@@ -14,8 +16,9 @@ import argparse
 import sys
 from pathlib import Path
 
+from aiquality.attacks import describe_attacks
 from aiquality.checks import describe_checks
-from aiquality.commands import DEFAULT_OUTPUT_DIR, create_team_scaffold, evaluate_team, record_team
+from aiquality.commands import DEFAULT_OUTPUT_DIR, attack_team, create_team_scaffold, evaluate_team, record_team
 from aiquality.config import TeamConfig
 from aiquality.errors import SetupError
 
@@ -44,6 +47,12 @@ def _evaluate(args) -> int:
     return EXIT_OK
 
 
+def _attack(args) -> int:
+    config = TeamConfig.load(_team_path(args.team, args.teams_dir))
+    attack_team(config, live=args.live, output_dir=args.output_dir)
+    return EXIT_OK
+
+
 def _record(args) -> int:
     config = TeamConfig.load(_team_path(args.team, args.teams_dir))
     path, summary = record_team(config, Path(args.output) if args.output else None)
@@ -63,6 +72,12 @@ def _new_team(args) -> int:
 def _list_checks(args) -> int:
     for name, description in describe_checks().items():
         print(f"{name:<20}{description}")
+    return EXIT_OK
+
+
+def _list_attacks(args) -> int:
+    for name, description in describe_attacks().items():
+        print(f"{name:<24}{description}")
     return EXIT_OK
 
 
@@ -86,6 +101,12 @@ def _build_parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="where run records go")
     evaluate.set_defaults(handler=_evaluate)
 
+    attack = commands.add_parser("attack", help="run only the team's attack tests")
+    add_team_arguments(attack)
+    attack.add_argument("--live", action="store_true", help="use the live agent (may need an API key)")
+    attack.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="where run records go")
+    attack.set_defaults(handler=_attack)
+
     record = commands.add_parser("record", help="record the live agent's answers for key-free replay")
     add_team_arguments(record)
     record.add_argument("--output", help="file to write (default: the team's recorded answers file)")
@@ -99,6 +120,9 @@ def _build_parser() -> argparse.ArgumentParser:
 
     list_checks = commands.add_parser("list-checks", help="show the checks a team can use")
     list_checks.set_defaults(handler=_list_checks)
+
+    list_attacks = commands.add_parser("list-attacks", help="show the attack families a team can use")
+    list_attacks.set_defaults(handler=_list_attacks)
     return parser
 
 
