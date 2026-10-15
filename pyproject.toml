@@ -29,7 +29,7 @@ aiquality = "aiquality.cli:main"
 include = ["aiquality*"]
 
 [tool.setuptools.package-data]
-aiquality = ["config/*.yaml"]
+aiquality = ["config/*.yaml", "judges/*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "test_judge_validation.py"]

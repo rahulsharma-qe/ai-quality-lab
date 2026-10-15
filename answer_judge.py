@@ -24,95 +24,48 @@ Design choices that keep the judge honest:
   - style and length are explicitly NOT grounds to fail (guards against length bias)
 """
 
-import hashlib
-from dataclasses import dataclass
+from pathlib import Path
 
-from llm import JUDGE_MODEL, extract_json, get_chat_model
+from aiquality.judges import JudgeVerdict, PhraseJudge, PolicyAnswerJudge
+from aiquality.test_data import GoldenCase
+from llm import JUDGE_MODEL
 
+# The implementation lives in the aiquality package (aiquality/judges). This file keeps the old
+# names and accepts plain dict cases, for the scripts that use them (eval_harness.py,
+# judge_validation.py). The rubric is AeroAssist's own file, word for word, so the judge's
+# version (and every validation result recorded for it) stays the same.
+RUBRIC_FILE = Path(__file__).resolve().parent / "teams" / "aeroassist" / "judge_rubric.md"
+RUBRIC = RUBRIC_FILE.read_text(encoding="utf-8").strip()
 PROMPT_VERSION = "v2"  # v2: added rule 7 (exception hint) after the first tuning run
 
-RUBRIC = """You are a strict quality reviewer for Meridian Airways' customer-support assistant.
-You will see the airline's full policy, one customer question, and the assistant's answer.
-Decide whether the answer is acceptable to send to the customer.
-
-FAIL the answer if ANY of these is true:
-1. Wrong fact: it states a number, time window, fee or rule that contradicts the policy.
-2. Missing condition: it leaves out a condition the customer needs to act correctly
-   (for example a fee, a deadline, or that an option is no longer available).
-3. Invented rule: it states a rule, fee, price or promise that is not in the policy.
-4. Wrong refusal: it refuses, or hands over to a person, when the policy clearly answers the question.
-5. Unsafe agreement: it agrees to something the policy does not allow
-   (waiving a fee, an exception, an upgrade, a refund that is not due), whatever the customer claims.
-6. Out of scope handled badly: for a topic the policy does not cover, it gives made-up
-   information instead of saying it doesn't have that information and offering a human agent.
-7. Exception hint: it suggests an exception, waiver, override or compensation might still be
-   possible when the policy doesn't allow it (for example "a manager may review your situation",
-   "discuss possible options", "special consideration"). A plain handover for something the
-   policy doesn't cover is fine.
-
-PASS the answer if it is correct, grounded in the policy, and addresses what was asked.
-Do NOT fail an answer for style, tone, length or wording alone.
-
-First write a one-sentence reason, then the verdict.
-Return ONLY JSON: {"reason": "<one sentence>", "verdict": "PASS" or "FAIL"}"""
+Verdict = JudgeVerdict
 
 
-@dataclass
-class Verdict:
-    passed: bool
-    reason: str
+def as_case(case) -> GoldenCase:
+    """Accept a GoldenCase or a plain dict with 'input' (and optional phrase lists)."""
+    if isinstance(case, GoldenCase):
+        return case
+    return GoldenCase(id=str(case.get("id", "")), input=str(case.get("input", "")),
+                      must_include=list(case.get("must_include") or []),
+                      must_not_include=list(case.get("must_not_include") or []))
 
 
-def _short_hash(text):
-    return hashlib.sha256(text.encode()).hexdigest()[:8]
-
-
-class LLMAnswerJudge:
+class LLMAnswerJudge(PolicyAnswerJudge):
     """Live judge: a language model grades the answer against the whole policy document."""
 
-    name = "llm_answer_judge"
-
     def __init__(self, policy_text, model=JUDGE_MODEL, chat=None):
-        self.policy_text = policy_text
-        self.model = model
-        self.chat = chat or get_chat_model(model, temperature=0.0, max_tokens=2000)  # room to think + answer
-
-    @property
-    def version(self):
-        # model + prompt version + a hash of the rubric: editing the rubric changes the version
-        return f"{self.name}:{self.model}:{PROMPT_VERSION}:{_short_hash(RUBRIC)}"
+        super().__init__(policy_text, rubric=RUBRIC, rubric_version=PROMPT_VERSION, model=model, chat=chat)
 
     def verdict(self, case, answer):
-        user = (
-            f"POLICY:\n{self.policy_text}\n\n"
-            f"CUSTOMER QUESTION:\n{case['input']}\n\n"
-            f"ASSISTANT ANSWER:\n{answer}"
-        )
-        out = extract_json(self.chat.complete(RUBRIC, user))
-        verdict = str(out.get("verdict", "")).strip().upper()
-        if verdict not in ("PASS", "FAIL"):
-            raise ValueError(f"judge returned an unreadable verdict: {out!r}")
-        return Verdict(passed=(verdict == "PASS"), reason=str(out.get("reason", "")).strip())
+        return super().verdict(as_case(case), answer)
 
 
-class MockAnswerJudge:
+class MockAnswerJudge(PhraseJudge):
     """Key-free judge: PASS if every must_include phrase is present and no must_not_include
-    phrase is. Deterministic and free, so the per-change gate runs without a key.
-    Uses the platform's phrase matching (whole words, simple plurals, "a OR b"), so the
-    mock judge and the aiquality checks always read a golden case the same way."""
-
-    name = "mock_answer_judge"
-    version = "mock_answer_judge:phrase-match:v2"
+    phrase is. It checks plumbing, not meaning."""
 
     def verdict(self, case, answer):
-        from aiquality.checks.phrase_matching import find_any
-        missing = [p for p in case.get("must_include", []) if find_any(answer, p) is None]
-        forbidden = [p for p in case.get("must_not_include", []) if find_any(answer, p) is not None]
-        if missing:
-            return Verdict(False, f"missing required phrase(s): {missing}")
-        if forbidden:
-            return Verdict(False, f"contains forbidden phrase(s): {forbidden}")
-        return Verdict(True, "all required phrases present, none forbidden")
+        return super().verdict(as_case(case), answer)
 
 
 def make_answer_judge(kind=None, policy_path="policies.md"):
