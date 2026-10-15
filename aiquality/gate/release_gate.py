@@ -86,7 +86,8 @@ class ReleaseGate:
             self._check_attacks(evaluation, accepted_pairs, decision)
 
         if golden and len(decision.accepted_findings) / len(evaluation.outcomes) > TOO_MANY_ACCEPTED:
-            decision.warnings.append(f"{len(decision.accepted_findings)} accepted findings is more than "
+            count = len(decision.accepted_findings)
+            decision.warnings.append(f"{count} accepted finding{'s' if count != 1 else ''} cover more than "
                                      f"{TOO_MANY_ACCEPTED:.0%} of cases: the check or the golden set may need fixing")
         decision.passed = not decision.failures
         return decision
