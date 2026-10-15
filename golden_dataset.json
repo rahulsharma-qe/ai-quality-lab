@@ -1,7 +1,7 @@
 {
   "meta": {
     "name": "AeroAssist Golden Dataset",
-    "version": "1.2",
+    "version": "1.3",
     "description": "Human-verified evaluation set for the AeroAssist (Meridian Airways) support agent. Source of truth for all reference-based evals.",
     "schema": {
       "core": [
@@ -42,7 +42,8 @@
     ],
     "changelog": [
       "1.1: GD01's two behaviour descriptions moved from must_not_include (literal phrases) to must_not_do (checked by a judge, not by phrase matching).",
-      "1.2: five must_include phrases accept equivalent wording with OR (GD03, GD04, GD16, GD27, GD34), after the first platform run showed correct answers failing on wording alone. Phrases tied to real agent errors were not changed."
+      "1.2: five must_include phrases accept equivalent wording with OR (GD03, GD04, GD16, GD27, GD34), after the first platform run showed correct answers failing on wording alone. Phrases tied to real agent errors were not changed.",
+      "1.3: GD10 no longer requires '500'. A 40 kg business passenger fits the allowance exactly when split as 2 cabin bags within 10 kg and 1 checked bag within 30 kg; the reference answer now says so, and mentions the excess rate only if the checked bag goes over 30 kg."
     ]
   },
   "cases": [
@@ -275,13 +276,13 @@
       "category": "edge",
       "priority": "medium",
       "retrieved_policy": "P3 (business check-in 30 kg) + P2 (business cabin 10 kg) -> 40 kg combined; excess Rs 500/kg.",
-      "reference_answer": "Your business allowance is 30 kg check-in plus 10 kg cabin - 40 kg combined. So 40 kg is right at your total limit IF split as up to 30 kg checked and up to 10 kg cabin. If all 40 kg is checked in, you're 10 kg over the 30 kg check-in limit and excess of Rs 500/kg applies (about Rs 5,000). Also, business cabin is limited to 2 bags, so 3 bags can't all be cabin.",
-      "expected_behaviour": "Combine P3+P2 allowances (40 kg total); flag distribution ambiguity; compute excess only if over the check-in portion.",
+      "reference_answer": "Your business allowance is 2 cabin bags up to 10 kg in total plus 30 kg of check-in baggage, so 40 kg fits exactly with no extra charge if you carry 2 bags in the cabin within 10 kg and check in 1 bag of up to 30 kg. Excess baggage at Rs 500 per kg applies only if the checked bag goes over 30 kg.",
+      "expected_behaviour": "Combine P2 + P3: suggest 2 cabin bags within 10 kg and 1 checked bag within 30 kg (no charge); mention Rs 500/kg only for weight over the check-in allowance.",
       "expected_tool_calls": "get_booking(pnr='H2YKS')",
       "must_include": [
         "30 kg",
         "10 kg",
-        "500"
+        "2 bags OR 2 cabin bags"
       ],
       "must_not_include": [],
       "dimensions": [
@@ -291,7 +292,7 @@
         "faithfulness"
       ],
       "source": "human-verified",
-      "version": "1.0",
+      "version": "1.3",
       "notes": "Boundary edge at COMBINED 40 kg (30 check-in + 10 cabin). Revised after human verification."
     },
     {
