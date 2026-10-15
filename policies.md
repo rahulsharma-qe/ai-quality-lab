@@ -1,6 +1,6 @@
 # Meridian Airways — Policy Knowledge Base (AeroAssist)
 _The source of truth AeroAssist answers from. Golden-dataset `retrieved_policy` fields reference these IDs._
-_Version 1.1 (P7: rebooking in the same cabin class) · anything outside these 8 policies + the booking tool = out-of-scope → abstain + escalate._
+_Version 1.2 (P5: the 4-hour cut-off, worded one way only) · anything outside these 8 policies + the booking tool = out-of-scope → abstain + escalate._
 
 ## P1 — Refund / Cancellation
 - Full refund if cancelled **within 24 hours** of booking (boundary inclusive: exactly 24h qualifies).
@@ -22,7 +22,8 @@ _Version 1.1 (P7: rebooking in the same cabin class) · anything outside these 8
 - After close, check-in only at the airport counter.
 
 ## P5 — Date Change / Rescheduling
-- Allowed up to **4 hours** before departure.
+- Date changes can be made **until 4 hours before departure** (exactly 4 hours still qualifies).
+- **No changes in the last 4 hours** before departure.
 - Charges = a **change fee + any fare difference**.
 
 ## P6 — No-show

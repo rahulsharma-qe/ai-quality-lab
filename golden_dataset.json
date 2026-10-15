@@ -1,7 +1,7 @@
 {
   "meta": {
     "name": "AeroAssist Golden Dataset",
-    "version": "1.6",
+    "version": "1.7",
     "description": "Human-verified evaluation set for the AeroAssist (Meridian Airways) support agent. Source of truth for all reference-based evals.",
     "schema": {
       "core": [
@@ -47,7 +47,8 @@
       "1.3: GD10 no longer requires '500'. A 40 kg business passenger fits the allowance exactly when split as 2 cabin bags within 10 kg and 1 checked bag within 30 kg; the reference answer now says so, and mentions the excess rate only if the checked bag goes over 30 kg.",
       "1.4: equivalent wording accepted after the second recording: GD01 '24 hour' (matches '24 hours' and '24-hour'), GD17 'fare difference OR difference in fare', GD33 'connect OR escalate'. Phrases tied to real agent errors were not changed.",
       "1.5: every case that needs a policy lists it in expected_sources (taken from retrieved_policy), so the expected_sources check can tell a retrieval miss from a reasoning error. Out-of-scope cases with no matching policy list none; GD32 lists P8, the nearest policy the agent must read to see the request is beyond it. Policies 1.1 adds 'in the same cabin class' to P7, which GD27's reference answer already assumed. Three held-out cases, GD37-GD39 (one per new agent rule; GD39 is multi-turn), were written after agent v2 was frozen and reviewed before any v2 answer was seen.",
-      "1.6: GD27 accepts 'same cabin class' and 'original cabin class', the wording of policies 1.1. It should have changed with P7 in 1.5; the v2 recording showed a correct answer failing on that word alone."
+      "1.6: GD27 accepts 'same cabin class' and 'original cabin class', the wording of policies 1.1. It should have changed with P7 in 1.5; the v2 recording showed a correct answer failing on that word alone.",
+      "1.7: policies 1.2 words the P5 cut-off one way only (changes until 4 hours before departure; none in the last 4 hours). Held-out GD40 asks for a change 6 hours before departure, so an agent that now refuses every date change fails it."
     ]
   },
   "cases": [
@@ -1131,6 +1132,33 @@
       "source": "human-verified; held-out: written after agent v2 was frozen, reviewed before any v2 answer was seen",
       "version": "1.5",
       "notes": "Held-out for v2 rule 4 and conversation history: the question never says 'economy'; only the earlier turn does."
+    },
+    {
+      "id": "GD40",
+      "input": "My flight leaves in 6 hours. Can I move it to tomorrow?",
+      "category": "edge",
+      "priority": "high",
+      "retrieved_policy": "P5 - changes allowed until 4h before departure; 6h is outside the cut-off, so allowed; change fee + fare difference.",
+      "expected_sources": [
+        "P5"
+      ],
+      "reference_answer": "Yes. Date changes can be made until 4 hours before departure, and your flight is 6 hours away, so you can move it to tomorrow. You'll pay the change fee plus any fare difference.",
+      "expected_behaviour": "Allow the change (6 hours is before the 4-hour cut-off) and state the charges; don't over-refuse.",
+      "must_include": [
+        "change fee",
+        "fare difference OR difference in fare"
+      ],
+      "must_not_include": [
+        "too late to change",
+        "can't be changed now"
+      ],
+      "dimensions": [
+        "correctness",
+        "completeness"
+      ],
+      "source": "human-verified; held-out: written after the policy 1.2 fix was frozen, reviewed before any answer was seen",
+      "version": "1.7",
+      "notes": "Held-out guard against over-correction: GD20 (2 hours before) must be refused, this one (6 hours) allowed."
     }
   ]
 }

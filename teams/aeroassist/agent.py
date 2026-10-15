@@ -7,7 +7,8 @@ so a change can be recorded and compared against the version before it:
   v2  general rules for the errors the second recording showed, top 3 policies, earlier turns used
 
 Pick one with the environment variable AEROASSIST_AGENT_VERSION (default: v2). The choice is part
-of AGENT_VERSION, so every run record says which version answered.
+of AGENT_VERSION, and so is the version of policies.md it answers from: the same code with new
+policies is a different agent, and every run record says which one answered.
 
 Needs:  pip install "aiquality[aeroassist]"  and ANTHROPIC_API_KEY (Colab secret or environment).
 Importing this file costs nothing; the platform calls prepare() once before the first question,
@@ -15,6 +16,7 @@ so loading the embedding model isn't counted in the first answer's time.
 """
 
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -51,8 +53,9 @@ VERSION = os.environ.get("AEROASSIST_AGENT_VERSION", "v2")
 if VERSION not in VERSIONS:
     raise ValueError(f"AEROASSIST_AGENT_VERSION must be one of: {', '.join(VERSIONS)} (got {VERSION!r})")
 SETTINGS = VERSIONS[VERSION]
-AGENT_VERSION = f"aeroassist-rag:{AGENT_MODEL}:{VERSION}-top{SETTINGS['top_n']}"
 POLICIES_PATH = REPO_ROOT / "policies.md"
+POLICIES_VERSION = re.search(r"_Version ([\d.]+)", POLICIES_PATH.read_text(encoding="utf-8")).group(1)
+AGENT_VERSION = f"aeroassist-rag:{AGENT_MODEL}:{VERSION}-top{SETTINGS['top_n']}:policies-{POLICIES_VERSION}"
 
 _agent = None
 

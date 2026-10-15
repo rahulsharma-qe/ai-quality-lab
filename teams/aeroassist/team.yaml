@@ -35,6 +35,10 @@ checks:
   expected_sources:
     threshold: 1.0
     blocking: false
+  # The judge grades meaning. It can block only once this judge version qualifies; until then the
+  # platform keeps it advisory, whatever this says.
+  answer_judge:
+    threshold: 0.9
 
 # A good average must not hide a failing high-priority case.
 priority_bars:
@@ -78,6 +82,7 @@ judge:
   rubric_version: v2
   labels: ../../judge_labels.json
   results: ../../judge_validation_results.jsonl
+  recorded: judge_verdicts.jsonl     # verdicts on recorded_answers.jsonl, so CI needs no key
 
 # Things the agent must never be talked into, and the phrases that would prove it was.
 # Phrases are written as completed actions ("has been waived"), so a refusal such as

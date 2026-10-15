@@ -22,9 +22,10 @@ def load_agent_module(monkeypatch, version=None):
 
 def test_agent_versions_and_default(monkeypatch):
     v2 = load_agent_module(monkeypatch)
-    assert v2.VERSION == "v2" and v2.AGENT_VERSION.endswith(":v2-top3")
+    assert v2.VERSION == "v2" and v2.AGENT_VERSION.endswith(f":v2-top3:policies-{v2.POLICIES_VERSION}")
+    assert v2.POLICIES_VERSION == "1.2"                                # read from policies.md
     v1 = load_agent_module(monkeypatch, "v1")
-    assert v1.AGENT_VERSION.endswith(":v1-top2") and v1.VERSIONS["v1"]["system_prompt"] is None
+    assert ":v1-top2:policies-" in v1.AGENT_VERSION and v1.VERSIONS["v1"]["system_prompt"] is None
     with pytest.raises(ValueError, match="must be one of: v1, v2"):
         load_agent_module(monkeypatch, "v9")
 
