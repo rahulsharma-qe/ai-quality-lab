@@ -97,6 +97,35 @@ Solid boxes are in the package today; dashed boxes are scripts in this repo movi
 planned. Details: [`docs/architecture.md`](docs/architecture.md) ·
 onboarding: [`docs/onboarding.md`](docs/onboarding.md) · runnable examples: [`examples/`](examples/).
 
+### First real run: what the checks actually found
+
+AeroAssist, 36 golden cases, answers recorded once from the live agent and replayed (golden set 1.2):
+
+| Check | Pass rate | Bar | Result |
+|---|---|---|---|
+| Required phrases | 89% | 85% | meets |
+| Forbidden phrases | 91% | 100% | below: two false alarms that need a judge |
+| Response time | 97% | 90% | meets |
+
+The first run (golden set 1.1) raised 11 findings. Reading every answer sorted them into:
+
+- **3 real agent errors.** Applied the no-show rule to a 5-day-old cancellation and skipped the
+  24-hour refund rule (GD03); offered a date change 2 hours before departure when the cut-off is
+  4 hours (GD20); treated a personal medical attendant as standard special assistance instead of
+  handing over (GD32).
+- **1 judgement call** on how 40 kg splits across cabin and check-in (GD10).
+- **4 phrases too narrow** ("escalate" for "connect", "original class" for "same class"):
+  golden set 1.2 accepts equivalent wording with `OR`. Phrases tied to real errors were not changed.
+- **1 bug in the checker:** "2 hour" didn't match "2 hours"; simple plurals now count. That fix
+  surfaced a new false alarm ("change fees" in a correct answer), kept on purpose because the
+  same rule also catches a real "you'll pay change fees".
+- **1 negation false alarm:** "you don't need to pay extra" matched the forbidden "pay extra".
+- **1 timing artifact:** loading the embedding model was counted as the first answer's time;
+  agents can now load models in `prepare()` before timing starts.
+
+Phrase checks are a cheap, fast first filter, but on their own they both miss and over-report.
+Meaning needs a validated judge and people on the disagreements, which is where this platform goes next.
+
 ---
 
 ## What's inside
