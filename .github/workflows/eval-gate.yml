@@ -1,7 +1,9 @@
-# Eval gate — runs the quality checks on every PR and fails the build on a regression.
-# Two arms (the key-free / live split):
-#   eval-gate : code metrics + mock judge -> deterministic, no API key -> every PR
-#   eval-live : real LLM judge -> needs a secret -> manual / nightly only
+# Eval gate: runs the quality checks on every pull request and fails the build on a regression.
+# Two jobs (the key-free / live split):
+#   eval-gate : no API key, same result every run -> every pull request and push to main
+#               tests, examples, the aiquality release gates (good demo must pass, regressed demo
+#               must fail, AeroAssist reported), then the original eval harness with the mock judge
+#   eval-live : the real language-model judge -> needs a secret -> run by hand or nightly
 name: eval-gate
 
 on:

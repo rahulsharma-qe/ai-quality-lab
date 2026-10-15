@@ -22,7 +22,7 @@ self-serve platform: a team connects its agent and brings one config file (YAML 
 golden set (JSON, CSV or Excel). No test code.
 
 ```bash
-pip install -e ".[dev]"
+pip install -e ".[dev]"     # install aiquality from this folder, plus the test tools (pytest, Excel support)
 aiquality new-team my_team                       # a starter team that already passes the gate
 aiquality evaluate --team my_team                # pass rate per check, attacks per family, every finding
 aiquality gate     --team examples/gate_demo/good_team       # PASS, exit 0

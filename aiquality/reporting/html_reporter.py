@@ -3,7 +3,7 @@
 from html import escape
 from pathlib import Path
 
-from aiquality.reporting.report_data import accepted_pairs, findings, percent, verdict
+from aiquality.reporting.report_data import accepted_pairs, findings, percent, verdict, version_text
 from aiquality.reporting.reporters import Reporter, register_reporter
 from aiquality.reporting.run_record import RunRecord
 
@@ -47,7 +47,7 @@ def render_html_report(record: RunRecord) -> str:
              f"<header><h1>aiquality · {escape(record.team)}</h1><div class='meta'>"
              f"{escape(record.command)} · agent {escape(record.agent_name)} ({escape(record.agent_version)}) · "
              f"mode {escape(record.run_mode)} · golden set {escape(record.golden_set_name)} "
-             f"(version {escape(record.golden_set_version)}) · run {escape(record.run_id)} · {escape(record.created_at)}"
+             f"({escape(version_text(record.golden_set_version))}) · run {escape(record.run_id)} · {escape(record.created_at)}"
              f"</div></header>"]
 
     decision = verdict(record)

@@ -15,6 +15,11 @@ def findings(record: RunRecord) -> list[tuple[dict, dict]]:
     return [(o, r) for o in ordered for r in o["results"] if r["status"] in ("FAIL", "ERROR")]
 
 
+def version_text(version: str) -> str:
+    """'1.4' -> 'version 1.4'; a golden set without a version says so plainly."""
+    return "no version" if version in ("", "unversioned") else f"version {version}"
+
+
 def percent(value) -> str:
     return "-" if value is None else f"{value:.0%}"
 

@@ -43,6 +43,7 @@ def test_all_reports_are_written(tmp_path, monkeypatch, capsys):
                                                "test_team-junit.xml", "test_team-summary.md"}
     assert "RELEASE GATE: FAIL" in capsys.readouterr().out
     assert summary_file.read_text().startswith("## ❌ aiquality · test_team: FAIL")
+    assert "(no version)" in summary_file.read_text()                       # a CSV golden set has no version
 
 
 def test_html_escapes_answers_and_shows_the_decision(tmp_path, monkeypatch):

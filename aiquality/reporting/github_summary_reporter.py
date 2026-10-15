@@ -7,7 +7,7 @@ It is always also written to <output_dir>/<team>-summary.md.
 import os
 from pathlib import Path
 
-from aiquality.reporting.report_data import accepted_pairs, findings, percent, verdict
+from aiquality.reporting.report_data import accepted_pairs, findings, percent, verdict, version_text
 from aiquality.reporting.reporters import Reporter, register_reporter
 from aiquality.reporting.run_record import RunRecord
 
@@ -34,7 +34,7 @@ def render_github_summary(record: RunRecord) -> str:
     icon = {"PASS": "✅", "FAIL": "❌"}.get(verdict(record), "📋")
     lines = [f"## {icon} aiquality · {record.team}: {verdict(record)}", "",
              f"Agent `{record.agent_version}` · mode `{record.run_mode}` · golden set "
-             f"{record.golden_set_name} (version {record.golden_set_version}) · run `{record.run_id}`", ""]
+             f"{record.golden_set_name} ({version_text(record.golden_set_version)}) · run `{record.run_id}`", ""]
     if gate.get("failures"):
         lines += ["**Why it failed**", ""] + [f"- {f}" for f in gate["failures"]] + [""]
     lines += ["| Check | Pass rate | Bar | Pass | Fail | N/A | Error |", "|---|---|---|---|---|---|---|"]
