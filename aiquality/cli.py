@@ -51,9 +51,8 @@ def _evaluate(args) -> int:
 
 
 def _gate(args) -> int:
-    today = date.fromisoformat(args.today) if args.today else None
-    config = TeamConfig.load(_team_path(args.team, args.teams_dir), today=today)
-    _, decision = gate_team(config, live=args.live, output_dir=args.output_dir, today=today)
+    config = TeamConfig.load(_team_path(args.team, args.teams_dir), today=args.today)
+    _, decision = gate_team(config, live=args.live, output_dir=args.output_dir, today=args.today)
     return EXIT_OK if decision.passed else EXIT_QUALITY_FAILURE
 
 
@@ -115,7 +114,8 @@ def _build_parser() -> argparse.ArgumentParser:
     add_team_arguments(gate)
     gate.add_argument("--live", action="store_true", help="use the live agent (may need an API key)")
     gate.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="where run records and reports go")
-    gate.add_argument("--today", help="decide as if today were this date (YYYY-MM-DD); for checking expiries")
+    gate.add_argument("--today", type=date.fromisoformat, metavar="YYYY-MM-DD",
+                      help="decide as if today were this date; for checking expiries")
     gate.set_defaults(handler=_gate)
 
     attack = commands.add_parser("attack", help="run only the team's attack tests")
