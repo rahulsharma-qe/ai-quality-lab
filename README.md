@@ -110,84 +110,22 @@ Solid boxes are in the package today; dashed boxes are scripts in this repo movi
 planned. Details: [`docs/architecture.md`](docs/architecture.md) ·
 onboarding: [`docs/onboarding.md`](docs/onboarding.md) · runnable examples: [`examples/`](examples/).
 
-### First real run: what the checks actually found
+### Testing AeroAssist with it: results so far
 
-AeroAssist, 36 golden cases, answers recorded once from the live agent and replayed (golden set 1.2):
+Four runs on a policy-answering airline support agent, each one changing what we test next. The full
+story (what we ran, found, changed and learned, with the evidence) is in
+**[`docs/quality-log.md`](docs/quality-log.md)**, which also lists every open problem.
 
-| Check | Pass rate | Bar | Result |
-|---|---|---|---|
-| Required phrases | 89% | 85% | meets |
-| Forbidden phrases | 91% | 100% | below: two false alarms that need a judge |
-| Response time | 97% | 90% | meets |
-
-The first run (golden set 1.1) raised 11 findings. Reading every answer sorted them into:
-
-- **3 real agent errors.** Applied the no-show rule to a 5-day-old cancellation and skipped the
-  24-hour refund rule (GD03); offered a date change 2 hours before departure when the cut-off is
-  4 hours (GD20); treated a personal medical attendant as standard special assistance instead of
-  handing over (GD32).
-- **1 judgement call** on how 40 kg splits across cabin and check-in (GD10).
-- **4 phrases too narrow** ("escalate" for "connect", "original class" for "same class"):
-  golden set 1.2 accepts equivalent wording with `OR`. Phrases tied to real errors were not changed.
-- **1 bug in the checker:** "2 hour" didn't match "2 hours"; simple plurals now count. That fix
-  surfaced a new false alarm ("change fees" in a correct answer), kept on purpose because the
-  same rule also catches a real "you'll pay change fees".
-- **1 negation false alarm:** "you don't need to pay extra" matched the forbidden "pay extra".
-- **1 timing artifact:** loading the embedding model was counted as the first answer's time;
-  agents can now load models in `prepare()` before timing starts.
-
-Phrase checks are a cheap, fast first filter, but on their own they both miss and over-report.
-Meaning needs a validated judge and people on the disagreements, which is where this platform goes next.
-
-### Second run: attacks and the release gate
-
-Re-recorded with attack cases (36 golden + 16 attacks, golden set 1.4):
-
-| | Result | Bar |
-|---|---|---|
-| Required phrases | 89% | 85% |
-| Forbidden phrases | 100% with 3 reviewed false alarms accepted until 14 Nov | 100% |
-| Personal data, response time | 100% | 100%, 90% |
-| Attacks | 16 of 16 resisted | 100% |
-| **Release gate** | **FAIL: high-priority cases GD03, GD20 and GD27 fail** | every high-priority case |
-
-The average alone (89% against an 85% bar) would have passed. A priority bar made the gate fail
-for the right reason: a date change offered two hours before departure (GD20) is not a rounding
-error. Known limit: AeroAssist's agent receives only the latest question, so the multi-turn attack
-family is effectively single-turn for it; passing the conversation to the agent is next.
-
-### Third run: one quality loop, v1 to v2
-
-Diagnose each error by layer, fix it with a general rule, then prove the fix on cases it never saw.
-
-1. **Diagnose.** A new `expected_sources` check showed retrieval found the needed policy in 31 of 33
-   cases; GD03 and GD20 never got it (a retrieval miss, not only a reasoning error). GD27 turned
-   out to be a gap in the policy: P7 never said "same cabin class", so a correct agent couldn't say it.
-2. **Fix, generally.** v2 retrieves 3 policies instead of 2, reads the earlier turns of a conversation,
-   and follows five general rules (check every limit before saying yes; don't stretch a policy, hand
-   over; when refusing, say what the passenger can do). A test fails if the rules mention any golden case.
-3. **Prove it.** Three held-out cases (GD37-GD39, one multi-turn) were written after v2 was frozen. Both
-   versions were recorded in one session with the same settings (golden set 1.5) and compared case by case
-   (`aiquality compare`; runs kept in `teams/aeroassist/history/`).
-
-| | v1 | v2 |
-|---|---|---|
-| Retrieval found the needed policy (diagnostic) | 94% | 100% |
-| Required phrases | 87% | 90% |
-| Forbidden phrases | 84% | 88% |
-| Attacks resisted | 16 of 16 | 16 of 16 |
-| Cases newly failing | | **none** |
-| Held-out cases GD37-GD39 | | **all pass** |
-
-What is left, honestly:
-
-- **GD20 is still wrong.** v2 says a date change is allowed "within the 4-hour window" with the flight
-  2 hours away. The policy says "allowed up to 4 hours before departure", which a person can also read
-  both ways, so the next step is a clearer policy and checking the time limit in code, not more prompt.
-  The release gate fails on this one case, and the AeroAssist gate stays non-blocking in CI until it's fixed.
-- **Phrase checks are at their limit.** GD03 and GD16 said the right thing in other words; GD21 mentioned a
-  full refund only as the correct condition. A person read and accepted them until 14 November, and the
-  gate now warns that 5 of 39 golden cases rely on an acceptance. Meaning needs a validated judge.
+- **An average hid a critical failure.** 89% against an 85% bar would have passed while three
+  high-priority cases failed; a priority bar now fails the gate for the right reason.
+- **One quality loop, proven on unseen cases.** Diagnosing by layer showed two errors were retrieval
+  misses and one was a gap in the policy. General fixes, then held-out cases written after the fix:
+  no case newly failing, all held-out cases passed.
+- **A sentence, not the model, was wrong.** "Allowed up to 4 hours before departure" was read two ways
+  by the agent and by a person; rewording the policy fixed the case the prompt rules hadn't.
+- **The phrase checks pass, and they are not enough.** An advisory AI judge found real errors the
+  phrase checks passed: a passenger flying tomorrow told web check-in is closed, and changes refused
+  at exactly 4 and 48 hours. So the AeroAssist gate stays non-blocking in CI until they're fixed.
 
 ---
 
@@ -196,7 +134,8 @@ What is left, honestly:
 | Area | File | The quality question it answers |
 |---|---|---|
 | **Platform** | `aiquality/`, `teams/`, `examples/`, `tests/`, `docs/` | *Can another team use this without writing test code?* Agent adapters, team configs, golden sets from JSON/CSV/Excel, pluggable checks, a company floor, run records and a command line. See the section above. |
-| **Golden dataset** | `golden_dataset.json` | *What is the human-verified source of truth?* 36 labelled cases (happy / edge / adversarial / out-of-scope), with a schema validator (`loader_cell.py`). |
+| **Quality log** | `docs/quality-log.md` | *What did testing find, what changed, and what is still open?* Every run in order, the open problems, and the lessons that carry over to other agents. |
+| **Golden dataset** | `golden_dataset.json` | *What is the human-verified source of truth?* 40 labelled cases (happy / edge / adversarial / out-of-scope, 4 of them held-out), versioned with a changelog, plus a schema validator (`loader_cell.py`). |
 | **RAG evaluation** | `rag_eval.py` | *Is the agent accurate and grounded?* Scores a policy-RAG with **RAGAS** — context precision/recall (retrieval) and faithfulness/answer-relevancy (generation), judged by Claude, embedded locally (no OpenAI). |
 | **Red-teaming** | `red_team.py`, `red_team_v2.py` | *Can I break it?* OWASP-LLM-mapped attacks — prompt injection (direct & indirect), jailbreak, data-leak, excessive agency — plus strengthened vectors (obfuscation, multi-turn, poisoned knowledge base). |
 | **The fix** | `guardrail_fix.py` | *How do I close a breach?* A deterministic **policy-of-record at the execution gate** — money decisions live in code, not in the model. |
@@ -315,7 +254,7 @@ Data is privacy-safe synthetic only (no real PII).
 - [x] **Judge validation (done, round 1)** — human labels, tuning and held-back halves, two numbers, advisory mode until qualified.
 - [ ] **Judge validation, round 2** — a labelling guide with quiet-failure examples, a second labeller, narrower single-purpose judges, and a fresh held-back set with the bars set beforehand.
 - [ ] **One model layer for every judge** — move the RAGAS, red-team and completeness judges onto `llm.py`.
-- [ ] **Clearer policy boundaries** — state whether each deadline is inclusive, and reword "up to 4 hours before departure" (P5), which reads two ways (GD20); check time limits in code.
+- [ ] **Clearer policy boundaries** — P5's cut-off is reworded (done); the agent still refuses at exactly 4 and exactly 48 hours (GD18, GD30), so state every boundary as inclusive and test each one.
 - [x] **Platform core (done)** — `aiquality` package: one agent contract, three adapters, team configs in YAML or JSON, golden sets from JSON/CSV/Excel, pluggable checks, a company floor, run records, a command line.
 - [x] **Release gate per team and client (done)** — attack tests as plugins, accepted findings with expiry, exit codes 0/1/2, HTML / JUnit XML / GitHub summary reports.
 - [x] **Judges in the platform (done)** — judges registry, validation and status per version, an advisory-until-qualified judge check, recorded verdicts, a human review queue.
