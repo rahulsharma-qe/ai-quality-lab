@@ -97,15 +97,17 @@ class LLMAnswerJudge:
 
 class MockAnswerJudge:
     """Key-free judge: PASS if every must_include phrase is present and no must_not_include
-    phrase is. Deterministic and free, so the per-change gate runs without a key."""
+    phrase is. Deterministic and free, so the per-change gate runs without a key.
+    Uses the platform's phrase matching (whole words, simple plurals, "a OR b"), so the
+    mock judge and the aiquality checks always read a golden case the same way."""
 
     name = "mock_answer_judge"
-    version = "mock_answer_judge:phrase-match:v1"
+    version = "mock_answer_judge:phrase-match:v2"
 
     def verdict(self, case, answer):
-        text = answer.lower()
-        missing = [p for p in case.get("must_include", []) if p.lower() not in text]
-        forbidden = [p for p in case.get("must_not_include", []) if p.lower() in text]
+        from aiquality.checks.phrase_matching import find_any
+        missing = [p for p in case.get("must_include", []) if find_any(answer, p) is None]
+        forbidden = [p for p in case.get("must_not_include", []) if find_any(answer, p) is not None]
         if missing:
             return Verdict(False, f"missing required phrase(s): {missing}")
         if forbidden:
