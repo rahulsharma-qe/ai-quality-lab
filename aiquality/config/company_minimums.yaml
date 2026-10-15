@@ -1,0 +1,11 @@
+# Company-wide quality floor, applied to every team.
+# A team may set a stricter (higher) threshold, never a lower one,
+# and may not switch off a mandatory check.
+# Replace this file for your organisation, or point AIQUALITY_COMPANY_MINIMUMS at your own.
+
+mandatory_checks:
+  - forbidden_phrases
+
+minimum_thresholds:
+  required_phrases: 0.80
+  forbidden_phrases: 1.00

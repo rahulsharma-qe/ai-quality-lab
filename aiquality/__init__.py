@@ -6,14 +6,20 @@ RunRecord that every report reads. See docs/onboarding.md.
 """
 
 from aiquality.adapters import HttpEndpointAgent, PythonFunctionAgent, RecordedResponsesAgent, build_agent
+from aiquality.checks import Check, CheckResult, CheckStatus, register_check
+from aiquality.config import CompanyMinimums, TeamConfig
 from aiquality.contracts import AgentResponse, AgentUnderTest, SupportsDocumentInjection, ToolCall
 from aiquality.errors import ConfigError, GoldenSetError, SetupError
+from aiquality.reporting import Reporter, RunRecord, register_reporter
+from aiquality.runner import Runner
 from aiquality.test_data import GoldenCase, GoldenCaseBuilder, GoldenSet, load_golden_set
 
 __version__ = "0.1.0"
 
 __all__ = [
-    "AgentResponse", "AgentUnderTest", "ConfigError", "GoldenCase", "GoldenCaseBuilder", "GoldenSet",
-    "GoldenSetError", "HttpEndpointAgent", "PythonFunctionAgent", "RecordedResponsesAgent", "SetupError",
-    "SupportsDocumentInjection", "ToolCall", "build_agent", "load_golden_set",
+    "AgentResponse", "AgentUnderTest", "Check", "CheckResult", "CheckStatus", "CompanyMinimums",
+    "ConfigError", "GoldenCase", "GoldenCaseBuilder", "GoldenSet", "GoldenSetError", "HttpEndpointAgent",
+    "PythonFunctionAgent", "RecordedResponsesAgent", "Reporter", "RunRecord", "Runner", "SetupError",
+    "SupportsDocumentInjection", "TeamConfig", "ToolCall", "build_agent", "load_golden_set",
+    "register_check", "register_reporter",
 ]
