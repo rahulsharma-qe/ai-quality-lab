@@ -52,6 +52,7 @@ JSON, CSV or Excel. One case per row:
 | `must_include` | Literal phrases a good answer contains. Several? Separate with `\|` |
 | `must_not_include` | Literal phrases a good answer never contains |
 | `must_not_do` | Descriptions of forbidden behaviour, for a judge (not phrase-matched) |
+| `expected_sources` | Optional ids of the documents a good answer needs, e.g. `P1\|P6` (retrieval agents) |
 | `client` | Optional tag, so results can be compared per client |
 | `conversation_history` | Optional earlier turns, as JSON text |
 
@@ -78,6 +79,16 @@ fails. Add a priority bar so cases of that priority must pass every blocking che
 ```yaml
 priority_bars:
   high: 1.0        # every high-priority golden case must pass
+```
+
+If your agent looks documents up before answering, return them as `retrieved_documents` and add
+`expected_sources` to your cases. The `expected_sources` check then tells a retrieval miss (the right
+document was never found) from a reasoning error (it was found, and the answer is still wrong).
+Keep it as a diagnostic, so the answer checks decide the release:
+
+```yaml
+checks:
+  expected_sources: {threshold: 0.9, blocking: false}   # see examples/13_check_retrieved_sources.py
 ```
 
 ## 6. Add attack tests

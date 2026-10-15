@@ -79,3 +79,10 @@ def test_builder_produces_a_valid_case():
     assert case.must_not_do == ["promise an exception"]
     with pytest.raises(ValueError):
         GoldenCaseBuilder("", "").build()
+
+
+def test_expected_sources_column(tmp_path):
+    path = tmp_path / "cases.csv"
+    path.write_text("id,input,expected_sources\nA,Refund?,P1 | P6\nB,Hi,\n")
+    first, second = load_golden_set(path).cases
+    assert first.expected_sources == ["P1", "P6"] and second.expected_sources == []

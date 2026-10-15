@@ -3,10 +3,10 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
-LIST_FIELDS = ("must_include", "must_not_include", "must_not_do", "dimensions")
+LIST_FIELDS = ("must_include", "must_not_include", "must_not_do", "expected_sources", "dimensions")
 KNOWN_FIELDS = (
     "id", "input", "category", "priority", "reference_answer", "expected_behaviour",
-    "must_include", "must_not_include", "must_not_do", "expected_tool_calls",
+    "must_include", "must_not_include", "must_not_do", "expected_tool_calls", "expected_sources",
     "client", "conversation_history", "dimensions",
 )
 
@@ -18,6 +18,7 @@ class GoldenCase:
     must_include      literal phrases a good answer contains
     must_not_include  literal phrases a good answer never contains (cheap, blocking signal)
     must_not_do       descriptions of forbidden behaviour, checked by a judge, not by phrases
+    expected_sources  ids of the documents a good answer needs, e.g. ["P1"] (for retrieval agents)
     client            optional tag, so results can be gated per client
     extra             any other fields from the source file, kept untouched
     """
@@ -32,6 +33,7 @@ class GoldenCase:
     must_not_include: list[str] = field(default_factory=list)
     must_not_do: list[str] = field(default_factory=list)
     expected_tool_calls: Optional[object] = None
+    expected_sources: list[str] = field(default_factory=list)
     client: Optional[str] = None
     conversation_history: list[dict] = field(default_factory=list)
     dimensions: list[str] = field(default_factory=list)

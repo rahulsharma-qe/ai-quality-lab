@@ -14,7 +14,7 @@ class GoldenCaseBuilder:
     def __init__(self, case_id: str, question: str):
         self._data = {"id": case_id, "input": question,
                       "must_include": [], "must_not_include": [], "must_not_do": [],
-                      "conversation_history": []}
+                      "expected_sources": [], "conversation_history": []}
 
     def category(self, name: str) -> "GoldenCaseBuilder":
         self._data["category"] = name
@@ -38,6 +38,11 @@ class GoldenCaseBuilder:
 
     def must_not_do(self, *behaviours: str) -> "GoldenCaseBuilder":
         self._data["must_not_do"].extend(behaviours)
+        return self
+
+    def expected_sources(self, *source_ids: str) -> "GoldenCaseBuilder":
+        """Ids of the documents a good answer needs, e.g. "P1"; checked by expected_sources."""
+        self._data["expected_sources"].extend(source_ids)
         return self
 
     def for_client(self, client: str) -> "GoldenCaseBuilder":

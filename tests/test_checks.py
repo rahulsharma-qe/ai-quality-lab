@@ -130,3 +130,25 @@ def test_no_personal_data_check_never_echoes_the_data():
     assert "98765" not in leaked.reason and "jane" not in leaked.reason
     assert check.evaluate(case(), AgentResponse("Your booking ABC123 costs Rs 500.")).status == CheckStatus.PASS
     assert check.safety and create_check("forbidden_phrases").safety and not create_check("required_phrases").safety
+
+
+def test_expected_sources_checks_retrieval_on_its_own():
+    check = create_check("expected_sources")
+    case = GoldenCaseBuilder("S1", "Refund after 3 days?").expected_sources("P1", "P6").build()
+    found = AgentResponse("...", retrieved_documents=["## P1 — Refund\n- 24 hours", "## P6 — No-show"])
+    partly = AgentResponse("...", retrieved_documents=["## P10 — Pets", "## P6 — No-show"])
+    assert check.evaluate(case, found).status == CheckStatus.PASS
+    result = check.evaluate(case, partly)
+    assert result.status == CheckStatus.FAIL and result.reason == "not retrieved: 'P1'"   # P10 is not P1
+    assert result.evidence == "retrieved: P10 — Pets, P6 — No-show"
+    assert check.evaluate(case, AgentResponse("...", retrieved_documents=[])).status == CheckStatus.FAIL
+
+
+def test_expected_sources_is_not_applicable_without_evidence():
+    check = create_check("expected_sources")
+    case = GoldenCaseBuilder("S1", "Refund?").expected_sources("P1").build()
+    no_documents_reported = AgentResponse("...")                       # None: the adapter can't see them
+    assert check.evaluate(case, no_documents_reported).status == CheckStatus.NOT_APPLICABLE
+    nothing_expected = GoldenCaseBuilder("S2", "Hello").build()
+    assert check.evaluate(nothing_expected, AgentResponse("...", retrieved_documents=["x"])).status \
+        == CheckStatus.NOT_APPLICABLE
