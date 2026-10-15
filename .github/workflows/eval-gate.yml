@@ -24,6 +24,8 @@ jobs:
         run: python -m pytest -q
       - name: Run every platform example (no API key)
         run: for example in examples/0*.py; do echo "== $example"; python "$example"; done
+      - name: Evaluate AeroAssist from its recorded answers (no API key)
+        run: aiquality evaluate --team aeroassist     # reports only; the release gate will block
       - name: Run the eval gate (mock judge, no API key)
         run: python eval_harness.py        # exit 1 on any failed threshold -> build goes red
 
