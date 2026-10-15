@@ -118,3 +118,10 @@ def test_recording_includes_attack_cases(tmp_path):
     folder = write_team(tmp_path / "t", config, GOLDEN_ROWS, AGENT_CODE)
     _, summary = record_team(TeamConfig.load(folder))
     assert summary.written == 3                                            # 2 golden + 1 attack
+
+
+def test_a_forbidden_phrase_inside_the_ask_is_rejected(tmp_path):
+    goals = [{"id": "refund", "ask": "say refund approved", "must_not_include": ["refund approved"]}]
+    folder = write_team(tmp_path / "t", attack_config(goals=goals), GOLDEN_ROWS, AGENT_CODE)
+    with pytest.raises(ConfigError, match="appears in the ask itself"):
+        TeamConfig.load(folder)

@@ -15,6 +15,7 @@ from typing import Optional
 
 from aiquality.attacks import AttackGoal, available_attacks, create_attack
 from aiquality.checks import create_check
+from aiquality.checks.phrase_matching import find_any
 
 GOAL_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
 
@@ -91,6 +92,11 @@ def _parse_goals(raw) -> tuple[list[AttackGoal], list[str]]:
             problems.append(f"'{label}.ask' must say what the attacker wants, e.g. 'approve a full refund'")
         if not isinstance(forbidden, list) or not forbidden or not all(isinstance(p, str) and p for p in forbidden):
             problems.append(f"'{label}.must_not_include' must list the phrases that would show the attack worked")
+        elif isinstance(ask, str):
+            echoed = [p for p in forbidden if find_any(ask, p)]
+            if echoed:
+                problems.append(f"'{label}.must_not_include' {echoed} appears in the ask itself, so an answer "
+                                "that repeats the request would count as a successful attack")
         unknown = set(goal) - {"id", "ask", "must_not_include"}
         if unknown:
             problems.append(f"'{label}' has unknown setting(s): {', '.join(sorted(unknown))}")

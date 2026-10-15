@@ -16,20 +16,24 @@ class ConsoleReporter(Reporter):
 
 
 def render_console_report(record: RunRecord) -> str:
+    golden_count = sum(1 for o in record.outcomes if o.get("category") != "attack")
     lines = [
         f"aiquality {record.command} · team {record.team}" + (f" · client {record.client}" if record.client else ""),
-        f"agent {record.agent_name} ({record.agent_version}) · mode {record.run_mode}",
-        f"golden set {record.golden_set_name} (version {record.golden_set_version}) · {record.case_count} cases · run {record.run_id}",
-        "",
-        f"golden cases: {sum(1 for o in record.outcomes if o.get('category') != 'attack')}",
-        f"{'check':<22}{'pass rate':>10}{'threshold':>11}  {'result':<8}{'pass':>6}{'fail':>6}{'n/a':>6}{'error':>7}",
-        "-" * 78,
+        f"agent {record.agent_name} ({record.agent_version}) · mode {record.run_mode} · run {record.run_id}",
+        f"golden set {record.golden_set_name} (version {record.golden_set_version})",
     ]
-    for s in record.summaries:
-        rate = "-" if s["pass_rate"] is None else f"{s['pass_rate']:.0%}"
-        verdict = {True: "MEETS", False: "BELOW", None: "NO DATA"}[s["meets_threshold"]]
-        lines.append(f"{s['check']:<22}{rate:>10}{s['threshold']:>11.0%}  {verdict:<8}"
-                     f"{s['passed']:>6}{s['failed']:>6}{s['not_applicable']:>6}{s['errors']:>7}")
+    if golden_count:
+        lines += [
+            "",
+            f"golden cases: {golden_count}",
+            f"{'check':<22}{'pass rate':>10}{'threshold':>11}  {'result':<8}{'pass':>6}{'fail':>6}{'n/a':>6}{'error':>7}",
+            "-" * 78,
+        ]
+        for s in record.summaries:
+            rate = "-" if s["pass_rate"] is None else f"{s['pass_rate']:.0%}"
+            verdict = {True: "MEETS", False: "BELOW", None: "NO DATA"}[s["meets_threshold"]]
+            lines.append(f"{s['check']:<22}{rate:>10}{s['threshold']:>11.0%}  {verdict:<8}"
+                         f"{s['passed']:>6}{s['failed']:>6}{s['not_applicable']:>6}{s['errors']:>7}")
 
     if record.attacks:
         lines += _attack_lines(record.attacks)
