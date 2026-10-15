@@ -20,6 +20,7 @@ from aiquality.judging import build_judge, judge_for_run, judge_summary
 from aiquality.reporting import RunRecord, create_reporter
 from aiquality.runner import Runner
 from aiquality.test_data import load_golden_set
+from aiquality.test_data.lint import lint_golden_set
 
 DEFAULT_OUTPUT_DIR = "aiquality-runs"
 JUDGE_CHECK = "answer_judge"
@@ -46,6 +47,7 @@ def gate_team(config: TeamConfig, live: bool = False, output_dir=DEFAULT_OUTPUT_
     record, evaluation, check_settings = _run_and_score(config, live, agent, True, True, "gate")
     mandatory = CompanyMinimums.load().mandatory_checks
     decision = ReleaseGate(config, mandatory, today, check_settings).decide(evaluation)
+    decision.warnings += [f"golden set: {warning}" for warning in record.golden_set_warnings]
     if record.judge and not record.judge["blocking"]:
         decision.warnings.append(f"answer_judge is advisory: judge {record.judge['version']} is "
                                  f"{record.judge['status'].replace('_', ' ')}, so it reports but can't block")
@@ -66,6 +68,7 @@ def _run_and_score(config, live, agent, include_golden, include_attacks, command
                                        run_mode=run_mode, agent_name=agent.name, agent_version=agent.version,
                                        golden_set=golden_set)
     record.judge = judge_info
+    record.golden_set_warnings = lint_golden_set(golden_set)
     return record, evaluation, check_settings
 
 

@@ -10,6 +10,7 @@
   aiquality validate-judge --team aeroassist --split holdout   measure the judge against people's labels
   aiquality review   --team aeroassist          what a person should look at from the latest run, and why
   aiquality new-team claims_assist --format json
+  aiquality lint     --team aeroassist          golden-set mistakes that would cause false alarms
   aiquality list-checks
   aiquality list-attacks
 
@@ -115,6 +116,15 @@ def _review(args) -> int:
     return EXIT_OK
 
 
+def _lint(args) -> int:
+    from aiquality.test_data import load_golden_set
+    from aiquality.test_data.lint import lint_golden_set
+    config = TeamConfig.load(_team_path(args.team, args.teams_dir))
+    warnings = lint_golden_set(load_golden_set(config.golden_set))
+    print("\n".join(f"warning: {w}" for w in warnings) or "golden set: no warnings")
+    return EXIT_OK
+
+
 def _list_judges(args) -> int:
     for kind in available_judges():
         print(kind)
@@ -214,6 +224,10 @@ def _build_parser() -> argparse.ArgumentParser:
     add_team_arguments(review)
     review.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="where the run records are")
     review.set_defaults(handler=_review)
+
+    lint = commands.add_parser("lint", help="check the team's golden set for mistakes that cause false alarms")
+    add_team_arguments(lint)
+    lint.set_defaults(handler=_lint)
 
     list_judges = commands.add_parser("list-judges", help="show the judge kinds a team can use")
     list_judges.set_defaults(handler=_list_judges)

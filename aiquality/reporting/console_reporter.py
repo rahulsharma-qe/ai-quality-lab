@@ -58,7 +58,9 @@ def render_console_report(record: RunRecord) -> str:
     if queue:
         lines += ["", f"needs a person: {len(queue)} item(s) · see them with: aiquality review --team {record.team}"]
     if record.gate_decision:
-        lines += _gate_lines(record.gate_decision)
+        lines += _gate_lines(record.gate_decision)          # the gate repeats golden-set warnings
+    elif record.golden_set_warnings:
+        lines += [""] + [f"golden set warning: {warning}" for warning in record.golden_set_warnings]
     return "\n".join(lines)
 
 

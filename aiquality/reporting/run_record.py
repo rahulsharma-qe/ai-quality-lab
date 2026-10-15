@@ -37,6 +37,7 @@ class RunRecord:
     attacks: Optional[dict] = None         # attack resistance, overall and per family
     gate_decision: Optional[dict] = None   # filled by the release gate
     judge: Optional[dict] = None           # filled when a judge takes part
+    golden_set_warnings: list = field(default_factory=list)   # from the golden-set lint
     schema_version: str = SCHEMA_VERSION
     run_id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"))
