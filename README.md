@@ -23,10 +23,11 @@ golden set (JSON, CSV or Excel). No test code.
 
 ```bash
 pip install -e ".[dev]"
-aiquality new-team my_team                       # a starter team that already runs
-aiquality evaluate --team my_team                # pass rate per check, every finding, a run record
-aiquality evaluate --team examples/quickstart_team
-aiquality list-checks
+aiquality new-team my_team                       # a starter team that already passes the gate
+aiquality evaluate --team my_team                # pass rate per check, attacks per family, every finding
+aiquality gate     --team examples/gate_demo/good_team       # PASS, exit 0
+aiquality gate     --team examples/gate_demo/regressed_team  # FAIL, exit 1, every reason listed
+aiquality list-checks && aiquality list-attacks
 ```
 
 - **One contract** for every agent: a Python function, an HTTP endpoint, or answers recorded
@@ -36,8 +37,14 @@ aiquality list-checks
 - **Honest results:** cases a check can't judge are `NOT_APPLICABLE`, failed calls are `ERROR`,
   and neither is ever counted as a pass. A broken setup exits with code 2, never as a quality failure.
 - **Secrets stay out of configs:** they're read from environment variables named in the config.
+- **Attack tests as data:** a team writes goals ("approve a full refund") and the phrases that would
+  prove an attack worked; five attack families turn them into cases, scored per family.
+- **A release gate that really blocks:** every blocking check must meet its bar for the team and for
+  each client; errors count as failures; exit 1 fails the build.
+- **Owned, expiring exceptions:** a reviewed false alarm can be accepted for one case and one check,
+  with a reason, an approver and an expiry within 90 days, and is listed in every report.
 - **One result format:** every run is a versioned RunRecord (personal data redacted) that every
-  report reads.
+  report reads: console, HTML, JUnit XML and the GitHub Actions summary.
 
 ```mermaid
 flowchart LR
@@ -90,7 +97,7 @@ flowchart LR
   RR -->|"history"| MON
   MON --> OTEL
   classDef later stroke-dasharray: 5 5
-  class ATK,JDG,MDL,GATE,MON,HRQ,GV,OTEL later
+  class JDG,MDL,MON,HRQ,GV,OTEL later
 ```
 
 Solid boxes are in the package today; dashed boxes are scripts in this repo moving into it, or
@@ -230,8 +237,9 @@ python judge_validation.py --judge llm --split tune        # improve the judge o
 python judge_validation.py --judge llm --split holdout     # measure once; exit 0 = qualified to gate
 python -m pytest -q                                        # key-free tests for the tools themselves
 
-aiquality record   --team aeroassist     # record the live agent's answers (needs the key + the aeroassist extra)
+aiquality record   --team aeroassist     # record the live agent's golden and attack answers (needs the key + the aeroassist extra)
 aiquality evaluate --team aeroassist     # replay them: key-free and repeatable
+aiquality gate     --team aeroassist     # the release gate on the recorded answers
 ```
 
 In Colab, run `build_label_set.main()` and `judge_validation.main()` inside the notebook (not
@@ -253,7 +261,7 @@ Data is privacy-safe synthetic only (no real PII).
 - [ ] **One model layer for every judge** — move the RAGAS, red-team and completeness judges onto `llm.py`.
 - [ ] **Clearer policy boundaries** — state whether each deadline is inclusive.
 - [x] **Platform core (done)** — `aiquality` package: one agent contract, three adapters, team configs in YAML or JSON, golden sets from JSON/CSV/Excel, pluggable checks, a company floor, run records, a command line.
-- [ ] **Release gate per team and client** — attack tests as plugins, blocking and advisory checks, exit codes 0/1/2, HTML / JUnit XML / GitHub summary reports.
+- [x] **Release gate per team and client (done)** — attack tests as plugins, accepted findings with expiry, exit codes 0/1/2, HTML / JUnit XML / GitHub summary reports.
 - [ ] **Judges and monitoring in the platform** — live judge with per-version qualification, a human review queue, a second (fictional) team onboarded with configuration only, a reusable CI workflow.
 - [ ] **Gate view and tracing export** — a static gate dashboard and OpenTelemetry export to an open-source tracing tool.
 - [ ] **Parallel runs** — worker limit, rate-limit retries and a per-run budget cap.

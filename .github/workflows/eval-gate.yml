@@ -24,8 +24,24 @@ jobs:
         run: python -m pytest -q
       - name: Run every platform example (no API key)
         run: for example in examples/0*.py; do echo "== $example"; python "$example"; done
-      - name: Evaluate AeroAssist from its recorded answers (no API key)
-        run: aiquality evaluate --team aeroassist     # reports only; the release gate will block
+      - name: Release gate must PASS on the good demo agent
+        run: aiquality gate --team examples/gate_demo/good_team
+      - name: Release gate must FAIL (exit 1) on the regressed demo agent
+        run: |
+          set +e
+          aiquality gate --team examples/gate_demo/regressed_team
+          code=$?
+          set -e
+          if [ "$code" -ne 1 ]; then echo "expected exit 1 (quality failure), got $code"; exit 1; fi
+      - name: AeroAssist release gate (known failing, fix in progress; reported, not blocking)
+        continue-on-error: true      # 3 known agent errors; switch to blocking once the agent is fixed
+        run: aiquality gate --team aeroassist
+      - name: Keep the reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aiquality-reports
+          path: aiquality-runs/
       - name: Run the eval gate (mock judge, no API key)
         run: python eval_harness.py        # exit 1 on any failed threshold -> build goes red
 

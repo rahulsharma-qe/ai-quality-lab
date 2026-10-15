@@ -60,17 +60,16 @@ flowchart LR
   RR -->|"history"| MON
   MON --> OTEL
   classDef later stroke-dasharray: 5 5
-  class ATK,JDG,MDL,GATE,MON,HRQ,GV,OTEL later
+  class JDG,MDL,MON,HRQ,GV,OTEL later
 ```
 
 | Part | Status |
 |---|---|
-| Contracts, adapters, team config, company minimums, test data, runner, checks registry, RunRecord, console report, command line | In the package |
+| Contracts, adapters, team config, company minimums, test data, runner, checks registry, attacks registry, release gate (per team and client, accepted findings), RunRecord, console / HTML / JUnit XML / GitHub summary reports, command line | In the package |
 | Judges, judge validation, model layer, monitoring | Standalone scripts in this repo (`answer_judge.py`, `judge_validation.py`, `llm.py`, `observability/`), moving into the package |
-| Attacks registry | Attacks exist as scripts (`red_team.py`, `red_team_v2.py`); registry planned |
-| Release gate with per-team and per-client bars, more report formats, human review queue, gate view, tracing export | Planned |
+| Human review queue, reusable CI workflow, gate view, tracing export | Planned |
 
-## 2. One gate run, step by step (target design)
+## 2. One gate run, step by step
 
 ```mermaid
 sequenceDiagram
@@ -98,10 +97,11 @@ sequenceDiagram
   CLI-->>CI: exit 0 for pass, 1 for fail
 ```
 
-Today `aiquality evaluate` runs steps 1 to 6 and 10 (scores and records; it never blocks).
+`aiquality gate` runs all of these steps; the human review queue for advisory (judge) findings is
+planned. `aiquality evaluate` runs the same steps without the decision and never blocks.
 Exit codes: 0 done or pass · 1 quality below the bar (release gate) · 2 setup error.
 
-## 3. How a team uses it in CI (target design)
+## 3. How a team uses it in CI (target design: the reusable workflow and review queue are planned)
 
 ```mermaid
 flowchart LR
@@ -137,3 +137,9 @@ access through CI secrets. Blocking a merge also needs branch protection in that
   (for example "not approved") needs a judge; a match right after a negation word is flagged.
 - **One result format.** Every command writes a RunRecord with a `schema_version`; every report
   reads it.
+- **The gate reads strictly.** Errors count as failures, a mandatory check with no applicable case
+  fails for lack of evidence, and each client tag must meet the bar on its own.
+- **Exceptions are owned and expire.** An accepted finding names one case and one check, a reason,
+  an approver and an expiry within 90 days, and is listed in every report.
+- **Attacks are data plus plugins.** Teams write goals; families turn them into cases built the same
+  way every run, so recorded answers can be replayed.
