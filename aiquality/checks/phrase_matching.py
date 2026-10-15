@@ -2,7 +2,8 @@
 
 Whole-word matching stops substring mistakes: "100" does not match inside "1000",
 "free" does not match inside "freedom". A simple plural still counts: "2 hour" matches
-"2 hours", so phrases can be written in the singular.
+"2 hours", so phrases can be written in the singular. A hyphen counts as a space: "24 hour"
+matches "24-hour", and "no-show" matches "no show".
 
 Alternatives: "connect OR escalate" passes if either phrase appears (the OR is uppercase,
 so a phrase can still contain an ordinary "or").
@@ -44,10 +45,11 @@ def find_any(text: str, item: str) -> Optional[PhraseMatch]:
 
 def find_phrase(text: str, phrase: str) -> Optional[PhraseMatch]:
     phrase = " ".join(phrase.split())
-    if not phrase:
+    words = [re.escape(word) for word in re.split(r"[\s-]+", phrase) if word]
+    if not words:
         return None
-    words = [re.escape(word) for word in phrase.split(" ")]
-    pattern = r"(?<![\w])" + r"\s+".join(words) + r"(?:e?s)?(?![\w])"   # optional plural
+    # Words may be separated by spaces or hyphens ("24 hour" matches "24-hour"); optional plural at the end.
+    pattern = r"(?<![\w])" + r"[\s-]+".join(words) + r"(?:e?s)?(?![\w])"
     match = re.search(pattern, text, flags=re.IGNORECASE)
     if match is None:
         return None

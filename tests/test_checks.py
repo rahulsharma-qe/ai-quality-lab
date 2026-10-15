@@ -20,6 +20,9 @@ from aiquality.runner import CaseRun
     ("closes 2 hours before departure", "2 hour", True),   # a simple plural still counts
     ("two boxes", "box", True),
     ("100s of bags", "100", True),
+    ("within the 24-hour window", "24 hour", True),         # a hyphen counts as a space
+    ("within 24 hours of booking", "24 hour", True),
+    ("treated as a no show", "no-show", True),
 ])
 def test_whole_word_matching(text, phrase, found):
     assert (find_phrase(text, phrase) is not None) is found
