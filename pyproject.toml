@@ -19,8 +19,8 @@ excel = ["openpyxl>=3.1"]
 live = ["anthropic"]
 # Run the AeroAssist demo agent live (retrieval needs an embedding model).
 aeroassist = ["anthropic", "numpy", "langchain-huggingface", "sentence-transformers"]
-# Everything needed to run the tests and examples.
-dev = ["pytest>=7", "openpyxl>=3.1"]
+# Everything needed to run the tests and examples (numpy: the AeroAssist retrieval tests).
+dev = ["pytest>=7", "openpyxl>=3.1", "numpy"]
 
 [project.scripts]
 aiquality = "aiquality.cli:main"
@@ -33,3 +33,4 @@ aiquality = ["config/*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "test_judge_validation.py"]
+pythonpath = ["."]          # the repository root, for the standalone modules (rag_eval.py, llm.py)
