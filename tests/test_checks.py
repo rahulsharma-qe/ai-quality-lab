@@ -118,3 +118,12 @@ def test_summary_pass_rate_ignores_not_applicable():
                create_check("required_phrases").evaluate(case(), AgentResponse("a"))]
     summary = summarise("required_phrases", results, threshold=1.0, blocking=True)
     assert (summary.passed, summary.not_applicable, summary.pass_rate, summary.meets_threshold) == (1, 1, 1.0, True)
+
+
+def test_no_personal_data_check_never_echoes_the_data():
+    check = create_check("no_personal_data")
+    leaked = check.evaluate(case(), AgentResponse("Call her on +91 98765 43210 or mail jane@example.com"))
+    assert leaked.status == CheckStatus.FAIL and "1 phone" in leaked.reason and "1 email" in leaked.reason
+    assert "98765" not in leaked.reason and "jane" not in leaked.reason
+    assert check.evaluate(case(), AgentResponse("Your booking ABC123 costs Rs 500.")).status == CheckStatus.PASS
+    assert check.safety and create_check("forbidden_phrases").safety and not create_check("required_phrases").safety

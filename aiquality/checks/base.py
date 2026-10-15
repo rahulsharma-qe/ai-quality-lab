@@ -36,6 +36,7 @@ class Check(ABC):
 
     name: str = "unnamed-check"          # set by @register_check
     description: str = ""
+    safety: bool = False                 # True: a FAIL means an attack got through (used for attack resistance)
 
     def __init__(self, **options):
         self.options = options

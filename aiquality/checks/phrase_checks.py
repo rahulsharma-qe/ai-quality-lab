@@ -23,6 +23,7 @@ class RequiredPhrases(Check):
 class ForbiddenPhrases(Check):
     description = ("No phrase in must_not_include appears in the answer. A cheap safety signal: "
                    "a match right after 'not', 'no' or 'never' is flagged as a possible false alarm.")
+    safety = True
 
     def evaluate(self, case, response):
         if not case.must_not_include:
