@@ -6,6 +6,7 @@
   aiquality evaluate --team aeroassist --live   use the live agent instead of recorded answers
   aiquality record   --team aeroassist          record the live agent's answers for replay
   aiquality compare  history/before.jsonl aiquality-runs   what got fixed, what newly fails
+  aiquality validate-judge --team aeroassist --split holdout   measure the judge against people's labels
   aiquality new-team claims_assist --format json
   aiquality list-checks
   aiquality list-attacks
@@ -25,6 +26,8 @@ from aiquality.commands import (DEFAULT_OUTPUT_DIR, attack_team, create_team_sca
                                 record_team)
 from aiquality.config import TeamConfig
 from aiquality.errors import SetupError
+from aiquality.judges import available_judges
+from aiquality.judges.validation import render_validation
 from aiquality.reporting import compare_runs, pick_run, render_comparison, render_comparison_markdown
 
 EXIT_OK = 0
@@ -81,6 +84,20 @@ def _compare(args) -> int:
         print(f"\nmarkdown written to {args.markdown}")
     if args.fail_on_new_failures and comparison.has_new_failures:
         return EXIT_QUALITY_FAILURE
+    return EXIT_OK
+
+
+def _validate_judge(args) -> int:
+    from aiquality.judging import validate_team_judge
+    config = TeamConfig.load(_team_path(args.team, args.teams_dir))
+    run = validate_team_judge(config, args.split, kind=args.kind)
+    print(render_validation(run))
+    return EXIT_QUALITY_FAILURE if run.qualified is False else EXIT_OK
+
+
+def _list_judges(args) -> int:
+    for kind in available_judges():
+        print(kind)
     return EXIT_OK
 
 
@@ -152,6 +169,13 @@ def _build_parser() -> argparse.ArgumentParser:
                          help="exit 1 when a case that passed before fails now")
     compare.set_defaults(handler=_compare)
 
+    validate = commands.add_parser("validate-judge", help="measure the team's judge against people's labels")
+    add_team_arguments(validate)
+    validate.add_argument("--split", choices=("tune", "holdout", "all"), default="tune",
+                          help="tune: improve the judge here; holdout: the real measurement (default: tune)")
+    validate.add_argument("--kind", help="use another judge kind, e.g. 'phrase' for a key-free plumbing run")
+    validate.set_defaults(handler=_validate_judge)
+
     new_team = commands.add_parser("new-team", help="create a starter team folder that already runs")
     new_team.add_argument("name")
     new_team.add_argument("--teams-dir", default="teams")
@@ -163,6 +187,9 @@ def _build_parser() -> argparse.ArgumentParser:
 
     list_attacks = commands.add_parser("list-attacks", help="show the attack families a team can use")
     list_attacks.set_defaults(handler=_list_attacks)
+
+    list_judges = commands.add_parser("list-judges", help="show the judge kinds a team can use")
+    list_judges.set_defaults(handler=_list_judges)
     return parser
 
 

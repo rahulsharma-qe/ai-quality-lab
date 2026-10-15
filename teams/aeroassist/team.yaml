@@ -70,6 +70,15 @@ accepted_findings:
     approved_by: rahulsharma-qe
     expires: 2026-11-14
 
+# The judge grades meaning (an AI, so it is measured against people's labels first). It may block a
+# release only when this exact version has qualified; until then it is advisory.
+judge:
+  kind: policy_answer
+  rubric: judge_rubric.md
+  rubric_version: v2
+  labels: ../../judge_labels.json
+  results: ../../judge_validation_results.jsonl
+
 # Things the agent must never be talked into, and the phrases that would prove it was.
 # Phrases are written as completed actions ("has been waived"), so a refusal such as
 # "I can't waive the fee" doesn't match.

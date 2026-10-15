@@ -19,6 +19,9 @@ Rules that keep the numbers honest:
   - measure the HELD-BACK half once the judge is final; never tune on it
   - re-run whenever the judge's version changes (new model, new rubric)
 
+Now a thin wrapper: the logic is in aiquality/judges/validation.py, and teams use
+  aiquality validate-judge --team <team> --split holdout
+
 Run:
   python judge_validation.py --judge llm  --split tune      # improve the judge here
   python judge_validation.py --judge llm  --split holdout   # the real measurement
@@ -36,40 +39,29 @@ import argparse
 import json
 import sys
 import time
-from collections import defaultdict
-from datetime import datetime, timezone
+from types import SimpleNamespace
 
+from aiquality.judges import validation
+from aiquality.judges.validation import MIN_CATCH_RATE, MIN_LEAVE_ALONE_RATE, LabelledAnswer  # noqa: F401
 from answer_judge import make_answer_judge
 
+# The implementation lives in the aiquality package (aiquality/judges/validation.py; command line:
+# aiquality validate-judge). This file keeps the old command line and the old dict-based helpers.
 LABELS_PATH = "judge_labels.json"
 RESULTS_PATH = "judge_validation_results.jsonl"
 
-# The judge's own exam: it may gate releases only if it clears BOTH bars on held-back data.
-MIN_CATCH_RATE = 0.85        # of human FAILs, the judge must also fail at least this share
-MIN_LEAVE_ALONE_RATE = 0.80  # of human PASSes, the judge must also pass at least this share
 
-
-# ======================================================================
-# SECTION A — Load the labelled cases
-# ======================================================================
 def load_labelled(path, split):
+    """Labelled cases as plain dicts (the old shape)."""
     with open(path) as f:
         cases = json.load(f)["cases"]
     if split != "all":
         cases = [c for c in cases if c.get("split") == split]
-    labelled = [c for c in cases if c.get("human_label") in ("PASS", "FAIL")]
-    skipped = len(cases) - len(labelled)
-    if skipped:
-        print(f"  ⚠️  {skipped} case(s) have no human label yet — skipped.")
-    return labelled
+    return [c for c in cases if c.get("human_label") in ("PASS", "FAIL")]
 
 
-# ======================================================================
-# SECTION B — Run the judge (a failed call is infrastructure, not a verdict)
-# ======================================================================
 def run_judge(judge, cases, retries=2):
-    """Returns {case_id: Verdict}; cases whose judge call kept failing are left out
-    and reported, so a network glitch never counts as a right or wrong verdict."""
+    """{case_id: Verdict} for dict cases; calls that kept failing are left out and listed."""
     verdicts, errored = {}, []
     for c in cases:
         for attempt in range(retries + 1):
@@ -84,115 +76,31 @@ def run_judge(judge, cases, retries=2):
     return verdicts, errored
 
 
-# ======================================================================
-# SECTION C — The two numbers (overall and per category)
-# ======================================================================
-def rate(numerator, denominator):
-    return round(numerator / denominator, 3) if denominator else None
+def _view(cases):
+    """Dict cases seen through the attributes the package's maths reads."""
+    return [SimpleNamespace(id=c["id"], human_label=c["human_label"], category=c.get("category", "uncategorised"),
+                            label_reason=c.get("label_reason"), failure_type=c.get("failure_type")) for c in cases]
 
 
 def score(cases, verdicts):
-    scored = [c for c in cases if c["id"] in verdicts]
-    human_fail = [c for c in scored if c["human_label"] == "FAIL"]
-    human_pass = [c for c in scored if c["human_label"] == "PASS"]
-    caught = sum(1 for c in human_fail if not verdicts[c["id"]].passed)
-    left_alone = sum(1 for c in human_pass if verdicts[c["id"]].passed)
-    return {
-        "n": len(scored),
-        "human_fail": len(human_fail),
-        "human_pass": len(human_pass),
-        "catch_rate": rate(caught, len(human_fail)),
-        "leave_alone_rate": rate(left_alone, len(human_pass)),
-        "agreement": rate(caught + left_alone, len(scored)),
-    }
+    return validation.score(_view(cases), verdicts)
 
 
 def by_category(cases, verdicts):
-    groups = defaultdict(list)
-    for c in cases:
-        groups[c["category"]].append(c)
-    return {cat: score(group, verdicts) for cat, group in sorted(groups.items())}
+    return validation.by_category(_view(cases), verdicts)
 
 
 def disagreements(cases, verdicts):
-    out = []
-    for c in cases:
-        v = verdicts.get(c["id"])
-        if v is None:
-            continue
-        judge_label = "PASS" if v.passed else "FAIL"
-        if judge_label != c["human_label"]:
-            out.append({
-                "id": c["id"], "category": c["category"],
-                "human": c["human_label"], "judge": judge_label,
-                "human_reason": c.get("label_reason"), "judge_reason": v.reason,
-                "failure_type": c.get("failure_type"),
-            })
-    return out
-
-
-# ======================================================================
-# SECTION D — Report, save, and decide whether the judge may gate
-# ======================================================================
-def pct(x):
-    return "  n/a" if x is None else f"{x:5.0%}"
-
-
-def report(judge, split, overall, per_cat, misses, errored):
-    print(f"\nJudge: {judge.version}   ·   split: {split}")
-    print(f"\n{'':14} {'n':>3} {'fails':>6} {'catches':>8} {'leaves good':>12}")
-    print("-" * 47)
-    for cat, s in per_cat.items():
-        print(f"{cat:14} {s['n']:>3} {s['human_fail']:>6} {pct(s['catch_rate']):>8} {pct(s['leave_alone_rate']):>12}")
-    print("-" * 47)
-    print(f"{'ALL':14} {overall['n']:>3} {overall['human_fail']:>6} "
-          f"{pct(overall['catch_rate']):>8} {pct(overall['leave_alone_rate']):>12}")
-    if overall["human_fail"]:
-        print(f"\n  Small-sample note: {overall['human_fail']} human FAILs here, so one case moves "
-              f"the catch rate by about {1 / overall['human_fail']:.0%}. A direction, not a verdict.")
-    if errored:
-        print(f"\n  ⚠️  {len(errored)} judge call(s) errored (infrastructure, not quality) — left out.")
-    if misses:
-        print(f"\nDisagreements ({len(misses)}):")
-        for m in misses:
-            print(f"  {m['id']} [{m['category']}] human {m['human']} vs judge {m['judge']}")
-            print(f"      human: {m['human_reason']}")
-            print(f"      judge: {m['judge_reason']}")
-
-
-def save(judge, split, overall, per_cat, misses, errored, qualified):
-    row = {
-        "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "judge_version": judge.version,
-        "split": split,
-        "overall": overall,
-        "by_category": per_cat,
-        "disagreement_ids": [m["id"] for m in misses],
-        "errored_ids": [e[0] for e in errored],
-        "bars": {"min_catch_rate": MIN_CATCH_RATE, "min_leave_alone_rate": MIN_LEAVE_ALONE_RATE},
-        "qualified": qualified,
-    }
-    with open(RESULTS_PATH, "a") as f:
-        f.write(json.dumps(row) + "\n")
-
-
-def judge_status(version, path=None):
-    """'qualified' / 'not_qualified' / 'unvalidated' for this exact judge version, from its
-    most recent held-back run. A new model or rubric = a new version = unvalidated again."""
-    try:
-        with open(path or RESULTS_PATH) as f:
-            rows = [json.loads(line) for line in f if line.strip()]
-    except FileNotFoundError:
-        return "unvalidated"
-    runs = [r for r in rows if r.get("judge_version") == version and r.get("split") in ("holdout", "all")]
-    if not runs:
-        return "unvalidated"
-    return "qualified" if runs[-1].get("qualified") else "not_qualified"
+    return validation.disagreements(_view(cases), verdicts)
 
 
 def qualifies(overall):
-    c, g = overall["catch_rate"], overall["leave_alone_rate"]
-    return c is not None and g is not None and c >= MIN_CATCH_RATE and g >= MIN_LEAVE_ALONE_RATE
+    return validation.qualifies(overall)
+
+
+def judge_status(version, path=None):
+    """'qualified' / 'not_qualified' / 'unvalidated' for this exact judge version."""
+    return validation.judge_status(version, path or RESULTS_PATH)
 
 
 def main():
@@ -203,32 +111,14 @@ def main():
     args = ap.parse_args()
 
     judge = make_answer_judge(args.judge)
-    cases = load_labelled(args.labels, args.split)
-    if not cases:
+    items, skipped = validation.load_labels(args.labels, args.split)
+    if not items:
         print("No labelled cases to validate against — label judge_labels.json first.")
         return 1
-
-    verdicts, errored = run_judge(judge, cases)
-    overall = score(cases, verdicts)
-    per_cat = by_category(cases, verdicts)
-    misses = disagreements(cases, verdicts)
-    report(judge, args.split, overall, per_cat, misses, errored)
-
-    gating_run = args.split in ("holdout", "all")
-    qualified = qualifies(overall) if gating_run else None
-    save(judge, args.split, overall, per_cat, misses, errored, qualified)
-
-    print()
-    if not gating_run:
-        print("Tuning run — use the disagreements above to improve the judge. "
-              "Not a qualification; run --split holdout once the judge is final.")
-        return 0
-    bars = f"(bars: catches ≥ {MIN_CATCH_RATE:.0%}, leaves good alone ≥ {MIN_LEAVE_ALONE_RATE:.0%})"
-    if qualified:
-        print(f"JUDGE: ✅ QUALIFIED to gate {bars}")
-        return 0
-    print(f"JUDGE: ❌ NOT QUALIFIED to gate {bars}")
-    return 1
+    run = validation.validate_judge(judge, items, args.split, skipped_unlabelled=skipped)
+    print(validation.render_validation(run))
+    validation.save_run(run, RESULTS_PATH)
+    return 0 if run.qualified in (None, True) else 1
 
 
 if __name__ == "__main__":
