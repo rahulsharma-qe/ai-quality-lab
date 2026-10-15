@@ -55,7 +55,9 @@ JSON, CSV or Excel. One case per row:
 | `client` | Optional tag, so results can be compared per client |
 | `conversation_history` | Optional earlier turns, as JSON text |
 
-Tips: phrases match as whole words in any case, so `100` won't match inside `1000`. Phrase
+Tips: phrases match as whole words in any case, so `100` won't match inside `1000`; a simple
+plural still counts (`2 hour` matches `2 hours`). Accept equivalent wording with an uppercase
+`OR`: `connect OR escalate`. Phrase
 checks can't understand "not": if `approved` is forbidden, the answer "not approved" still
 matches (it is flagged as a possible false alarm). Make forbidden phrases specific, such as
 `refund approved`, and put behaviour rules in `must_not_do`.

@@ -17,6 +17,9 @@ from aiquality.runner import CaseRun
     ("A full\n refund is due", "full refund", True),  # any spacing between words
     ("Call 24/7", "24/7", True),
     ("can't override it", "can't override", True),
+    ("closes 2 hours before departure", "2 hour", True),   # a simple plural still counts
+    ("two boxes", "box", True),
+    ("100s of bags", "100", True),
 ])
 def test_whole_word_matching(text, phrase, found):
     assert (find_phrase(text, phrase) is not None) is found
@@ -27,6 +30,14 @@ def test_negation_is_flagged_but_not_understood():
     assert match is not None and match.follows_negation          # still a match: meaning needs a judge
     assert not find_phrase("A no-show gets a full refund.", "full refund").follows_negation
     assert find_phrase("Refunds approved here.", "approved").sentence == "Refunds approved here."
+
+
+def test_alternatives_with_uppercase_or():
+    from aiquality.checks.phrase_matching import find_any, split_alternatives
+    assert split_alternatives("connect OR escalate") == ["connect", "escalate"]
+    assert split_alternatives("this or that") == ["this or that"]          # lowercase "or" is just text
+    assert find_any("I'll escalate this to a person.", "connect OR escalate").phrase == "escalate"
+    assert find_any("Please wait.", "connect OR escalate") is None
 
 
 def case(**fields):
@@ -42,6 +53,8 @@ def test_required_phrases():
     failed = check.evaluate(case(must_include=["24 hours", "fee"]), AgentResponse("Within 24 hours."))
     assert failed.status == CheckStatus.FAIL and "'fee'" in failed.reason
     assert check.evaluate(case(), AgentResponse("x")).status == CheckStatus.NOT_APPLICABLE
+    either = case(must_include=["connect OR escalate"])
+    assert check.evaluate(either, AgentResponse("I can escalate this.")).status == CheckStatus.PASS
 
 
 def test_forbidden_phrases_show_the_sentence_and_flag_negation():

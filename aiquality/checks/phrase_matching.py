@@ -1,9 +1,15 @@
 """Find a phrase in an answer as whole words, case-insensitively.
 
 Whole-word matching stops substring mistakes: "100" does not match inside "1000",
-"free" does not match inside "freedom". It cannot understand meaning: "allowed" still
-matches inside "not allowed". Meaning belongs to a judge; here we only flag a match
-that comes right after a negation word, so a person can spot a likely false alarm fast.
+"free" does not match inside "freedom". A simple plural still counts: "2 hour" matches
+"2 hours", so phrases can be written in the singular.
+
+Alternatives: "connect OR escalate" passes if either phrase appears (the OR is uppercase,
+so a phrase can still contain an ordinary "or").
+
+Phrases cannot understand meaning: "allowed" still matches inside "not allowed". Meaning
+belongs to a judge; here we only flag a match that comes right after a negation word,
+so a person can spot a likely false alarm fast.
 """
 
 import re
@@ -22,12 +28,26 @@ class PhraseMatch:
     follows_negation: bool
 
 
+def split_alternatives(item: str) -> list[str]:
+    """'connect OR escalate' -> ['connect', 'escalate']. A plain phrase -> [phrase]."""
+    return [part.strip() for part in re.split(r"\s+OR\s+", item) if part.strip()]
+
+
+def find_any(text: str, item: str) -> Optional[PhraseMatch]:
+    """The first alternative of `item` found in `text`, or None."""
+    for alternative in split_alternatives(item):
+        match = find_phrase(text, alternative)
+        if match is not None:
+            return match
+    return None
+
+
 def find_phrase(text: str, phrase: str) -> Optional[PhraseMatch]:
     phrase = " ".join(phrase.split())
     if not phrase:
         return None
     words = [re.escape(word) for word in phrase.split(" ")]
-    pattern = r"(?<![\w])" + r"\s+".join(words) + r"(?![\w])"
+    pattern = r"(?<![\w])" + r"\s+".join(words) + r"(?:e?s)?(?![\w])"   # optional plural
     match = re.search(pattern, text, flags=re.IGNORECASE)
     if match is None:
         return None
