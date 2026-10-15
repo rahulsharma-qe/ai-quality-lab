@@ -58,7 +58,7 @@ def render_html_report(record: RunRecord) -> str:
                      + "".join(f"<li>{escape(f)}</li>" for f in gate["failures"]) + "</ul></section>")
 
     rows = "".join(
-        f"<tr><td>{escape(row['check'])}</td><td>{escape(rate_text(row))}</td><td>{percent(row['threshold'])}</td>"
+        f"<tr><td>{escape(row['label'])}</td><td>{escape(rate_text(row))}</td><td>{percent(row['threshold'])}</td>"
         f"<td class='{result_text(row)}'>{result_text(row)}</td><td>{row['passed']}</td><td>{row['failed']}</td>"
         f"<td>{row['not_applicable']}</td><td>{row['errors']}</td></tr>" for row in check_rows(record))
     parts.append("<section><h2>Golden cases</h2><table><tr><th>Check</th><th>Pass rate</th><th>Bar</th><th>Result</th>"

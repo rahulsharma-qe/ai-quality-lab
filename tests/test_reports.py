@@ -80,3 +80,14 @@ def test_reports_show_the_rate_after_accepted_findings(tmp_path, monkeypatch, ca
     assert "| forbidden_phrases | 50% → 100% (1 accepted) | 100% | MEETS |" in summary
     assert "50% → 100% (1 accepted)" in html
     assert "100% with 1 accepted" in console
+
+
+def test_a_check_that_does_not_block_is_marked_diagnostic(tmp_path, monkeypatch, capsys):
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+    config = dict(BASE_CONFIG, reports=["console", "github_summary"],
+                  checks={"required_phrases": {"threshold": 0.9},
+                          "forbidden_phrases": {"threshold": 1.0, "blocking": False}})
+    team = TeamConfig.load(write_team(tmp_path / "shop", config, ROWS, AGENT))
+    gate_team(team, output_dir=tmp_path / "out")
+    assert "diagnostic, doesn't block" in capsys.readouterr().out
+    assert "| forbidden_phrases (diagnostic) |" in (tmp_path / "out" / "test_team-summary.md").read_text()

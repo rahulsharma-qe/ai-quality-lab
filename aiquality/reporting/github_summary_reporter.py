@@ -39,7 +39,7 @@ def render_github_summary(record: RunRecord) -> str:
     if gate.get("failures"):
         lines += ["**Why it failed**", ""] + [f"- {f}" for f in gate["failures"]] + [""]
     lines += ["| Check | Pass rate | Bar | Result | Pass | Fail | N/A | Error |", "|---|---|---|---|---|---|---|---|"]
-    lines += [f"| {row['check']} | {rate_text(row)} | {percent(row['threshold'])} | {result_text(row)} | "
+    lines += [f"| {row['label']} | {rate_text(row)} | {percent(row['threshold'])} | {result_text(row)} | "
               f"{row['passed']} | {row['failed']} | {row['not_applicable']} | {row['errors']} |"
               for row in check_rows(record)]
     if record.attacks:
