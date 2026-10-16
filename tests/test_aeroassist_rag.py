@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import pytest
 
 pytest.importorskip("numpy")
-from rag_eval import DEFAULT_SYSTEM_PROMPT, AeroAssistRAG  # noqa: E402
+from aeroassist_rag import DEFAULT_SYSTEM_PROMPT, AeroAssistRAG  # noqa: E402
 
 POLICIES = """# Policies
 ## P1 — Refund

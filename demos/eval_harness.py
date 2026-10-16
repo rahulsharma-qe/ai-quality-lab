@@ -15,8 +15,8 @@ PR), a retry wrapper (a flaky judge call is retried; a persistent infra error is
 gated — infra failure != quality regression), and thresholds with margin (not 1.0).
 
 Run:
-  python eval_harness.py            # scenario "good"      -> gate PASS (exit 0)
-  python eval_harness.py regressed  # scenario "regressed" -> gate FAIL (exit 1)
+  python demos/eval_harness.py            # scenario "good"      -> gate PASS (exit 0)
+  python demos/eval_harness.py regressed  # scenario "regressed" -> gate FAIL (exit 1)
 
 Live judge (optional): LLM_PROVIDER=anthropic + ANTHROPIC_API_KEY. Default is the mock.
 """
@@ -24,6 +24,8 @@ Live judge (optional): LLM_PROVIDER=anthropic + ANTHROPIC_API_KEY. Default is th
 import os
 import sys
 import time
+
+from paths import POLICIES
 
 
 # ======================================================================
@@ -85,7 +87,7 @@ class LiveJudge(MockJudge):
     language-model answer judge — the same judge that is validated against human
     labels in judge_validation.py before it is trusted to gate."""
 
-    def __init__(self, policy_path="policies.md"):
+    def __init__(self, policy_path=POLICIES):
         from answer_judge import make_answer_judge
         self.answer_judge = make_answer_judge("llm", policy_path)
 

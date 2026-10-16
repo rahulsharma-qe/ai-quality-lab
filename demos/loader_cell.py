@@ -6,8 +6,13 @@
 import json
 from collections import Counter
 
-# If running in Colab, upload golden_dataset.json first (Files pane) or mount Drive.
-PATH = "golden_dataset.json"
+try:
+    from paths import GOLDEN_SET            # run from this repository
+except ImportError:                        # pasted into a notebook cell on its own
+    GOLDEN_SET = "golden_dataset.json"
+
+# On its own in Colab: upload golden_dataset.json first (Files pane) or mount Drive.
+PATH = str(GOLDEN_SET)
 
 CORE = ["id","input","category","priority","retrieved_policy","reference_answer",
         "expected_behaviour","dimensions","source","version","notes"]

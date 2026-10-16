@@ -29,12 +29,13 @@ from pathlib import Path
 from aiquality.judges import JudgeVerdict, PhraseJudge, PolicyAnswerJudge
 from aiquality.test_data import GoldenCase
 from llm import JUDGE_MODEL
+from paths import JUDGE_RUBRIC, POLICIES
 
 # The implementation lives in the aiquality package (aiquality/judges). This file keeps the old
 # names and accepts plain dict cases, for the scripts that use them (eval_harness.py,
 # judge_validation.py). The rubric is AeroAssist's own file, word for word, so the judge's
 # version (and every validation result recorded for it) stays the same.
-RUBRIC_FILE = Path(__file__).resolve().parent / "teams" / "aeroassist" / "judge_rubric.md"
+RUBRIC_FILE = JUDGE_RUBRIC
 RUBRIC = RUBRIC_FILE.read_text(encoding="utf-8").strip()
 PROMPT_VERSION = "v2"  # v2: added rule 7 (exception hint) after the first tuning run
 
@@ -68,7 +69,7 @@ class MockAnswerJudge(PhraseJudge):
         return super().verdict(as_case(case), answer)
 
 
-def make_answer_judge(kind=None, policy_path="policies.md"):
+def make_answer_judge(kind=None, policy_path=POLICIES):
     """'llm' for the live judge, 'mock' for the key-free one."""
     kind = (kind or "mock").lower()
     if kind == "mock":

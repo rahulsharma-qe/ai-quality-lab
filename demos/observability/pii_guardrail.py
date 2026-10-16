@@ -6,10 +6,10 @@ check scans every answer BEFORE it goes out and blocks anything that looks like
 personal contact data (phone/email). The model drafts; the code decides what ships.
 
 Demo flow (screen-share friendly — shows BOTH states):
-    python tracing.py                       # raw traffic (the leak gets through)
-    python monitor.py traces.jsonl          # BEFORE: breach-rate > 0
-    python pii_guardrail.py                 # apply the guardrail -> traces_guarded.jsonl
-    python monitor.py traces_guarded.jsonl  # AFTER: breach-rate 0
+    python demos/observability/tracing.py                       # raw traffic (the leak gets through)
+    python demos/observability/monitor.py traces.jsonl          # BEFORE: breach-rate > 0
+    python demos/observability/pii_guardrail.py                 # apply the guardrail -> traces_guarded.jsonl
+    python demos/observability/monitor.py traces_guarded.jsonl  # AFTER: breach-rate 0
 
 All PII in the data is fake/synthetic — safe to show on a screen-share.
 """

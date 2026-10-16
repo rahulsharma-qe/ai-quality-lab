@@ -9,7 +9,7 @@ is the **"AI *for* QA"** side — using AI to generate tests, data and scripts. 
 cover both halves of modern quality engineering.
 
 > **System under test:** *AeroAssist*, a mock support agent for the fictional **Meridian
-> Airways**, answering from an 8-policy knowledge base (`policies.md`). Everything here is
+> Airways**, answering from an 8-policy knowledge base ([`teams/aeroassist/policies.md`](teams/aeroassist/policies.md)). Everything here is
 > evaluated against that agent, but the techniques are stack-agnostic — point them at any
 > LLM app.
 
@@ -106,8 +106,8 @@ flowchart LR
   class MON,GV,OTEL later
 ```
 
-Solid boxes are in the package today; dashed boxes are scripts in this repo moving into it, or
-planned. Details: [`docs/architecture.md`](docs/architecture.md) ·
+Solid boxes are in the package today; dashed boxes are scripts in [`demos/`](demos/) moving into it,
+or planned. Details: [`docs/architecture.md`](docs/architecture.md) ·
 onboarding: [`docs/onboarding.md`](docs/onboarding.md) · runnable examples: [`examples/`](examples/).
 
 ### Testing AeroAssist with it: results so far
@@ -135,17 +135,17 @@ story (what we ran, found, changed and learned, with the evidence) is in
 |---|---|---|
 | **Platform** | `aiquality/`, `teams/`, `examples/`, `tests/`, `docs/` | *Can another team use this without writing test code?* Agent adapters, team configs, golden sets from JSON/CSV/Excel, pluggable checks, a company floor, run records and a command line. See the section above. |
 | **Quality log** | `docs/quality-log.md` | *What did testing find, what changed, and what is still open?* Every run in order, the open problems, and the lessons that carry over to other agents. |
-| **Golden dataset** | `golden_dataset.json` | *What is the human-verified source of truth?* 40 labelled cases (happy / edge / adversarial / out-of-scope, 4 of them held-out), versioned with a changelog, plus a schema validator (`loader_cell.py`). |
-| **RAG evaluation** | `rag_eval.py` | *Is the agent accurate and grounded?* Scores a policy-RAG with **RAGAS** — context precision/recall (retrieval) and faithfulness/answer-relevancy (generation), judged by Claude, embedded locally (no OpenAI). |
-| **Red-teaming** | `red_team.py`, `red_team_v2.py` | *Can I break it?* OWASP-LLM-mapped attacks — prompt injection (direct & indirect), jailbreak, data-leak, excessive agency — plus strengthened vectors (obfuscation, multi-turn, poisoned knowledge base). |
-| **The fix** | `guardrail_fix.py` | *How do I close a breach?* A deterministic **policy-of-record at the execution gate** — money decisions live in code, not in the model. |
-| **Agentic testing** | `aeroassist_agent.py`, `trajectory_eval.py`, `consistency_check.py` | *Is the agent's whole journey right, not just its answer?* A tool-using agent that emits a **trajectory**, graded on tool choice, arguments, termination and **multi-intent completeness** — run N times to measure a reliability rate (a probabilistic agent isn't certified by a single pass). |
-| **Completeness fix** | `completeness_guardrail.py` | *How do I stop a silently dropped intent?* A code-owned **intent checklist** that re-asks for any missed request. Before/after: fully-complete rate `80% → 100%`. |
-| **Eval harness / CI gate** | `eval_harness.py`, `.github/workflows/eval-gate.yml` | *How do I stop a regression shipping?* A metric **registry** with per-metric thresholds + direction and a build-failing **exit code** — evals become a **gate**, not a report. Key-free **mock judge** runs on every PR (deterministic, no API key); the **live judge** runs on demand, and may only block a release once it has qualified against human labels (otherwise it's advisory). Demo: healthy outputs PASS (exit 0), a seeded regression FAILS (exit 1). |
-| **Model layer** | `llm.py` | *Can I switch models without touching every file?* One place for model clients: provider and model are settings (`LLM_PROVIDER`, `AGENT_MODEL`, `JUDGE_MODEL`); the judge uses a different, stronger model than the agent, so nothing grades its own work. |
-| **Judge validation** | `answer_judge.py`, `build_label_set.py`, `judge_labels.json`, `judge_validation.py`, `judge_validation_results.jsonl` | *Can I trust the AI judge that gates my releases?* Thirty answers labelled blind by a person, split into a tuning half and a held-back half; two numbers against the human labels — **catches real failures** and **leaves good answers alone**; per-category breakdown; results saved per judge version. A judge that hasn't qualified runs in **advisory mode**. |
-| **Tests for the test tools** | `test_judge_validation.py`, `tests/` | *Do the evaluation tools themselves work?* Key-free tests (fake judges, local servers, no network) run on every PR. |
-| **Observability** | `observability/tracing.py`, `observability/monitor.py`, `observability/pii_guardrail.py` | *Is it still safe in production?* A structured per-run **trace** (evidence log), a **dashboard** (breach/refusal rate, latency, cost), a baseline-vs-recent **drift alert**, and a **triage→fix** loop. Before/after: PII breach-rate `1.7% → 0%` (fake PII only). |
+| **Golden dataset** | `teams/aeroassist/golden_dataset.json` | *What is the human-verified source of truth?* 40 labelled cases (happy / edge / adversarial / out-of-scope, 4 of them held-out), versioned with a changelog, plus a schema validator (`demos/loader_cell.py`). |
+| **RAG evaluation** | `demos/rag_eval.py` | *Is the agent accurate and grounded?* Scores a policy-RAG with **RAGAS** — context precision/recall (retrieval) and faithfulness/answer-relevancy (generation), judged by Claude, embedded locally (no OpenAI). |
+| **Red-teaming** | `demos/red_team.py`, `demos/red_team_v2.py` | *Can I break it?* OWASP-LLM-mapped attacks — prompt injection (direct & indirect), jailbreak, data-leak, excessive agency — plus strengthened vectors (obfuscation, multi-turn, poisoned knowledge base). |
+| **The fix** | `demos/guardrail_fix.py` | *How do I close a breach?* A deterministic **policy-of-record at the execution gate** — money decisions live in code, not in the model. |
+| **Agentic testing** | `demos/aeroassist_agent.py`, `demos/trajectory_eval.py`, `demos/consistency_check.py` | *Is the agent's whole journey right, not just its answer?* A tool-using agent that emits a **trajectory**, graded on tool choice, arguments, termination and **multi-intent completeness** — run N times to measure a reliability rate (a probabilistic agent isn't certified by a single pass). |
+| **Completeness fix** | `demos/completeness_guardrail.py` | *How do I stop a silently dropped intent?* A code-owned **intent checklist** that re-asks for any missed request. Before/after: fully-complete rate `80% → 100%`. |
+| **Eval harness / CI gate** | `demos/eval_harness.py`, `.github/workflows/eval-gate.yml` | *How do I stop a regression shipping?* A metric **registry** with per-metric thresholds + direction and a build-failing **exit code** — evals become a **gate**, not a report. Key-free **mock judge** runs on every PR (deterministic, no API key); the **live judge** runs on demand, and may only block a release once it has qualified against human labels (otherwise it's advisory). Demo: healthy outputs PASS (exit 0), a seeded regression FAILS (exit 1). |
+| **Model layer** | `aiquality/models`, `demos/llm.py` | *Can I switch models without touching every file?* One place for model clients: provider and model are settings (`LLM_PROVIDER`, `AGENT_MODEL`, `JUDGE_MODEL`); the judge uses a different, stronger model than the agent, so nothing grades its own work. |
+| **Judge validation** | `demos/answer_judge.py`, `demos/build_label_set.py`, `demos/judge_validation.py`; labels and results in `teams/aeroassist/` | *Can I trust the AI judge that gates my releases?* Thirty answers labelled blind by a person, split into a tuning half and a held-back half; two numbers against the human labels — **catches real failures** and **leaves good answers alone**; per-category breakdown; results saved per judge version. A judge that hasn't qualified runs in **advisory mode**. |
+| **Tests for the test tools** | `tests/` | *Do the evaluation tools themselves work?* Key-free tests (fake judges, local servers, no network) run on every PR. |
+| **Observability** | `demos/observability/tracing.py`, `demos/observability/monitor.py`, `demos/observability/pii_guardrail.py` | *Is it still safe in production?* A structured per-run **trace** (evidence log), a **dashboard** (breach/refusal rate, latency, cost), a baseline-vs-recent **drift alert**, and a **triage→fix** loop. Before/after: PII breach-rate `1.7% → 0%` (fake PII only). |
 
 ---
 
@@ -212,25 +212,25 @@ can't block a release.
 ## Run it
 
 ```bash
-pip install -r requirements.txt
+pip install -e ".[dev]" -r demos/requirements.txt
 cp .env.example .env          # add your ANTHROPIC_API_KEY (never commit .env)
 
-python rag_eval.py            # evaluate the RAG with RAGAS
-python red_team.py            # baseline red-team (OWASP-mapped)
-python red_team_v2.py         # strengthened attacks (finds the real breach)
-python guardrail_fix.py       # the fix: breach closed, legit refunds still work
+python demos/rag_eval.py            # evaluate the RAG with RAGAS
+python demos/red_team.py            # baseline red-team (OWASP-mapped)
+python demos/red_team_v2.py         # strengthened attacks (finds the real breach)
+python demos/guardrail_fix.py       # the fix: breach closed, legit refunds still work
 
-python trajectory_eval.py     # grade the agent's trajectory (tool/args/termination/completeness)
-python consistency_check.py   # N-run completeness rate (catches silent multi-intent drops)
-python completeness_guardrail.py  # the completeness fix: before/after rate
+python demos/trajectory_eval.py     # grade the agent's trajectory (tool/args/termination/completeness)
+python demos/consistency_check.py   # N-run completeness rate (catches silent multi-intent drops)
+python demos/completeness_guardrail.py  # the completeness fix: before/after rate
 
-python eval_harness.py            # CI GATE: healthy outputs -> PASS (exit 0)
-python eval_harness.py regressed  # CI GATE: seeded regression -> FAIL (exit 1)
+python demos/eval_harness.py            # CI GATE: healthy outputs -> PASS (exit 0)
+python demos/eval_harness.py regressed  # CI GATE: seeded regression -> FAIL (exit 1)
 
-python build_label_set.py                                  # 15 agent + 15 seeded answers to label
-python judge_validation.py --judge llm --split tune        # improve the judge on the tuning half
-python judge_validation.py --judge llm --split holdout     # measure once; exit 0 = qualified to gate
-python -m pytest -q                                        # key-free tests for the tools themselves
+python demos/build_label_set.py                                  # 15 agent + 15 seeded answers to label
+python demos/judge_validation.py --judge llm --split tune        # improve the judge on the tuning half
+python demos/judge_validation.py --judge llm --split holdout     # measure once; exit 0 = qualified to gate
+python -m pytest -q                                              # key-free tests for the tools themselves
 
 aiquality record   --team aeroassist     # record the live agent's golden and attack answers (needs the key + the aeroassist extra)
 aiquality evaluate --team aeroassist     # replay them: key-free and repeatable
@@ -240,9 +240,9 @@ aiquality gate     --team aeroassist     # the release gate on the recorded answ
 In Colab, run `build_label_set.main()` and `judge_validation.main()` inside the notebook (not
 with `!python`) so the Colab secret is available.
 
-Each file is self-contained and also runs cell-by-cell in a notebook. The API key is read
-from the environment (`ANTHROPIC_API_KEY`) — it is never hard-coded, and `.env` is gitignored.
-Data is privacy-safe synthetic only (no real PII).
+Run the scripts from the repository root; [`demos/README.md`](demos/README.md) says what each one
+shows. The API key is read from the environment (`ANTHROPIC_API_KEY`) — it is never hard-coded,
+and `.env` is gitignored. Data is privacy-safe synthetic only (no real PII).
 
 ---
 
@@ -253,7 +253,7 @@ Data is privacy-safe synthetic only (no real PII).
 - [x] **Observability loop (done)** — trace every run; track hallucination-rate, guardrail-breach-rate, cost, latency; detect drift.
 - [x] **Judge validation (done, round 1)** — human labels, tuning and held-back halves, two numbers, advisory mode until qualified.
 - [ ] **Judge validation, round 2** — a labelling guide with quiet-failure examples, a second labeller, narrower single-purpose judges, and a fresh held-back set with the bars set beforehand.
-- [ ] **One model layer for every judge** — move the RAGAS, red-team and completeness judges onto `llm.py`.
+- [ ] **One model layer for every judge** — move the RAGAS, red-team and completeness judges onto the package's model layer (`aiquality/models`).
 - [ ] **Clearer policy boundaries** — P5's cut-off is reworded (done); the agent still refuses at exactly 4 and exactly 48 hours (GD18, GD30), so state every boundary as inclusive and test each one.
 - [x] **Platform core (done)** — `aiquality` package: one agent contract, three adapters, team configs in YAML or JSON, golden sets from JSON/CSV/Excel, pluggable checks, a company floor, run records, a command line.
 - [x] **Release gate per team and client (done)** — attack tests as plugins, accepted findings with expiry, exit codes 0/1/2, HTML / JUnit XML / GitHub summary reports.

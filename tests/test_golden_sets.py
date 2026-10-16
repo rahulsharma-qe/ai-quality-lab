@@ -8,7 +8,7 @@ import pytest
 from aiquality import GoldenCaseBuilder, GoldenSetError, load_golden_set
 
 EXAMPLE_DATA = Path(__file__).resolve().parents[1] / "examples" / "data"
-REPO_GOLDEN_SET = Path(__file__).resolve().parents[1] / "golden_dataset.json"
+REPO_GOLDEN_SET = Path(__file__).resolve().parents[1] / "teams" / "aeroassist" / "golden_dataset.json"
 
 
 def test_three_formats_give_identical_cases():

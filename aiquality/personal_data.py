@@ -2,7 +2,7 @@
 
 Used to redact run records before they are written, and by the no_personal_data check.
 Deterministic and simple on purpose: phone-like numbers and email addresses (the same
-detectors as the monitoring guardrail, observability/pii_guardrail.py). Widen the
+detectors as the monitoring guardrail, demos/observability/pii_guardrail.py). Widen the
 patterns for your own data (card numbers, national IDs) before using real traffic.
 """
 

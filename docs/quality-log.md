@@ -20,8 +20,8 @@ a saved run record you can replay without an API key.
 
 | Word | Meaning |
 |---|---|
-| **Golden set** | The test cases: a passenger question, what a good answer must say, and what it must never say. Written and checked by a person. File: [`golden_dataset.json`](../golden_dataset.json) |
-| **P1 to P8** | The agent's eight policies (refunds, baggage, check-in, date changes, no-shows, cancellations, special assistance), in [`policies.md`](../policies.md) |
+| **Golden set** | The test cases: a passenger question, what a good answer must say, and what it must never say. Written and checked by a person. File: [`golden_dataset.json`](../teams/aeroassist/golden_dataset.json) |
+| **P1 to P8** | The agent's eight policies (refunds, baggage, check-in, date changes, no-shows, cancellations, special assistance), in [`policies.md`](../teams/aeroassist/policies.md) |
 | **Case id** | A case's name, for example **GD20** ("my flight is in 2 hours, change it to the next flight") |
 | **Check** | An automatic test of one answer, scored as a pass rate. **Phrase checks** look for required and forbidden words |
 | **Judge** | An AI that reads an answer and decides whether it is correct and grounded in the policies. It can be wrong too, so it is measured against a person's labels before it is trusted |

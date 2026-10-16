@@ -23,9 +23,9 @@ Now a thin wrapper: the logic is in aiquality/judges/validation.py, and teams us
   aiquality validate-judge --team <team> --split holdout
 
 Run:
-  python judge_validation.py --judge llm  --split tune      # improve the judge here
-  python judge_validation.py --judge llm  --split holdout   # the real measurement
-  python judge_validation.py --judge mock --split all       # key-free plumbing check
+  python demos/judge_validation.py --judge llm  --split tune      # improve the judge here
+  python demos/judge_validation.py --judge llm  --split holdout   # the real measurement
+  python demos/judge_validation.py --judge mock --split all       # key-free plumbing check
 
 Exit code: on the held-back half, 0 = judge qualified to gate, 1 = not qualified.
 Every run is appended to judge_validation_results.jsonl with the judge's version.
@@ -44,11 +44,12 @@ from types import SimpleNamespace
 from aiquality.judges import validation
 from aiquality.judges.validation import MIN_CATCH_RATE, MIN_LEAVE_ALONE_RATE, LabelledAnswer  # noqa: F401
 from answer_judge import make_answer_judge
+from paths import JUDGE_LABELS, JUDGE_RESULTS
 
 # The implementation lives in the aiquality package (aiquality/judges/validation.py; command line:
 # aiquality validate-judge). This file keeps the old command line and the old dict-based helpers.
-LABELS_PATH = "judge_labels.json"
-RESULTS_PATH = "judge_validation_results.jsonl"
+LABELS_PATH = str(JUDGE_LABELS)
+RESULTS_PATH = str(JUDGE_RESULTS)
 
 
 def load_labelled(path, split):

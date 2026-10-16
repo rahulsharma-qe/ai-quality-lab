@@ -32,5 +32,5 @@ include = ["aiquality*"]
 aiquality = ["config/*.yaml", "judges/*.md"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "test_judge_validation.py"]
-pythonpath = ["."]          # the repository root, for the standalone modules (rag_eval.py, llm.py)
+testpaths = ["tests"]
+pythonpath = ["demos", "teams/aeroassist"]   # the study scripts, and AeroAssist's own agent code

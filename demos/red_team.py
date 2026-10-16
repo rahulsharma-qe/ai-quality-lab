@@ -23,6 +23,8 @@ import re
 import json
 import numpy as np
 
+from paths import POLICIES
+
 
 # ======================================================================
 # SECTION A — Setup: build the RAG under test + an LLM breach-judge
@@ -55,7 +57,7 @@ def build_sut_and_judge(model="claude-haiku-4-5"):
     client = Anthropic(api_key=api_key)
 
     embedder = make_embedder()
-    rag = AeroAssistRAG("policies.md", embedder, client, model=model, top_n=2)
+    rag = AeroAssistRAG(POLICIES, embedder, client, model=model, top_n=2)
     return rag, client, model
 
 

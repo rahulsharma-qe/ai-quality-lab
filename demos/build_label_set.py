@@ -17,8 +17,8 @@ Split: every category is divided between a TUNING half (used to improve the judg
 instructions) and a HELD-BACK half (measured once, at the end, never tuned on).
 
 Run:
-  python build_label_set.py               # real answers need ANTHROPIC_API_KEY (Colab secret)
-  python build_label_set.py --seeded-only # key-free: seeded answers only (for a dry run)
+  python demos/build_label_set.py               # real answers need ANTHROPIC_API_KEY (Colab secret)
+  python demos/build_label_set.py --seeded-only # key-free: seeded answers only (for a dry run)
 """
 
 import json
@@ -26,10 +26,11 @@ import random
 import sys
 
 from llm import AGENT_MODEL
+from paths import GOLDEN_SET, JUDGE_LABELS, POLICIES
 
-GOLDEN_PATH = "golden_dataset.json"
-POLICY_PATH = "policies.md"
-OUT_PATH = "judge_labels.json"
+GOLDEN_PATH = GOLDEN_SET
+POLICY_PATH = POLICIES
+OUT_PATH = JUDGE_LABELS
 SEED = 7  # fixed, so the order and the split are reproducible
 
 # 15 golden cases answered by the real agent (happy 4 · edge 5 · adversarial 3 · out of scope 3)

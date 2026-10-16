@@ -54,7 +54,7 @@ jobs:
           name: aiquality-reports
           path: aiquality-runs/
       - name: Run the eval gate (mock judge, no API key)
-        run: python eval_harness.py        # exit 1 on any failed threshold -> build goes red
+        run: python demos/eval_harness.py  # exit 1 on any failed threshold -> build goes red
 
   eval-live:                       # the expensive, real-judge arm — not on every PR
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
@@ -64,19 +64,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install the model client
-        run: pip install anthropic
+      - name: Install the platform with the model client
+        run: pip install -e ".[live]"
       - name: Re-check the judge against human labels (held-back half)
         continue-on-error: true    # a judge that doesn't qualify isn't a failed build — the
                                    # next step then runs it in ADVISORY mode (reports, can't block)
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: python judge_validation.py --judge llm --split holdout
+        run: python demos/judge_validation.py --judge llm --split holdout
       - name: Run with the live LLM judge
         env:
           LLM_PROVIDER: anthropic
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: python eval_harness.py
+        run: python demos/eval_harness.py
 
 # Schedule the live arm nightly (optional):
 #   add  `schedule: [{cron: "0 2 * * *"}]`  to the `on:` block above.

@@ -1,6 +1,7 @@
 """AeroAssist's live agent, in the shape the platform expects: answer(question, conversation) -> dict.
 
-It wraps the policy-retrieval agent (AeroAssistRAG in rag_eval.py). Two versions live side by side,
+It wraps the policy-retrieval agent (AeroAssistRAG in aeroassist_rag.py, next to this file). Two
+versions live side by side,
 so a change can be recorded and compared against the version before it:
 
   v1  the original: the first instructions, top 2 policies, earlier turns ignored
@@ -20,11 +21,11 @@ import re
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+TEAM_FOLDER = Path(__file__).resolve().parent
+if str(TEAM_FOLDER) not in sys.path:
+    sys.path.insert(0, str(TEAM_FOLDER))              # for aeroassist_rag.py, the agent's own code
 
-from llm import AGENT_MODEL  # noqa: E402  (light import: model name only)
+from aiquality.models import AGENT_MODEL  # noqa: E402  (light import: model name only)
 
 # General rules, written for kinds of error, never for one golden case (a test checks this).
 RULES_V2 = [
@@ -53,7 +54,7 @@ VERSION = os.environ.get("AEROASSIST_AGENT_VERSION", "v2")
 if VERSION not in VERSIONS:
     raise ValueError(f"AEROASSIST_AGENT_VERSION must be one of: {', '.join(VERSIONS)} (got {VERSION!r})")
 SETTINGS = VERSIONS[VERSION]
-POLICIES_PATH = REPO_ROOT / "policies.md"
+POLICIES_PATH = TEAM_FOLDER / "policies.md"
 POLICIES_VERSION = re.search(r"_Version ([\d.]+)", POLICIES_PATH.read_text(encoding="utf-8")).group(1)
 AGENT_VERSION = f"aeroassist-rag:{AGENT_MODEL}:{VERSION}-top{SETTINGS['top_n']}:policies-{POLICIES_VERSION}"
 
@@ -75,9 +76,9 @@ def answer(question: str, conversation: list = None) -> dict:
 def _get_agent():
     global _agent
     if _agent is None:
+        from aeroassist_rag import DEFAULT_SYSTEM_PROMPT, AeroAssistRAG, make_embedder
+        from aiquality.models import get_api_key
         from anthropic import Anthropic
-        from llm import get_api_key
-        from rag_eval import DEFAULT_SYSTEM_PROMPT, AeroAssistRAG, make_embedder
 
         client = Anthropic(api_key=get_api_key())
         system_prompt = SETTINGS["system_prompt"] or DEFAULT_SYSTEM_PROMPT

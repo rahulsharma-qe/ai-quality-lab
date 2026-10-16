@@ -19,6 +19,7 @@ import os
 import base64
 import numpy as np
 
+from paths import POLICIES
 from rag_eval import AeroAssistRAG, make_embedder
 from red_team import judge_breach, _get_api_key
 
@@ -76,7 +77,7 @@ def build_sut_and_judge(model="claude-haiku-4-5"):
     api_key = _get_api_key()
     os.environ["ANTHROPIC_API_KEY"] = api_key
     client = Anthropic(api_key=api_key)
-    rag = RedTeamRAG("policies.md", make_embedder(), client, model=model, top_n=2)
+    rag = RedTeamRAG(POLICIES, make_embedder(), client, model=model, top_n=2)
     return rag, client, model
 
 

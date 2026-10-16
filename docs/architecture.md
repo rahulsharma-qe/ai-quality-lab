@@ -68,8 +68,8 @@ flowchart LR
 | Part | Status |
 |---|---|
 | Contracts, adapters, team config, company minimums, test data, runner, checks registry, attacks registry, release gate (per team and client, accepted findings), RunRecord, console / HTML / JUnit XML / GitHub summary reports, run comparison, command line | In the package |
-| Model layer, judges registry, judge validation and status per version, answer_judge check (advisory until qualified), recorded verdicts, human review queue | In the package (the old `llm.py`, `answer_judge.py` and `judge_validation.py` now wrap it) |
-| Monitoring | Standalone scripts in this repo (`observability/`), moving into the package |
+| Model layer, judges registry, judge validation and status per version, answer_judge check (advisory until qualified), recorded verdicts, human review queue | In the package (the study scripts `demos/llm.py`, `demos/answer_judge.py` and `demos/judge_validation.py` now wrap it) |
+| Monitoring | Standalone scripts in this repo (`demos/observability/`), moving into the package |
 | Reusable CI workflow, gate view, tracing export | Planned |
 
 ## 2. One gate run, step by step
