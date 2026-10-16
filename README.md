@@ -1,24 +1,54 @@
-# ai-quality-lab — Quality Engineering *of* AI systems
+# ai-quality-lab — quality engineering for AI agents
 
-A hands-on toolkit for testing the things that make an LLM agent trustworthy:
-**is it accurate, is it grounded, and is it safe under attack?**
+[![eval-gate](https://github.com/rahulsharma-qe/ai-quality-lab/actions/workflows/eval-gate.yml/badge.svg)](https://github.com/rahulsharma-qe/ai-quality-lab/actions/workflows/eval-gate.yml)
 
-This is the **"QA *of* AI"** side of my work — evaluating and hardening AI systems.
-Its sibling repo, [`aeroassist-qa-agent`](https://github.com/rahulsharma-qe/aeroassist-qa-agent),
-is the **"AI *for* QA"** side — using AI to generate tests, data and scripts. Together they
-cover both halves of modern quality engineering.
+**`aiquality`** is a self-serve quality platform for AI agents. A team connects its agent and brings
+one config file and a golden set of test cases, with no test code, and gets: a pass rate for every
+check, attack tests, a release gate that fails the build in CI, an AI judge that may block a
+release only after it agrees with people's labels, and a queue of what a person should look at.
 
-> **System under test:** *AeroAssist*, a mock support agent for the fictional **Meridian
-> Airways**, answering from an 8-policy knowledge base ([`teams/aeroassist/policies.md`](teams/aeroassist/policies.md)). Everything here is
-> evaluated against that agent, but the techniques are stack-agnostic — point them at any
-> LLM app.
+It is tested here on **AeroAssist**, a support agent for the fictional **Meridian Airways** that
+answers passengers from eight policies ([`teams/aeroassist/policies.md`](teams/aeroassist/policies.md))
+or hands over to a person.
+
+### What testing AeroAssist found
+
+- **An average hid a critical failure.** 89% against an 85% bar would have passed while three
+  high-priority cases failed; a bar per priority now fails the gate for the right reason.
+- **One quality loop, proven on unseen cases.** Diagnosing by layer showed two errors were retrieval
+  misses and one was a gap in the policy. After general fixes, retrieval went from 94% to 100%, no
+  case newly failed, and every held-out case written after the fix passed.
+- **A sentence, not the model, was wrong.** "Allowed up to 4 hours before departure" was read two ways
+  by the agent and by a person; rewording the policy fixed the case the prompt rules hadn't.
+- **The phrase checks pass, and they are not enough.** An advisory AI judge found real errors the
+  phrase checks passed: a passenger flying tomorrow told web check-in is closed, and changes refused
+  at exactly 4 and 48 hours. So the AeroAssist gate stays non-blocking in CI until they're fixed.
+
+The full story, run by run, with the evidence and every open problem:
+**[`docs/quality-log.md`](docs/quality-log.md)**.
+
+### Try it (no API key)
+
+```bash
+pip install -e ".[dev]"
+aiquality gate   --team aeroassist     # the release gate on AeroAssist's recorded answers
+aiquality review --team aeroassist     # what a person should look at, and why
+```
+
+**Start here:** [quality log](docs/quality-log.md) · [onboarding a team](docs/onboarding.md) ·
+[architecture](docs/architecture.md) · [runnable examples](examples/) ·
+[the studies that came first](demos/)
+
+This repository is the **"quality of AI"** side of my work. Its sibling,
+[`aeroassist-qa-agent`](https://github.com/rahulsharma-qe/aeroassist-qa-agent), is the
+**"AI for quality"** side: using AI to generate tests, data and scripts.
 
 ---
 
 ## The platform: `aiquality` — configuration, not code
 
-The scripts below proved each technique on one agent. `aiquality` packages them into a
-self-serve platform: a team connects its agent and brings one config file (YAML or JSON) and a
+The studies in [`demos/`](demos/) proved each technique on one agent. `aiquality` packages them
+into a self-serve platform: a team connects its agent and brings one config file (YAML or JSON) and a
 golden set (JSON, CSV or Excel). No test code.
 
 ```bash
@@ -109,23 +139,6 @@ flowchart LR
 Solid boxes are in the package today; dashed boxes are scripts in [`demos/`](demos/) moving into it,
 or planned. Details: [`docs/architecture.md`](docs/architecture.md) ·
 onboarding: [`docs/onboarding.md`](docs/onboarding.md) · runnable examples: [`examples/`](examples/).
-
-### Testing AeroAssist with it: results so far
-
-Four runs on a policy-answering airline support agent, each one changing what we test next. The full
-story (what we ran, found, changed and learned, with the evidence) is in
-**[`docs/quality-log.md`](docs/quality-log.md)**, which also lists every open problem.
-
-- **An average hid a critical failure.** 89% against an 85% bar would have passed while three
-  high-priority cases failed; a priority bar now fails the gate for the right reason.
-- **One quality loop, proven on unseen cases.** Diagnosing by layer showed two errors were retrieval
-  misses and one was a gap in the policy. General fixes, then held-out cases written after the fix:
-  no case newly failing, all held-out cases passed.
-- **A sentence, not the model, was wrong.** "Allowed up to 4 hours before departure" was read two ways
-  by the agent and by a person; rewording the policy fixed the case the prompt rules hadn't.
-- **The phrase checks pass, and they are not enough.** An advisory AI judge found real errors the
-  phrase checks passed: a passenger flying tomorrow told web check-in is closed, and changes refused
-  at exactly 4 and 48 hours. So the AeroAssist gate stays non-blocking in CI until they're fixed.
 
 ---
 
