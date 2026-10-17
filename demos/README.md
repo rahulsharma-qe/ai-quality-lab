@@ -32,4 +32,5 @@ python demos/loader_cell.py                      # golden-set schema check, no A
 python demos/rag_eval.py                         # needs ANTHROPIC_API_KEY
 ```
 
-The scripts that call a model read `ANTHROPIC_API_KEY` from the environment.
+The scripts that call a model read `ANTHROPIC_API_KEY` from the environment: `export ANTHROPIC_API_KEY=your-key`,
+or fill in `.env` from `.env.example` and load it with `set -a; source .env; set +a`.

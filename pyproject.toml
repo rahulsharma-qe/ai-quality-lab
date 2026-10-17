@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]   # 77: the license is written as "MIT", the current standard
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,7 +7,9 @@ name = "aiquality"
 version = "0.1.0"
 description = "A self-serve quality platform for AI agents: evaluation, attack tests, a release gate and reports, driven by configuration."
 readme = "README.md"
-requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"          # tested in CI on 3.11 and 3.12; 3.10 reaches end of life in October 2026
 dependencies = [
     "pyyaml>=6.0",
 ]

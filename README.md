@@ -230,7 +230,7 @@ can't block a release.
 
 ```bash
 pip install -e ".[dev]" -r demos/requirements.txt
-cp .env.example .env          # add your ANTHROPIC_API_KEY (never commit .env)
+export ANTHROPIC_API_KEY=your-key   # or: cp .env.example .env, add the key, then  set -a; source .env; set +a
 
 python demos/rag_eval.py            # evaluate the RAG with RAGAS
 python demos/red_team.py            # baseline red-team (OWASP-mapped)
@@ -287,3 +287,5 @@ and `.env` is gitignored. Data is privacy-safe synthetic only (no real PII).
 
 *Part of a two-repo body of work on AI quality: this repo (**QA of AI**) and
 [`aeroassist-qa-agent`](https://github.com/rahulsharma-qe/aeroassist-qa-agent) (**AI for QA**).*
+
+Released under the [MIT License](LICENSE).

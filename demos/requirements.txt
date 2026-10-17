@@ -1,4 +1,5 @@
-# QA-of-AI toolkit — pinned for reproducibility (eval tooling churns fast)
+# The study scripts' extra tools. Only RAGAS is held to a version range, because its interface
+# changes between minor versions; the rest take the latest release.
 anthropic
 ragas>=0.2,<0.3
 langchain-anthropic
