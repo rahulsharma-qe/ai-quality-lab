@@ -7,6 +7,10 @@ versions live side by side, so a change can be recorded and compared against the
   v2  general rules for the errors the second recording showed, top 3 policies, earlier turns used
   v3  v2's settings, with rules for the kinds of error the judge and a person found in Run 4:
       boundaries, timing inside a window, the request as asked, plain hand-overs, nothing invented
+  v4  v3, but limits are decided in code: the model reads the facts (hours until departure, weights),
+      calls the check_policy_limits tool (policy_limits.py, next to this file) and words its ruling.
+      One rule changes (work out timing yourself -> use the tool), and one sentence that pointed at
+      working out totals now points at the tool
 
 Pick one with the environment variable AEROASSIST_AGENT_VERSION (default: v3, since Run 5). The choice is part
 of AGENT_VERSION, and so is the version of policies.md it answers from: the same code with new
@@ -69,6 +73,23 @@ RULES_V3 = [
 ]
 
 
+# v4: the timing rule (rule 4) becomes "use the tool", and rule 5's sentence about working out totals
+# points at the tool's ruling instead. Every other rule is v3's, word for word, so a difference
+# between v3 and v4 comes from the tool.
+TOOL_RULE = (
+    "When the answer depends on a time, a weight or a charge, call the check_policy_limits tool with "
+    "the facts from the conversation and give its ruling; never work these out yourself. If a fact "
+    "isn't exact, pass the most likely value and state that assumption in a short clause; don't ask a "
+    "question instead of answering."
+)
+_TOTALS_SENTENCE = "Working out a total from the policy's own figures is fine."
+RULES_V4 = list(RULES_V3)
+RULES_V4[3] = TOOL_RULE
+assert _TOTALS_SENTENCE in RULES_V4[4]
+RULES_V4[4] = RULES_V4[4].replace(_TOTALS_SENTENCE, "A ruling from the check_policy_limits tool counts as "
+                                                    "the policy's own figure.")
+
+
 def _prompt(rules: list[str]) -> str:
     return ("You are AeroAssist, Meridian Airways support. Answer ONLY from the policy context provided; "
             "never invent policy.\n\nRules:\n"
@@ -78,11 +99,13 @@ def _prompt(rules: list[str]) -> str:
 
 PROMPT_V2 = _prompt(RULES_V2)
 PROMPT_V3 = _prompt(RULES_V3)
+PROMPT_V4 = _prompt(RULES_V4)
 
 VERSIONS = {
     "v1": {"system_prompt": None, "top_n": 2, "use_conversation": False},       # None: the original prompt
     "v2": {"system_prompt": PROMPT_V2, "top_n": 3, "use_conversation": True},
     "v3": {"system_prompt": PROMPT_V3, "top_n": 3, "use_conversation": True},
+    "v4": {"system_prompt": PROMPT_V4, "top_n": 3, "use_conversation": True, "policy_limits_tool": True},
 }
 TEMPERATURE = 0          # comparable runs: every version is recorded with the same setting
 
@@ -103,10 +126,12 @@ def prepare() -> None:
 
 
 def answer(question: str, conversation: list = None) -> dict:
-    """Answer one passenger question; also return the policies the agent retrieved."""
+    """Answer one passenger question; also return the policies the agent retrieved and, for a
+    version with tools, the tools it called (None for a version without tools: nothing to see)."""
     earlier_turns = conversation if SETTINGS["use_conversation"] else None
-    answer_text, retrieved_policies = _get_agent().answer(question, earlier_turns)
-    return {"answer_text": answer_text, "retrieved_documents": retrieved_policies}
+    answer_text, retrieved_policies, tool_calls = _get_agent().answer_with_tool_calls(question, earlier_turns)
+    return {"answer_text": answer_text, "retrieved_documents": retrieved_policies,
+            "tool_calls": tool_calls if SETTINGS.get("policy_limits_tool") else None}
 
 
 def _get_agent():
@@ -118,6 +143,11 @@ def _get_agent():
 
         client = Anthropic(api_key=get_api_key())
         system_prompt = SETTINGS["system_prompt"] or DEFAULT_SYSTEM_PROMPT
+        tools = {}
+        if SETTINGS.get("policy_limits_tool"):
+            import policy_limits
+            tools = {"tools": [policy_limits.TOOL_SCHEMA], "run_tool": policy_limits.run_tool}
         _agent = AeroAssistRAG(POLICIES_PATH, make_embedder(), client, model=AGENT_MODEL,
-                               top_n=SETTINGS["top_n"], system_prompt=system_prompt, temperature=TEMPERATURE)
+                               top_n=SETTINGS["top_n"], system_prompt=system_prompt, temperature=TEMPERATURE,
+                               **tools)
     return _agent
