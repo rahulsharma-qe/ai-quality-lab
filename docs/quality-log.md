@@ -233,4 +233,4 @@ gate stays non-blocking until those errors are fixed or the judge qualifies.
 
 After a run worth recording: update **Where we are now** (the status table, open problems and accepted
 findings), then add a run below the last one with the same five parts: question, what we ran, what we
-found, what we changed, what we learned. Link the evidence; keep it in plain words.
+found, what we changed, what we learned. Link the evidence.
