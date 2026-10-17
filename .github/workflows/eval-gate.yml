@@ -39,9 +39,9 @@ jobs:
           set -e
           if [ "$code" -ne 1 ]; then echo "expected exit 1 (quality failure), got $code"; exit 1; fi
       - name: AeroAssist release gate (reported, not blocking)
-        # The phrase checks pass, but the judge and a person found real errors they miss (GD13, GD18,
-        # GD30: see docs/quality-log.md). Blocking on checks known to miss errors would be false comfort;
-        # switch to blocking once those are fixed or the judge qualifies.
+        # It fails on real errors (GD18 and GD40, wrong about a time window), and the judge finds more
+        # that the phrase checks pass (see docs/quality-log.md, "Where we are now"). Switch to blocking
+        # once the confirmed high-priority errors are fixed and the gate passes.
         continue-on-error: true
         run: env -u GITHUB_STEP_SUMMARY aiquality gate --team aeroassist
       - name: Summarise every gate on the run page

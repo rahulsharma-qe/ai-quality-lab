@@ -33,46 +33,47 @@ a saved run record you can replay without an API key.
 | **Hidden error** | A check passes a wrong answer, because the answer contains the right words but means the wrong thing |
 | **Accepted finding** | A false alarm a person has reviewed and accepted, with a reason and an expiry date |
 | **Review queue** | After each run, the list of findings a person should look at, and why |
+| **Repeat check** | The same cases asked again, to see how often a result changes on its own |
 
 ---
 
 ## Where we are now
 
-*Updated 15 October 2026.*
+*Updated 17 October 2026, after Run 5.*
 
 | | |
 |---|---|
-| Agent | v2 rules, 3 policies retrieved per question, earlier conversation turns used, policies version 1.2 |
-| Golden set | version 1.8, 40 cases (including 4 held-out cases) |
-| Phrase checks | required phrases 92%, forbidden phrases 88% (100% after accepted false alarms); attacks resisted 16 of 16 |
-| Judge | grades every answer, but **advisory**: its version has not qualified against a person's labels (it leaves only 62% of good answers alone; the bar is 80%) |
-| Release gate on phrase checks | **PASS**, with a warning: 5 of 40 cases rely on an accepted finding |
-| Continuous integration (CI) | the AeroAssist gate is reported but **not blocking**, on purpose: the phrase checks pass while the judge and a person found real errors they miss (below) |
+| Agent | v3: v2's settings plus nine general rules for the kinds of error Run 4 found; policies version 1.3 |
+| Golden set | version 1.10, 45 cases (9 of them held-out) |
+| Phrase checks | required phrases 89% (91% after an accepted false alarm), forbidden phrases 97% (100% after one); attacks resisted 16 of 16 |
+| Judge | passes 24 of 45 answers (53%), but **advisory**: its version has not qualified against a person's labels (it leaves only 62% of good answers alone; the bar is 80%) |
+| Release gate on phrase checks | **FAIL**: high-priority GD18 and GD40, both wrong about a time window |
+| Repeat check | the judge's verdict changed at least once in 4 tries for 13 of the 24 cases asked again, so one recording can't tell a change of 2 or 3 cases from noise |
+| Continuous integration (CI) | the AeroAssist gate is reported but **not blocking**: it fails, and the judge finds errors the phrase checks miss |
 
 ### Open problems
 
 | Case | What is wrong, in plain words | Found by | Since | Next step |
 |---|---|---|---|---|
-| GD18 | A passenger asks to change a flight **exactly** 4 hours before departure. The policy says exactly 4 hours still qualifies; the agent refuses | Judge, confirmed by reading the answer | Already wrong in v2; the phrase checks passed it | Boundary rule for the agent |
-| GD30 | A wheelchair request **exactly** 48 hours before departure is told it is "not guaranteed"; the policy says at least 48 hours qualifies | Judge, confirmed | New with policies 1.2 | Boundary rule; say in the policy that 48 hours is inclusive |
-| GD13 | A passenger flying tomorrow is told web check-in is **closed**, when it opens 48 hours before departure | Judge, confirmed | New with policies 1.2 (v2 answered correctly) | Agent fix, then a phrase check so it can't come back |
-| GD06 | Three bags the passenger wants to **check in** are treated as cabin bags | Judge, confirmed | Already wrong in v2 | Agent fix |
-| GD38 (held-out) | Asked about a missed connection on another airline, the agent invents "a claim … for damages" instead of a plain hand-over | Judge, confirmed | Policies 1.2 recording | Agent fix |
-| GD24 | A late passenger asks to rebook at the same price; the agent never says that missing the flight means rebooking at the full current fare | Phrase check | Policies 1.2 recording | Agent fix |
-| About 11 answers | The hand-over hints that an exception might still be possible ("they can discuss options", "may be able to arrange it"). The reviewer's own written standard counts that as a failure | Judge (rubric rule 7) | Agent v2's hand-over wording | Agent fix: hand over plainly, promise nothing |
-| GD01, GD09, GD35, GD10 | Smaller invented details ("refund initiated immediately", "1 bag", "fare difference" for a no-show, an opening "Not quite") | Judge | Mixed | A person to confirm, then fix |
+| GD40, GD18 (high) | A date change **6 hours** before departure is refused ("you're within the final 4-hour window"), and so is one **exactly** 4 hours before. The policy allows both | Phrase checks and judge (GD40 on every try) | GD18 since v2; GD40 since policies 1.3 (v2 too) | Run 6: the time-window decision moves into code; the model only words it |
+| GD41 (held-out), GD13 | Web check-in: 30 hours before departure the agent says it is "not yet open"; for a flight tomorrow it says check-in "opened 48 hours ago" | Judge. GD41's phrase checks miss "not yet open" | GD41: v3. GD13: since policies 1.2, now a different error | Run 6; add "not yet open" to GD41's forbidden phrases |
+| GD14 | "My flight is in 2 hours": web check-in closes 2 hours before departure, but the policy doesn't say whether exactly 2 hours is still open | Reading the policy | Since the start | The policy owner decides, as P8 did in policies 1.3 |
+| GD22, GD40 | v3 says no policy covers a missed flight (P6 does) or a late date change: its "don't stretch a policy" rule is applied too widely | Phrase checks and judge | v3 | Revise that rule in Run 6 |
+| GD32 | Asked for a personal medical attendant, v3 offers to arrange it and asks for the departure time instead of handing over. The judge passed it; the phrase check caught it | Phrase check | v3 | Agent fix; add the answer to the judge's label set as a miss |
+| GD01, GD02 (high) | "Your refund will be initiated immediately": the policy says within 24 hours | Judge; GD02 on every try | GD01 in Run 4 and v3 (v2 on policies 1.3 passed it); GD02 new in v3 | Agent fix |
+| GD38, GD44 (held-out, high) | Out-of-scope questions get an invented rule ("their decision and responsibility") or a hint that a person may still help | Judge | GD38 since v2; GD44 in v3 (it changes from try to try) | Agent fix |
+| 10 answers | The hand-over still hints that an exception might be possible (GD11, GD18, GD21, GD26, GD27, GD28, GD31, GD37, GD38, GD44), down from 20 with v2 | Judge (rubric rule 7) | Since v2 | Agent fix |
+| GD10, GD22, GD36, GD42, GD44 | The result changes from try to try: a coin flip, not a fix or a regression | Repeat check | Run 5 | Compare runs with repeats, not one recording each (next platform phase) |
+| Platform | An accepted finding matches a case and a check, not the answer it was written for; a recorded verdict doesn't say which policies version it was graded against | Review of the platform | Run 5 | Next platform phase |
 
 ### Accepted findings (expire 14 November 2026)
 
-Each was read by a person: the answer is right, the phrase check is wrong.
+Each was read by a person against the v3 answer: the answer is right, the phrase check is wrong.
 
 | Case | Check | Why it is a false alarm |
 |---|---|---|
-| GD03 | required phrases | Refuses in other words ("I can't approve that request… VIP status doesn't change the policy") |
-| GD16 | required phrases | Says web check-in "closes 2 hours before departure" and "you're well past that deadline" instead of "closed" |
-| GD21 | forbidden phrases | Mentions a full refund only as the correct condition (booked within the last 24 hours) |
+| GD03 | required phrases | Refuses in other words ("I can't approve that… Your VIP status doesn't change the policy") |
 | GD31 | forbidden phrases | "not guaranteed" matches the forbidden word "guaranteed" |
-| GD36 | forbidden phrases | "there is no waived change fee" matches the forbidden "change fee" |
 
 ---
 
@@ -202,6 +203,76 @@ took it to mean "allowed within the last 4 hours". Is the agent wrong, or the se
 person have found real high-priority errors. A gate is only as good as its checks, so the AeroAssist
 gate stays non-blocking until those errors are fixed or the judge qualifies.
 
+### Run 5: general rules for the kinds of error Run 4 found (golden set 1.9 to 1.10)
+
+**Question.** Run 4's errors fell into a few kinds: limits ("exactly 4 hours"), timing inside a
+window, answering a different request, hand-overs that hint at an exception, and invented details.
+Can general rules fix the kinds, not the cases, and does the fix hold on cases nobody had seen
+answers for?
+
+**What we changed first.**
+
+- **Our own test data, held to the reviewer's standard** (golden 1.9). Some reference answers hinted at
+  exceptions themselves, which the rubric counts as a failure. A new lint rule checks that every
+  reference answer passes its own phrase checks; it found two test-data bugs (GD24, GD31).
+- Five **held-out cases** (GD41 to GD45), one per kind of error, frozen before any answer was seen.
+- Policies 1.3: P8 says exactly 48 hours still qualifies.
+- Agent v3: nine general rules. A test fails if a rule names a golden case's words or any number.
+- Phrase checks read through markdown emphasis ("is **closed**").
+
+**What we ran.** v2 and v3, both on policies 1.3, in one session (45 golden and 16 attack cases
+each). Then a **repeat check**: every case whose result changed between v2 and v3, and every
+held-out case, was asked 3 more times (24 cases).
+
+**What we found.**
+
+| | Run 4: v2, policies 1.2 | v2, policies 1.3 | v3, policies 1.3 |
+|---|---|---|---|
+| Judge passes, the original 40 cases | 15 | 16 | **22** |
+| Held-out GD41 to GD45, judge passes | | 4 of 5 | **2 of 5** |
+| Judge failures that name a hinted exception | 18 | 20 | **10** |
+| Attacks resisted | 16 of 16 | 16 of 16 | 16 of 16 |
+| Release gate on phrase checks | PASS | FAIL (GD40) | FAIL (GD18, GD40) |
+
+- **What held up when repeated:** plainer hand-overs and fewer invented details. GD09, GD12 and GD35
+  passed 4 tries of 4; GD06, GD07, GD24 and GD39 passed 3 of 4. GD30 (exactly 48 hours) was fixed by
+  the policy sentence alone: v2 gets it right too.
+- **Timing got worse.** GD40 (a change 6 hours before departure) is refused by v2 and v3; in Run 4, v2
+  allowed it, and the only change since is one sentence in P8 (one recording each). v3 says web
+  check-in is "not yet open" 30 hours before departure on all 4 tries (GD41; v2 was right), still
+  refuses exactly 4 hours (GD18), and says check-in "opened 48 hours ago" (GD13).
+- **The rules made new errors.** v3 says no policy covers a missed flight (GD22) and offers to
+  arrange a personal medical attendant (GD32). "Refund initiated immediately", an invented promise, now
+  appears in GD02 on every try, as well as in GD01.
+- **A likely cause, not proven:** GD18, GD40, GD41 and GD42 open with "No", and the working that
+  follows sometimes contradicts it (GD42: "No, you don't pay extra", then the agent works out the
+  ₹2,000 charge). v3's first rule says to answer first; the model may commit before it calculates.
+  v2 also failed GD40 and GD42, so the rule is not the only cause.
+- **One recording is not enough.** The judge's verdict changed at least once in 4 tries for 13 of the
+  24 cases. GD42 and GD44, two of v3's held-out failures, passed on some tries; GD41 failed every time.
+- **Each layer caught what the other missed.** The judge passed GD32's offer to arrange an attendant,
+  and the phrase check caught it; the phrase checks passed GD41's "not yet open", and the judge
+  caught it.
+- A correct one-line hand-over ("A human agent will take over") failed GD34 on wording alone.
+
+**What we changed after.**
+
+- v3 is the default agent and CI replays its answers: the judge passes 6 more of the original cases,
+  and hinted exceptions halved. v2 also refuses GD18; it passes that phrase check only because it
+  names the change fee.
+- Golden 1.10 accepts "take over" and "transfer" as a hand-over (GD04, GD33, GD34).
+- The accepted findings were re-read against v3's answers: GD03 and GD31 kept, GD16, GD21 and GD36
+  dropped because they now pass.
+- Each run in the [history](../teams/aeroassist/history/) keeps its own answers, so earlier runs can
+  still be replayed.
+- The success criteria set before the run were not met (every confirmed high-priority error fixed, 4
+  of 5 held-out cases passing, the phrase gate passing), so the AeroAssist gate stays non-blocking.
+
+**What we learned.** Prompt rules trade one kind of error for another, and it takes both the original
+cases and held-out cases to see the whole trade. Working out whether a time is inside a window is fragile in the model, and an unrelated
+change to its context can flip the answer: that decision belongs in code, like the refund decision
+before it. And a single recording can't tell a small change from noise.
+
 ---
 
 ## Lessons that carry over to any AI agent
@@ -223,9 +294,21 @@ gate stays non-blocking until those errors are fixed or the judge qualifies.
     too many of them is a signal that a check has reached its limit.
 11. **Compare fairly:** the same session, the same settings. Otherwise a difference may be chance.
 12. **The same code with new knowledge is a new agent.** The agent's version includes its policies' version.
-13. **Boundaries are where agents fail.** "Exactly 4 hours" and "exactly 48 hours" are still open (GD18, GD30).
+13. **Boundaries are where agents fail.** "Exactly 48 hours" was fixed by saying so in the policy (GD30);
+    "exactly 4 hours" is still refused (GD18).
 14. **Any change to an agent's knowledge needs the whole set re-run, graded for meaning.** Rewording one
     policy broke answers about two others (GD13, GD30).
+15. **Run it more than once.** At temperature 0, the judge's verdict changed in 4 tries for 13 of 24 cases.
+    Repeat the cases that changed before calling a difference of a few cases a result.
+16. **Prompt rules trade errors.** v3 halved hinted exceptions and broke timing and scope answers.
+    Measure on the original cases and on held-out cases written before any answer was seen; either
+    alone shows only part of the trade.
+17. **Arithmetic on limits belongs in code, like money.** "Is 6 hours before the 4-hour cut-off?" is a
+    calculation, and the model gets it wrong on every try.
+18. **Hold the test data to its own standard.** Reference answers broke the rubric's rule, and some failed
+    their own phrase checks. A lint now checks every reference answer against its own phrase checks.
+19. **Layers catch different errors.** The phrase check caught what the judge passed (GD32), and the judge
+    caught what the phrase checks passed (GD41). Keep both.
 
 ---
 

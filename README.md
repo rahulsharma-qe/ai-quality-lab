@@ -20,9 +20,13 @@ or hands over to a person.
   case newly failed, and every held-out case written after the fix passed.
 - **A sentence, not the model, was wrong.** "Allowed up to 4 hours before departure" was read two ways
   by the agent and by a person; rewording the policy fixed the case the prompt rules hadn't.
-- **The phrase checks pass, and they are not enough.** An advisory AI judge found real errors the
-  phrase checks passed: a passenger flying tomorrow told web check-in is closed, and changes refused
-  at exactly 4 and 48 hours. So the AeroAssist gate stays non-blocking in CI until they're fixed.
+- **Each layer catches what another misses.** An advisory AI judge found real errors the phrase checks
+  passed (a passenger told web check-in isn't open when it is), and a phrase check caught an answer
+  the judge passed. So the AeroAssist gate stays non-blocking in CI until the errors are fixed.
+- **Prompt rules trade errors, and one run is not enough.** General rules halved the answers that
+  hint at an exception, but broke others, including a held-out case that works out a time window.
+  Asked again, the judge's verdict changed for 13 of 24 cases, so a change of a few cases is
+  noise until it is repeated. Next: the time-window decision moves into code.
 
 The full story, run by run, with the evidence and every open problem:
 **[`docs/quality-log.md`](docs/quality-log.md)**.
@@ -267,13 +271,16 @@ and `.env` is gitignored. Data is privacy-safe synthetic only (no real PII).
 - [x] **Judge validation (done, round 1)** — human labels, tuning and held-back halves, two numbers, advisory mode until qualified.
 - [ ] **Judge validation, round 2** — a labelling guide with quiet-failure examples, a second labeller, narrower single-purpose judges, and a fresh held-back set with the bars set beforehand.
 - [ ] **One model layer for every judge** — move the RAGAS, red-team and completeness judges onto the package's model layer (`aiquality/models`).
-- [ ] **Clearer policy boundaries** — P5's cut-off is reworded (done); the agent still refuses at exactly 4 and exactly 48 hours (GD18, GD30), so state every boundary as inclusive and test each one.
+- [ ] **Clearer policy boundaries** — P5's cut-off reworded and P8's 48 hours stated as inclusive (done); the agent still refuses at exactly 4 hours (GD18), and P4 doesn't say whether exactly 2 hours before departure is still open (GD14).
 - [x] **Platform core (done)** — `aiquality` package: one agent contract, three adapters, team configs in YAML or JSON, golden sets from JSON/CSV/Excel, pluggable checks, a company floor, run records, a command line.
 - [x] **Release gate per team and client (done)** — attack tests as plugins, accepted findings with expiry, exit codes 0/1/2, HTML / JUnit XML / GitHub summary reports.
 - [x] **Judges in the platform (done)** — judges registry, validation and status per version, an advisory-until-qualified judge check, recorded verdicts, a human review queue.
 - [ ] **A second team and monitoring in the platform** — a second (fictional) team onboarded with configuration only, a reusable CI workflow, monitoring moved into the package.
 - [ ] **Gate view and tracing export** — a static gate dashboard and OpenTelemetry export to an open-source tracing tool.
 - [x] **Quality loop on AeroAssist (done)** — retrieval checked on its own, run comparison case by case, agent v2 with general rules, held-out cases, no regressions.
+- [x] **Second quality loop on AeroAssist (done)** — agent v3 with a rule per kind of error, a held-out case per kind, and a repeat check: half the hinted exceptions, worse answers on time windows.
+- [ ] **Limit decisions in code (next)** — time windows, allowances and fees worked out by a small calculator the agent calls; the model only words the result.
+- [ ] **Compare with repeats** — ask the cases that changed again and report how often each result holds, so noise isn't read as a fix or a regression.
 - [ ] **Parallel runs** — worker limit, rate-limit retries and a per-run budget cap.
 
 ---
