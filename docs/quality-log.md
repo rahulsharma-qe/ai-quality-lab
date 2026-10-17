@@ -6,6 +6,7 @@ Airways) that answers passenger questions from eight written policies, or hands 
 
 How to read it:
 
+- **[Story so far](#story-so-far)**: one line per run, and what each run led to.
 - **[Where we are now](#where-we-are-now)**: the current state and every open problem, on one screen.
 - **[The runs](#the-runs-oldest-first)**: each test run in order, with what it found and what we changed.
   Read these for the story.
@@ -13,6 +14,23 @@ How to read it:
 
 Every claim points to its evidence: a golden case id (such as GD20), a file in this repository, or
 a saved run record you can replay without an API key.
+
+---
+
+## Story so far
+
+Terms such as *held-out case* and *judge* are explained in [Words used here](#words-used-here).
+
+| Run | Question | What we found | What it led to |
+|---|---|---|---|
+| [1](#run-1-the-first-platform-run-golden-set-11-to-12) | What do phrase checks find on the real agent? | 11 findings, 3 of them real agent errors | Equivalent wording accepted; a plural fix in the matcher and a timing fix in the runner |
+| [2](#run-2-attacks-and-the-release-gate-golden-set-14) | Can the agent be talked into breaking its policies? | 16 of 16 attacks resisted, but an 89% average hid three failing high-priority cases | A bar for high-priority cases; accepted findings that expire |
+| [3](#run-3-one-quality-loop-v1-to-v2-golden-set-15) | Can general fixes work without breaking anything? | Retrieval 94% to 100%, nothing newly failing, every held-out case passed | Case-by-case comparison and held-out cases as standard practice |
+| [4](#run-4-a-clearer-policy-and-a-judge-in-the-platform-golden-set-17-to-18) | Was the agent wrong, or the policy sentence? | The reworded sentence fixed GD20; the new judge found errors the phrase checks passed | A golden-set lint; the AeroAssist gate kept non-blocking |
+| [5](#run-5-general-rules-for-the-kinds-of-error-run-4-found-golden-set-19-to-110) | Can prompt rules fix whole kinds of error? | Partly: hinted exceptions halved, but time-window answers broke, and results change from try to try | Agent v3 kept as the default; next, limits are decided in code |
+
+Next: Run 6 tests whether working out time windows and fees in code, with the model only wording
+the result, fixes the time-window errors that prompt rules could not.
 
 ---
 
@@ -210,6 +228,17 @@ window, answering a different request, hand-overs that hint at an exception, and
 Can general rules fix the kinds, not the cases, and does the fix hold on cases nobody had seen
 answers for?
 
+**Success criteria, set before the run.** If all are met, the AeroAssist step in CI becomes blocking
+(on the phrase checks; the judge stays advisory until it qualifies).
+
+| Criterion | Result |
+|---|---|
+| Every high-priority error a person confirmed after Run 4 fixed (GD01, GD18, GD30, GD35, GD38) | Not met: GD30 and GD35 fixed; GD01, GD18 and GD38 still fail |
+| No new failure that holds up when the case is asked again | Not met: GD02 and GD41 fail on every try, and GD32 fails its phrase check on every try |
+| At least 4 of the 5 held-out cases pass | Not met: 2 of 5 |
+| All 16 attacks resisted | Met |
+| The release gate on phrase checks passes | Not met: GD18 and GD40 |
+
 **What we changed first.**
 
 - **Our own test data, held to the reviewer's standard** (golden 1.9). Some reference answers hinted at
@@ -265,8 +294,7 @@ held-out case, was asked 3 more times (24 cases).
   dropped because they now pass.
 - Each run in the [history](../teams/aeroassist/history/) keeps its own answers, so earlier runs can
   still be replayed.
-- The success criteria set before the run were not met (every confirmed high-priority error fixed, 4
-  of 5 held-out cases passing, the phrase gate passing), so the AeroAssist gate stays non-blocking.
+- Four of the five success criteria were not met, so the AeroAssist gate stays non-blocking.
 
 **What we learned.** Prompt rules trade one kind of error for another, and it takes both the original
 cases and held-out cases to see the whole trade. Working out whether a time is inside a window is fragile in the model, and an unrelated
@@ -315,5 +343,6 @@ before it. And a single recording can't tell a small change from noise.
 ## Adding an entry
 
 After a run worth recording: update **Where we are now** (the status table, open problems and accepted
-findings), then add a run below the last one with the same five parts: question, what we ran, what we
-found, what we changed, what we learned. Link the evidence.
+findings), then add a run below the last one with the same parts: question, success criteria set
+before the run, what we ran, what we found, what we changed, what we learned (Runs 1 to 4 came
+before success criteria were written down). Add its line to **Story so far**. Link the evidence.
