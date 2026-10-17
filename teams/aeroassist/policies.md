@@ -1,6 +1,6 @@
 # Meridian Airways — Policy Knowledge Base (AeroAssist)
 _The source of truth AeroAssist answers from. Golden-dataset `retrieved_policy` fields reference these IDs._
-_Version 1.2 (P5: the 4-hour cut-off, worded one way only) · anything outside these 8 policies + the booking tool = out-of-scope → abstain + escalate._
+_Version 1.3 (P8: the 48-hour request deadline says the boundary qualifies, as P1 and P5 do) · anything outside these 8 policies + the booking tool = out-of-scope → abstain + escalate._
 
 ## P1 — Refund / Cancellation
 - Full refund if cancelled **within 24 hours** of booking (boundary inclusive: exactly 24h qualifies).
@@ -35,7 +35,7 @@ _Version 1.2 (P5: the 4-hour cut-off, worded one way only) · anything outside t
 - No penalty to the passenger.
 
 ## P8 — Special Assistance
-- Wheelchair / medical assistance must be requested **at least 48 hours** before departure.
+- Wheelchair / medical assistance must be requested **at least 48 hours** before departure (exactly 48 hours still qualifies).
 - Requests inside 48 hours are best-effort and not guaranteed.
 
 ---
