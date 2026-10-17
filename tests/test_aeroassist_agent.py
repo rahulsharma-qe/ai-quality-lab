@@ -1,4 +1,4 @@
-"""teams/aeroassist/agent.py: its two versions, and the guard against fixes tuned to golden cases."""
+"""teams/aeroassist/agent.py: its versions, and the guard against fixes tuned to golden cases."""
 
 import importlib.util
 import re
@@ -21,14 +21,15 @@ def load_agent_module(monkeypatch, version=None):
 
 
 def test_agent_versions_and_default(monkeypatch):
-    v2 = load_agent_module(monkeypatch)
-    assert v2.VERSION == "v2" and v2.AGENT_VERSION.endswith(f":v2-top3:policies-{v2.POLICIES_VERSION}")
-    assert v2.POLICIES_VERSION == "1.3"                                # read from policies.md
+    default = load_agent_module(monkeypatch)
+    assert default.VERSION == "v3"                                     # the default since Run 5
+    assert default.AGENT_VERSION.endswith(f":v3-top3:policies-{default.POLICIES_VERSION}")
+    assert default.POLICIES_VERSION == "1.3"                           # read from policies.md
+    assert default.VERSIONS["v3"]["system_prompt"] == default.PROMPT_V3
     v1 = load_agent_module(monkeypatch, "v1")
     assert ":v1-top2:policies-" in v1.AGENT_VERSION and v1.VERSIONS["v1"]["system_prompt"] is None
-    v3 = load_agent_module(monkeypatch, "v3")
-    assert ":v3-top3:policies-" in v3.AGENT_VERSION and v3.VERSIONS["v3"]["system_prompt"] == v3.PROMPT_V3
-    assert v3.PROMPT_V2 == load_agent_module(monkeypatch).PROMPT_V2          # v2 is unchanged
+    v2 = load_agent_module(monkeypatch, "v2")
+    assert ":v2-top3:policies-" in v2.AGENT_VERSION and v2.VERSIONS["v2"]["system_prompt"] == v2.PROMPT_V2
     with pytest.raises(ValueError, match="must be one of: v1, v2, v3"):
         load_agent_module(monkeypatch, "v9")
 

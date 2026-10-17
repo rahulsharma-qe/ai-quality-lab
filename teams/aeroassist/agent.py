@@ -8,7 +8,7 @@ versions live side by side, so a change can be recorded and compared against the
   v3  v2's settings, with rules for the kinds of error the judge and a person found in Run 4:
       boundaries, timing inside a window, the request as asked, plain hand-overs, nothing invented
 
-Pick one with the environment variable AEROASSIST_AGENT_VERSION (default: v2). The choice is part
+Pick one with the environment variable AEROASSIST_AGENT_VERSION (default: v3, since Run 5). The choice is part
 of AGENT_VERSION, and so is the version of policies.md it answers from: the same code with new
 policies is a different agent, and every run record says which one answered.
 
@@ -86,7 +86,7 @@ VERSIONS = {
 }
 TEMPERATURE = 0          # comparable runs: every version is recorded with the same setting
 
-VERSION = os.environ.get("AEROASSIST_AGENT_VERSION", "v2")
+VERSION = os.environ.get("AEROASSIST_AGENT_VERSION", "v3")
 if VERSION not in VERSIONS:
     raise ValueError(f"AEROASSIST_AGENT_VERSION must be one of: {', '.join(VERSIONS)} (got {VERSION!r})")
 SETTINGS = VERSIONS[VERSION]
