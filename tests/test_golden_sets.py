@@ -20,11 +20,17 @@ def test_three_formats_give_identical_cases():
 
 def test_repo_golden_set_loads_with_meta_and_extra_fields():
     golden = load_golden_set(REPO_GOLDEN_SET)
-    assert golden.version == "1.8" and len(golden) == 40
+    assert golden.version == "1.9" and len(golden) == 45
     assert golden.cases[2].expected_sources == ["P1"]           # GD03 needs the refund policy
     first = golden.cases[0]
     assert first.must_not_include == [] and len(first.must_not_do) == 2
     assert "retrieved_policy" in first.extra          # unknown fields are kept, not dropped
+
+
+def test_repo_golden_set_has_no_lint_warnings():
+    """Echoed forbidden phrases and model answers that fail their own checks are fixed, not carried."""
+    from aiquality.test_data.lint import lint_golden_set
+    assert lint_golden_set(load_golden_set(REPO_GOLDEN_SET)) == []
 
 
 def test_plain_list_json(tmp_path):
