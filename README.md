@@ -26,7 +26,11 @@ or hands over to a person.
 - **Prompt rules trade errors, and one run is not enough.** General rules halved the answers that
   hint at an exception, but broke others, including a held-out case that works out a time window.
   Asked again, the judge's verdict changed for 13 of 24 cases, so a change of a few cases is
-  noise until it is repeated. Next: the time-window decision moves into code.
+  noise until it is repeated.
+- **Code decides limits correctly, when it is asked.** With the time-window decisions moved into a
+  tool, every ruling the agent asked for was right for the facts it gave, but it asked in only 13 of
+  30 cases and began questioning passengers for exact figures. Next: the code, not the model,
+  decides when to check.
 
 The full story, run by run, with the evidence and every open problem:
 **[`docs/quality-log.md`](docs/quality-log.md)**.
@@ -279,7 +283,8 @@ and `.env` is gitignored. Data is privacy-safe synthetic only (no real PII).
 - [ ] **Gate view and tracing export** — a static gate dashboard and OpenTelemetry export to an open-source tracing tool.
 - [x] **Quality loop on AeroAssist (done)** — retrieval checked on its own, run comparison case by case, agent v2 with general rules, held-out cases, no regressions.
 - [x] **Second quality loop on AeroAssist (done)** — agent v3 with a rule per kind of error, a held-out case per kind, and a repeat check: half the hinted exceptions, worse answers on time windows.
-- [ ] **Limit decisions in code (next)** — time windows, allowances and fees worked out by a small calculator the agent calls; the model only words the result.
+- [x] **Limit decisions in code, first try (done)** — time windows, allowances and fees ruled on by code the agent calls as a tool; right whenever called, but the agent called it in only 13 of 30 cases.
+- [ ] **Code consults the limits on every question (next)** — the model can't skip the check, and the limits rule on approximate facts ("tomorrow") instead of asking the passenger.
 - [ ] **Compare with repeats** — ask the cases that changed again and report how often each result holds, so noise isn't read as a fix or a regression.
 - [ ] **Parallel runs** — worker limit, rate-limit retries and a per-run budget cap.
 
