@@ -3,7 +3,8 @@
 Whole-word matching stops substring mistakes: "100" does not match inside "1000",
 "free" does not match inside "freedom". A simple plural still counts: "2 hour" matches
 "2 hours", so phrases can be written in the singular. A hyphen counts as a space: "24 hour"
-matches "24-hour", and "no-show" matches "no show".
+matches "24-hour", and "no-show" matches "no show". Markdown emphasis between or around words
+is read through: "is closed" matches "is **closed**", because agents often bold the key word.
 
 Alternatives: "connect OR escalate" passes if either phrase appears (the OR is uppercase,
 so a phrase can still contain an ordinary "or").
@@ -20,6 +21,7 @@ from typing import Optional
 NEGATION_WORDS = {"not", "no", "never", "cannot", "can't", "won't", "isn't", "aren't",
                   "don't", "doesn't", "didn't", "wouldn't", "shouldn't", "without"}
 WORDS_CHECKED_BEFORE_MATCH = 3
+SEPARATOR = r"[\s\-*_`]+"          # space, hyphen, or markdown emphasis between two words
 
 
 @dataclass
@@ -48,8 +50,8 @@ def find_phrase(text: str, phrase: str) -> Optional[PhraseMatch]:
     words = [re.escape(word) for word in re.split(r"[\s-]+", phrase) if word]
     if not words:
         return None
-    # Words may be separated by spaces or hyphens ("24 hour" matches "24-hour"); optional plural at the end.
-    pattern = r"(?<![\w])" + r"[\s-]+".join(words) + r"(?:e?s)?(?![\w])"
+    # Words may be separated by spaces, hyphens or markdown emphasis ("is **closed**"); optional plural.
+    pattern = r"(?<![\w])" + SEPARATOR.join(words) + r"(?:e?s)?(?![\w])"
     match = re.search(pattern, text, flags=re.IGNORECASE)
     if match is None:
         return None

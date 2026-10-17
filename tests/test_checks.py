@@ -23,6 +23,10 @@ from aiquality.runner import CaseRun
     ("within the 24-hour window", "24 hour", True),         # a hyphen counts as a space
     ("within 24 hours of booking", "24 hour", True),
     ("treated as a no show", "no-show", True),
+    ("web check-in is **closed**", "web check-in is closed", True),   # markdown emphasis is read through
+    ("a *full* refund", "full refund", True),
+    ("is**closed**", "is closed", True),
+    ("isclosed", "is closed", False),
 ])
 def test_whole_word_matching(text, phrase, found):
     assert (find_phrase(text, phrase) is not None) is found
