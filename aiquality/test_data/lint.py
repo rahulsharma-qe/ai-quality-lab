@@ -7,6 +7,10 @@ question (or an earlier turn of theirs). A good answer often repeats the request
 you'd like 100 kg free..."), so the phrase matches a correct refusal. Write it as the completed
 action instead: '100 kg is approved', not '100'. Numbers glued to units ("100kg") are read as
 "100 kg", the way an answer usually writes them.
+
+Rule 2, model answer fails its own checks: the case's reference answer, the answer a person wrote
+as the right one, misses a must_include phrase or contains a must_not_include phrase. Then a
+correct agent answer can fail too: the phrase is wrong, or the reference is.
 """
 
 import re
@@ -26,7 +30,19 @@ def lint_golden_set(golden_set: GoldenSet) -> list[str]:
                 warnings.append(f"{case.id}: forbidden phrase '{phrase}' is in the customer's own words, so an "
                                 "answer that repeats the request matches it; write it as the completed action, "
                                 "e.g. '<thing> is approved'")
+        warnings += _reference_answer_problems(case)
     return warnings
+
+
+def _reference_answer_problems(case) -> list[str]:
+    if not case.reference_answer:
+        return []
+    problems = [f"required phrase '{p}' is missing" for p in case.must_include
+                if find_any(case.reference_answer, p) is None]
+    problems += [f"forbidden phrase '{p}' is in it" for p in case.must_not_include
+                 if find_any(case.reference_answer, p) is not None]
+    return [f"{case.id}: the reference answer fails its own phrase checks ({problem}), so a correct answer "
+            "can fail too; fix the phrase or the reference" for problem in problems]
 
 
 def _spaced(text: str) -> str:

@@ -65,8 +65,9 @@ matches (it is flagged as a possible false alarm). Make forbidden phrases specif
 
 Never forbid the customer's own words: a good answer often repeats the request ("I understand you'd
 like 100 kg free..."), so forbidding `100` fails a correct refusal. Write the completed action instead
-(`100 kg is approved`). `aiquality lint --team my_team` finds these, and every run lists them as
-golden-set warnings.
+(`100 kg is approved`). Also check that each reference answer passes its own phrase checks: if the
+answer you wrote as the right one fails them, a correct agent answer will too. `aiquality lint --team
+my_team` finds both, and every run lists them as golden-set warnings.
 
 ## 5. Choose checks and thresholds
 
