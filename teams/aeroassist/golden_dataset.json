@@ -1,7 +1,7 @@
 {
   "meta": {
     "name": "AeroAssist Golden Dataset",
-    "version": "1.10",
+    "version": "1.11",
     "description": "Human-verified evaluation set for the AeroAssist (Meridian Airways) support agent. Source of truth for all reference-based evals.",
     "schema": {
       "core": [
@@ -51,7 +51,8 @@
       "1.7: policies 1.2 words the P5 cut-off one way only (changes until 4 hours before departure; none in the last 4 hours). Held-out GD40 asks for a change 6 hours before departure, so an agent that now refuses every date change fails it.",
       "1.8: forbidden phrases taken from the customer's own words are written as completed actions (GD11 '100' -> '100 kg is approved', GD12 '20 kg', GD19 'no charge', GD24 'same price', GD25 'pay extra', GD31 'no issues'). The new golden-set lint flagged five of them; GD19 repeated the request in other words, so the lint could not see it. Changed after the policies-1.2 recording showed correct refusals failing on these words.",
       "1.9: reference answers follow the reviewer's standard (rubric rule 7: no hint of an exception) and the policies: GD03, GD24, GD26, GD32 drop exception hints or invented availability; GD07 no longer assumes business class; GD21 and GD23 say '4 or more hours' (the P5 boundary qualifies); GD29 no longer promises assistance the policy doesn't; GD18 and GD30 state the boundary from the policy instead of assuming it. A new self-check (every reference answer passes its own phrase checks) found two test-data bugs: GD24's forbidden 'earlier price' matched a correct refusal (now 'earlier price is applied'), and GD31 required '48 hours' where a correct answer says '48-hour' (now '48 hour'). Hour phrases are written in the singular so '4-hour' and '4 hours' both match (GD02, GD18, GD20, GD29, GD30), the same fix GD31 needed. Locks on errors found in Run 4: GD13 must not say check-in is closed, GD18 must state the change fee, GD30 must not refuse the 48-hour request. Held-out GD41-GD45, one per kind of error, written before the agent v3 rules and frozen before any answer was seen. The held-out cases' phrase checks are kept loose on purpose (GD45 has none: a correct answer can mention a charge 'only above 15 kg'); the judge grades their meaning.",
-      "1.10: GD04, GD33 and GD34 accept 'take over' and 'transfer' as a hand-over, as well as 'connect' and 'escalate'. Agent v3 hands over in one line ('A human agent will take over'), and GD34 failed a correct answer on that wording alone. 'human' is still required."
+      "1.10: GD04, GD33 and GD34 accept 'take over' and 'transfer' as a hand-over, as well as 'connect' and 'escalate'. Agent v3 hands over in one line ('A human agent will take over'), and GD34 failed a correct answer on that wording alone. 'human' is still required.",
+      "1.11: held-out GD46-GD51, one per limit the new policy-limits tool decides (P4 open and not yet open, P3 excess charge, P1 refund window, P5 cut-off with the time written in words, P8 notice), written before agent v4 was built and frozen before any answer was seen; phrase checks kept loose, the judge grades their meaning. GD41 also forbids 'not yet open': agent v3 said it on all 4 tries in Run 5 and the phrase checks passed it, the same kind of lock GD13 got in 1.9."
     ]
   },
   "cases": [
@@ -1194,14 +1195,15 @@
       "must_not_include": [
         "check-in is closed",
         "not open yet",
-        "isn't open yet"
+        "isn't open yet",
+        "not yet open"
       ],
       "dimensions": [
         "correctness",
         "groundedness"
       ],
       "source": "human-verified; held-out: written before the agent v3 rules, reviewed and frozen before any answer was seen",
-      "version": "1.9",
+      "version": "1.11",
       "notes": "Kind of error: timing placed in the wrong part of a window."
     },
     {
@@ -1302,6 +1304,162 @@
       "source": "human-verified; held-out: written before the agent v3 rules, reviewed and frozen before any answer was seen",
       "version": "1.9",
       "notes": "Kind of error: a boundary read as outside the limit (on a policy this run doesn't change)."
+    },
+    {
+      "id": "GD46",
+      "input": "My flight is in 3 hours. Can I still check in online?",
+      "category": "edge",
+      "priority": "medium",
+      "retrieved_policy": "P4 - closes 2h before departure; 3h out is still open.",
+      "expected_sources": [
+        "P4"
+      ],
+      "reference_answer": "Yes. Web check-in closes 2 hours before departure, and your flight is 3 hours away, so it's still open.",
+      "expected_behaviour": "Place 3 hours before departure inside the web check-in window (it closes at 2 hours) and confirm it is open.",
+      "expected_tool_calls": "check_policy_limits",
+      "must_include": [
+        "2 hour"
+      ],
+      "must_not_include": [
+        "check-in is closed",
+        "check-in has closed"
+      ],
+      "dimensions": [
+        "correctness",
+        "groundedness"
+      ],
+      "source": "human-verified; held-out: written before agent v4 was built, reviewed by a person and frozen before any answer was seen",
+      "version": "1.11",
+      "notes": "Limit decided in code (P4 close). Close to the 2-hour cut-off but clearly before it."
+    },
+    {
+      "id": "GD47",
+      "input": "My flight is the day after tomorrow, about 60 hours from now. Can I check in on the website yet?",
+      "category": "edge",
+      "priority": "medium",
+      "retrieved_policy": "P4 - opens 48h before departure; 60h out is not open yet.",
+      "expected_sources": [
+        "P4"
+      ],
+      "reference_answer": "Not yet. Web check-in opens 48 hours before departure, and your flight is about 60 hours away, so it opens in about 12 hours.",
+      "expected_behaviour": "Place 60 hours before departure before the window opens; say when it opens.",
+      "expected_tool_calls": "check_policy_limits",
+      "must_include": [
+        "48 hour"
+      ],
+      "must_not_include": [
+        "check-in is open now",
+        "you can check in now"
+      ],
+      "dimensions": [
+        "correctness",
+        "groundedness"
+      ],
+      "source": "human-verified; held-out: written before agent v4 was built, reviewed by a person and frozen before any answer was seen",
+      "version": "1.11",
+      "notes": "Limit decided in code (P4 open). The other side of the window from GD41."
+    },
+    {
+      "id": "GD48",
+      "input": "I'm flying economy and my checked suitcase weighs 18 kg. What will I have to pay?",
+      "category": "happy",
+      "priority": "medium",
+      "retrieved_policy": "P3 - economy free check-in 15 kg; excess Rs 500 per kg -> 3 kg x 500 = Rs 1,500.",
+      "expected_sources": [
+        "P3"
+      ],
+      "reference_answer": "Your economy free check-in allowance is 15 kg, so 18 kg is 3 kg over. Excess baggage is ₹500 per kg, so you'll pay ₹1,500.",
+      "expected_behaviour": "Apply the economy allowance and the excess rate; give the total.",
+      "expected_tool_calls": "check_policy_limits",
+      "must_include": [
+        "1,500 OR 1500"
+      ],
+      "must_not_include": [],
+      "dimensions": [
+        "correctness",
+        "completeness"
+      ],
+      "source": "human-verified; held-out: written before agent v4 was built, reviewed by a person and frozen before any answer was seen",
+      "version": "1.11",
+      "notes": "Charge decided in code (P3)."
+    },
+    {
+      "id": "GD49",
+      "input": "I booked my ticket about 20 hours ago. If I cancel now, do I get all my money back?",
+      "category": "happy",
+      "priority": "high",
+      "retrieved_policy": "P1 - full refund within 24h of booking; 20h qualifies.",
+      "expected_sources": [
+        "P1"
+      ],
+      "reference_answer": "Yes. You booked within the last 24 hours, so cancelling now gives a full refund of the amount you paid, including fees and taxes.",
+      "expected_behaviour": "Place 20 hours inside the 24-hour full-refund window; confirm a full refund, promise no timing the policy doesn't give.",
+      "expected_tool_calls": "check_policy_limits",
+      "must_include": [
+        "24 hour"
+      ],
+      "must_not_include": [],
+      "dimensions": [
+        "correctness",
+        "faithfulness"
+      ],
+      "source": "human-verified; held-out: written before agent v4 was built, reviewed by a person and frozen before any answer was seen",
+      "version": "1.11",
+      "notes": "Limit decided in code (P1)."
+    },
+    {
+      "id": "GD50",
+      "input": "My flight departs in three and a half hours. Can I move it to next week?",
+      "category": "edge",
+      "priority": "high",
+      "retrieved_policy": "P5 - no changes in the last 4h before departure; 3.5h is inside.",
+      "expected_sources": [
+        "P5"
+      ],
+      "reference_answer": "No. Date changes can be made until 4 hours before departure, and your flight is three and a half hours away, so it can't be changed now.",
+      "expected_behaviour": "Read 'three and a half hours' as 3.5 hours, place it inside the last 4 hours, and refuse the change.",
+      "expected_tool_calls": "check_policy_limits",
+      "must_include": [
+        "4 hour"
+      ],
+      "must_not_include": [
+        "you can change it",
+        "you can move it"
+      ],
+      "dimensions": [
+        "correctness",
+        "faithfulness"
+      ],
+      "source": "human-verified; held-out: written before agent v4 was built, reviewed by a person and frozen before any answer was seen",
+      "version": "1.11",
+      "notes": "Limit decided in code (P5). The time is written in words, so the model has to read it before the code can decide."
+    },
+    {
+      "id": "GD51",
+      "input": "I need a wheelchair at the airport. My flight is in 47 hours.",
+      "category": "edge",
+      "priority": "high",
+      "retrieved_policy": "P8 - requests at least 48h before departure; 47h is inside, so best-effort, not guaranteed.",
+      "expected_sources": [
+        "P8"
+      ],
+      "reference_answer": "Wheelchair assistance has to be requested at least 48 hours before departure. Your flight is 47 hours away, so a request now is best-effort and not guaranteed.",
+      "expected_behaviour": "Place 47 hours just inside the 48-hour notice; say best-effort, not guaranteed; promise nothing.",
+      "expected_tool_calls": "check_policy_limits",
+      "must_include": [
+        "48 hour"
+      ],
+      "must_not_include": [
+        "wheelchair is confirmed",
+        "has been arranged"
+      ],
+      "dimensions": [
+        "correctness",
+        "safety"
+      ],
+      "source": "human-verified; held-out: written before agent v4 was built, reviewed by a person and frozen before any answer was seen",
+      "version": "1.11",
+      "notes": "Limit decided in code (P8). One hour on the other side of GD30's boundary."
     }
   ]
 }
