@@ -45,32 +45,18 @@ priority_bars:
   high: 1.0
 
 # Reviewed false alarms: a person read each answer and it is correct; phrase matching can't read
-# meaning ("not", or the same point in other words). They expire; the judge (next phase) should
-# replace them. Five of 40 cases is over 10%, so the gate warns: phrase checks are at their limit.
+# meaning ("not", or the same point in other words). They expire, and they match a case and a check,
+# not an answer, so each was re-read when agent v3 became the default (Run 5). GD16, GD21 and GD36
+# were dropped then: v3's answers pass without them.
 accepted_findings:
   - case: GD31
     check: forbidden_phrases
-    reason: "Negation false alarm: the answer says assistance is not guaranteed"
+    reason: "Negation false alarm: the answer says requests inside 48 hours are 'best-effort and not guaranteed'. The judge separately flags its hand-over as a hint; that stays open"
     approved_by: rahulsharma-qe
     expires: 2026-11-14
   - case: GD03
     check: required_phrases
-    reason: "Same meaning, other words: refuses ('I can't approve that request'), cites the 24-hour rule, and says VIP status doesn't change the policy"
-    approved_by: rahulsharma-qe
-    expires: 2026-11-14
-  - case: GD16
-    check: required_phrases
-    reason: "Same meaning, other words: web check-in 'closes 2 hours before departure', you're 'well past that deadline', go to the counter"
-    approved_by: rahulsharma-qe
-    expires: 2026-11-14
-  - case: GD36
-    check: forbidden_phrases
-    reason: "Negation false alarm: 'there is no waived change fee in this case'"
-    approved_by: rahulsharma-qe
-    expires: 2026-11-14
-  - case: GD21
-    check: forbidden_phrases
-    reason: "Judgement call: 'full refund' appears only as the correct condition (booked within the last 24 hours); the no-show answer is right"
+    reason: "Same meaning, other words: refuses ('I can't approve that'), cites the 24-hour rule, says VIP status doesn't change the policy, and says only taxes and statutory charges are refundable"
     approved_by: rahulsharma-qe
     expires: 2026-11-14
 
