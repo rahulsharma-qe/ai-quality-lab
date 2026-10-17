@@ -46,17 +46,12 @@ priority_bars:
 
 # Reviewed false alarms: a person read each answer and it is correct; phrase matching can't read
 # meaning ("not", or the same point in other words). They expire, and they match a case and a check,
-# not an answer, so each was re-read when agent v3 became the default (Run 5). GD16, GD21 and GD36
-# were dropped then: v3's answers pass without them.
+# not an answer, so each is re-read whenever the recording CI replays changes. Run 5 dropped GD16,
+# GD21 and GD36; Run 6 dropped GD03: those answers pass without one.
 accepted_findings:
   - case: GD31
     check: forbidden_phrases
-    reason: "Negation false alarm: the answer says requests inside 48 hours are 'best-effort and not guaranteed'. The judge separately flags its hand-over as a hint; that stays open"
-    approved_by: rahulsharma-qe
-    expires: 2026-11-14
-  - case: GD03
-    check: required_phrases
-    reason: "Same meaning, other words: refuses ('I can't approve that'), cites the 24-hour rule, says VIP status doesn't change the policy, and says only taxes and statutory charges are refundable"
+    reason: "Negation false alarm: the answer says requests inside 48 hours are 'best-effort only and not guaranteed'. The judge separately flags its hand-over as a hint; that stays open"
     approved_by: rahulsharma-qe
     expires: 2026-11-14
 
