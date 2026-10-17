@@ -5,10 +5,12 @@ One policy = one chunk. Retrieval is in-memory cosine similarity over a local em
 policies, or hands over to a person. teams/aeroassist/agent.py wraps it for the platform, and the
 studies in demos/ (RAG evaluation, red-teaming, the judge's label set) test this same class.
 
-Moved here unchanged from demos/rag_eval.py, so the team folder holds everything its agent needs.
+Moved here from demos/rag_eval.py, so the team folder holds everything its agent needs. It can
+also let the model call tools (off by default, so the studies in demos/ behave as before).
 Needs: numpy, and for make_embedder() the 'aeroassist' extra (langchain-huggingface).
 """
 
+import json
 import re
 
 import numpy as np
@@ -29,6 +31,8 @@ DEFAULT_SYSTEM_PROMPT = (
     "information and offer to escalate to a human. Be concise; never invent policy."
 )
 RETRIEVAL_TURNS = 2   # earlier passenger turns that also steer retrieval, so a follow-up finds its policy
+# Said when the model keeps calling tools past the limit: a plain hand-over, never a guess.
+TOOL_LIMIT_REPLY = "I can't work this out reliably here. A human agent will take over."
 
 
 class AeroAssistRAG:
@@ -41,10 +45,14 @@ class AeroAssistRAG:
     Optional settings (the defaults keep the original behaviour):
       system_prompt  the instructions the model answers under
       temperature    None leaves the model's default; 0 makes repeated runs comparable
+      tools          tool definitions the model may call (None: no tools, the original behaviour)
+      run_tool       run_tool(name, arguments) -> result, called for each tool the model asks for
+      max_tool_rounds  how many rounds of tool calls before a plain hand-over
     """
 
     def __init__(self, policies_path, embedder, gen_client, model=MODEL, top_n=2,
-                 system_prompt=DEFAULT_SYSTEM_PROMPT, temperature=None):
+                 system_prompt=DEFAULT_SYSTEM_PROMPT, temperature=None, tools=None, run_tool=None,
+                 max_tool_rounds=3):
         self.embedder = embedder          # raw langchain embeddings (embed_documents/embed_query)
         self.gen_client = gen_client      # raw Anthropic client (the SUT's generator)
         self.model = model
@@ -52,6 +60,11 @@ class AeroAssistRAG:
         self.system_prompt = system_prompt
         self.temperature = temperature
         self._send_temperature = temperature is not None
+        if tools and run_tool is None:
+            raise ValueError("tools need a run_tool function to run them")
+        self.tools = tools
+        self.run_tool = run_tool
+        self.max_tool_rounds = max_tool_rounds
         self.chunks = self._load_and_chunk(policies_path)
         self.chunk_vectors = np.array(self.embedder.embed_documents(self.chunks))
 
@@ -78,10 +91,16 @@ class AeroAssistRAG:
         first. They are sent to the model as the conversation so far, and the passenger's last few
         turns also steer retrieval. Without it, behaviour is exactly the single-question original.
         """
+        answer_text, contexts, _ = self.answer_with_tool_calls(query, conversation)
+        return answer_text, contexts
+
+    def answer_with_tool_calls(self, query, conversation=None):
+        """answer(), plus the tools the model called: [{"name": ..., "arguments": {...}}] ([] if none)."""
         contexts = self.retrieve(self._retrieval_query(query, conversation))
         user = "Policy context:\n" + "\n\n".join(contexts) + f"\n\nPassenger: {query}"
         messages = _alternating_turns(list(conversation or []) + [{"role": "user", "content": user}])
-        return self._generate(messages), contexts
+        answer_text, tool_calls = self._generate(messages)
+        return answer_text, contexts, tool_calls
 
     @staticmethod
     def _retrieval_query(query, conversation):
@@ -89,17 +108,47 @@ class AeroAssistRAG:
         return " ".join(earlier + [query])
 
     def _generate(self, messages):
+        """The model's reply, and the tools it called on the way. Without tools: one call, as before."""
+        if not self.tools:
+            return _reply_text(self._create(messages)), []
+        messages, tool_calls = list(messages), []
+        for round_number in range(self.max_tool_rounds + 1):
+            reply = self._create(messages)
+            tool_uses = [block for block in reply.content if getattr(block, "type", None) == "tool_use"]
+            if not tool_uses:
+                return _reply_text(reply), tool_calls
+            if round_number == self.max_tool_rounds:      # still asking for tools after the last round
+                break
+            messages.append({"role": "assistant", "content": reply.content})
+            results = []
+            for use in tool_uses:
+                arguments = dict(use.input)
+                tool_calls.append({"name": use.name, "arguments": arguments})
+                results.append({"type": "tool_result", "tool_use_id": use.id,
+                                "content": json.dumps(self._run_tool(use.name, arguments), ensure_ascii=False)})
+            messages.append({"role": "user", "content": results})
+        return TOOL_LIMIT_REPLY, tool_calls
+
+    def _run_tool(self, name, arguments):
+        try:
+            return self.run_tool(name, arguments)
+        except Exception as error:            # a broken tool must not crash the answer; the model sees why
+            return {"error": f"{type(error).__name__}: {error}"}
+
+    def _create(self, messages):
         params = dict(model=self.model, max_tokens=500, system=self.system_prompt, messages=messages)
+        if self.tools:
+            params["tools"] = self.tools
         if self._send_temperature:
             try:
-                return _reply_text(self.gen_client.messages.create(**params, temperature=self.temperature))
+                return self.gen_client.messages.create(**params, temperature=self.temperature)
             except TypeError as error:
                 # Some SDK versions no longer accept a temperature setting; the error comes before
                 # any request is sent, so retrying without it costs nothing.
                 if "temperature" not in str(error):
                     raise
                 self._send_temperature = False
-        return _reply_text(self.gen_client.messages.create(**params))
+        return self.gen_client.messages.create(**params)
 
 
 def _alternating_turns(turns):
