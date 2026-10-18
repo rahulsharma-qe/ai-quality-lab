@@ -88,3 +88,12 @@ def test_compare_command_exit_codes_and_markdown(tmp_path, capsys):
     assert "fixed: 1" in capsys.readouterr().out and markdown.read_text().startswith("**Before:**")
     assert main(["compare", before, after, "--fail-on-new-failures"]) == EXIT_QUALITY_FAILURE
     assert main(["compare", before, after, "--before-run", "x"]) == EXIT_SETUP_ERROR
+
+
+def test_each_check_says_how_many_cases_got_better_and_worse(tmp_path):
+    comparison = compare_runs(*runs(tmp_path))
+    required = next(n for n in comparison.noise if n.check == "required_phrases")
+    assert (required.better, required.worse) == (1, 1)            # C2 fixed, C1 broken
+    assert required.verdict == "could be chance" and required.p_value == 1.0
+    assert "bigger than the noise?" in render_comparison(comparison)
+    assert "**Bigger than the noise?**" in render_comparison_markdown(comparison)

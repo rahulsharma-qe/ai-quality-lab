@@ -11,6 +11,9 @@ prompt, a new model, a retrieval setting) is judged case by case against a saved
 
 A case fails when any blocking check FAILED or ERRORED on it, the same reading the release
 gate uses. Diagnostic checks (blocking: false) still show in the per-check table.
+
+Each check also says whether its change is bigger than the noise: how many cases got better and
+how many worse, and how likely that split is by chance (see noise.py).
 """
 
 import json
@@ -19,6 +22,7 @@ from pathlib import Path
 from typing import Optional
 
 from aiquality.errors import SetupError
+from aiquality.reporting.noise import sign_test_p, verdict, wilson_range
 from aiquality.reporting.report_data import percent, version_text
 from aiquality.reporting.run_record import RUN_RECORDS_FILE, RunRecord, load_run_records
 
@@ -42,6 +46,26 @@ class CheckChange:
 
 
 @dataclass
+class CheckNoise:
+    """For one check: the cases that changed between the runs, and whether that is more than chance."""
+
+    check: str
+    better: int                       # FAIL before, PASS after
+    worse: int                        # PASS before, FAIL after
+    p_value: float
+    after_passed: int
+    after_total: int
+
+    @property
+    def verdict(self) -> str:
+        return verdict(self.better, self.worse, self.p_value)
+
+    @property
+    def after_range(self) -> tuple:
+        return wilson_range(self.after_passed, self.after_total)
+
+
+@dataclass
 class CaseChange:
     case_id: str
     category: str
@@ -61,6 +85,7 @@ class RunComparison:
     only_before: list[str] = field(default_factory=list)           # cases one run doesn't have
     only_after: list[str] = field(default_factory=list)
     new_cases_failing: list[CaseChange] = field(default_factory=list)  # among only_after
+    noise: list[CheckNoise] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
     @property
@@ -91,7 +116,8 @@ def pick_run(path, run_id: Optional[str] = None) -> RunRecord:
 
 def compare_runs(before: RunRecord, after: RunRecord) -> RunComparison:
     blocking = {s["check"] for s in before.summaries + after.summaries if s.get("blocking", True)}
-    comparison = RunComparison(before=before, after=after, checks=_check_changes(before, after))
+    comparison = RunComparison(before=before, after=after, checks=_check_changes(before, after),
+                               noise=_noise(before, after))
     if before.team != after.team:
         comparison.warnings.append(f"different teams: {before.team} vs {after.team}")
     if before.golden_set_version != after.golden_set_version:
@@ -140,6 +166,12 @@ def render_comparison(comparison: RunComparison) -> str:
         lines += [f"  {_case_line(change, id_width)}" for change in changes]
     if comparison.only_before:
         lines += ["", f"only in the before run: {', '.join(comparison.only_before)}"]
+    if comparison.noise:
+        lines += ["", "bigger than the noise? (cases in both runs whose result changed)"]
+        noise_width = max(len(n.check) for n in comparison.noise) + 2
+        for n in comparison.noise:
+            lines.append(f"  {n.check:<{noise_width}}{n.better:>3} better {n.worse:>3} worse   "
+                         f"{_p_text(n.p_value):<10}{n.verdict:<23}after: {_range_text(n)}")
     return "\n".join(lines)
 
 
@@ -160,6 +192,12 @@ def render_comparison_markdown(comparison: RunComparison) -> str:
     for title, changes in _case_sections(comparison):
         cases = ", ".join(f"{c.case_id} ({c.priority})" for c in changes) or "none"
         lines.append(f"- **{title}:** {cases}")
+    if comparison.noise:
+        lines += ["", "**Bigger than the noise?** Cases in both runs whose result changed, per check:", "",
+                  "| Check | Better | Worse | Chance of a split this uneven | Reading | Pass rate after (likely range) |",
+                  "|---|---|---|---|---|---|"]
+        for n in comparison.noise:
+            lines.append(f"| {n.check} | {n.better} | {n.worse} | {_p_text(n.p_value)} | {n.verdict} | {_range_text(n)} |")
     return "\n".join(lines)
 
 
@@ -174,6 +212,40 @@ def _check_changes(before: RunRecord, after: RunRecord) -> list[CheckChange]:
                                    before_rate=before_rates.get(name, {}).get("pass_rate"),
                                    after_rate=after_rates.get(name, {}).get("pass_rate")))
     return changes
+
+
+def _noise(before: RunRecord, after: RunRecord) -> list[CheckNoise]:
+    """Per check, over cases in both runs where it gave a verdict both times: better, worse, p-value."""
+    def verdicts(record):
+        found = {}
+        for outcome in record.outcomes:
+            for result in outcome["results"]:
+                if result["status"] in ("PASS", "FAIL", "ERROR"):
+                    found[(result["check"], outcome["case_id"])] = result["status"] == "PASS"
+        return found
+    old, new = verdicts(before), verdicts(after)
+    noise = []
+    for check in dict.fromkeys(check for check, _ in new):
+        pairs = [(old[key], passed) for key, passed in new.items() if key[0] == check and key in old]
+        if not pairs:
+            continue
+        better = sum(1 for was, now in pairs if not was and now)
+        worse = sum(1 for was, now in pairs if was and not now)
+        after_results = [passed for (name, _), passed in new.items() if name == check]
+        noise.append(CheckNoise(check, better, worse, sign_test_p(better, worse),
+                                sum(after_results), len(after_results)))
+    return noise
+
+
+def _p_text(p_value: float) -> str:
+    return "p = 1" if p_value >= 0.995 else f"p = {p_value:.3f}" if p_value < 0.01 else f"p = {p_value:.2f}"
+
+
+def _range_text(noise: CheckNoise) -> str:
+    low, high = noise.after_range
+    if low is None:
+        return "-"
+    return f"{percent(noise.after_passed / noise.after_total)} ({percent(low)} to {percent(high)})"
 
 
 def _failing_checks(record: RunRecord, blocking: set) -> dict[str, list[str]]:

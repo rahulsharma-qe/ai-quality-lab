@@ -236,6 +236,11 @@ the ones **still failing**, and new cases separately, with each check's rate bef
 higher average can hide a new failure; this can't. By default it uses the last run in each file;
 pick others with `--before-run` and `--after-run` (see `examples/14_compare_two_runs.py`).
 
+An AI agent doesn't answer the same way twice, so two runs of the *same* agent already differ on some
+cases. For each check the comparison counts the cases that got better and worse, and says whether
+that split is bigger than chance (a sign test: 14 better and 2 worse is; 6 and 5 isn't), with the
+likely range of each pass rate. To measure your own noise, compare two runs of an unchanged agent.
+
 ## 12. Extend without forking
 
 Add a check: one class with `@register_check("name")` in a file in your team folder, list that

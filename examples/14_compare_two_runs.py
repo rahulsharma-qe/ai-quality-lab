@@ -3,6 +3,8 @@
 An average can go up while a case that used to pass breaks. Here the "before" agent is the
 regressed store agent; the "after" agent fixes the receipt rule but now claims the shop is
 open 24/7. Pass rates alone would call that progress; the comparison names the regression.
+It also says, per check, how many cases got better and how many worse, and whether that split is
+bigger than chance: on 9 cases it isn't, which is why one run of a few cases proves little.
 
 Command-line equivalent (two saved run records, the last run in each by default):
     aiquality compare history/before.jsonl aiquality-runs --markdown comparison.md
