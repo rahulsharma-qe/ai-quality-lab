@@ -75,7 +75,7 @@ aiquality evaluate --team my_team                # pass rate per check, attacks 
 aiquality gate     --team examples/gate_demo/good_team       # PASS, exit 0
 aiquality gate     --team examples/gate_demo/regressed_team  # FAIL, exit 1, every reason listed
 aiquality compare  before.jsonl aiquality-runs        # what a change fixed, and what it newly broke
-aiquality repeat   --team my_team --cases C13 --times 3   # ask again: which results hold, which were luck
+aiquality repeat   --team my_team --cases S02 --times 3   # ask again: which results hold, which were luck
 aiquality validate-judge --team aeroassist --split holdout   # trust the AI judge only after it qualifies
 aiquality review   --team aeroassist                 # what a person should look at, and why
 aiquality dashboard                                  # one page: every team now, and run by run

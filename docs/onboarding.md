@@ -272,7 +272,7 @@ likely range of each pass rate. To measure your own noise, compare two runs of a
 When a case changed, ask it again before believing the change:
 
 ```bash
-aiquality repeat --team my_team --cases C13,C18 --times 3
+aiquality repeat --team my_team --cases S02,S03 --times 3
 aiquality repeat --team my_team --changed-between history/before.jsonl aiquality-runs   # every case that changed
 ```
 
@@ -284,7 +284,7 @@ with the wording. Every answer, its tool calls and its results are saved to
 `aiquality-runs/repeat_check.jsonl` as each repeat finishes. A model agent costs one call per answer,
 plus one judge call per answer when the team has a judge (see `examples/18_repeat_cases.py`).
 In a notebook whose key is a notebook secret (Colab), run it from Python, where the secret can be read:
-`repeat_team(TeamConfig.load(...), ["C13"], times=3)` from `aiquality.commands`; a shell command such as
+`repeat_team(TeamConfig.load(...), ["S02"], times=3)` from `aiquality.commands`; a shell command such as
 `!aiquality repeat` runs in a separate process and only sees a key set as an environment variable.
 
 ## 12. Extend without forking
