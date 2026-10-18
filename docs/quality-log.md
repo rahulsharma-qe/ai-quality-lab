@@ -42,7 +42,8 @@ with repeats from the start.
 | Word | Meaning |
 |---|---|
 | **Golden set** | The test cases: a passenger question, what a good answer must say, and what it must never say. Written and checked by a person. File: [`golden_dataset.json`](../teams/aeroassist/golden_dataset.json) |
-| **P1 to P8** | The agent's eight policies (refunds, baggage, check-in, date changes, no-shows, cancellations, special assistance), in [`policies.md`](../teams/aeroassist/policies.md) |
+| **P1 to P8** | The agent's eight policies (refunds and cancellations, cabin baggage, checked baggage, web check-in, date changes, no-shows, flights cancelled by the airline, special assistance), in [`policies.md`](../teams/aeroassist/policies.md) |
+| **Agent versions** | v1: the first agent, answering from the policies it retrieves (Runs 1 and 2). v2: general rules, three policies retrieved, earlier turns (Run 3). v3: a rule per kind of error (Run 5). v4: limits decided by code, through a tool the model chooses to call (Run 6). v5: the code checks the limits on every message (Run 7; the default). v6: v5 with the hand-over sentence written by code, and a cabin class the passenger didn't state dropped (Run 8) |
 | **Case id** | A case's name, for example **GD20** ("my flight is in 2 hours, change it to the next flight") |
 | **Check** | An automatic test of one answer, scored as a pass rate. **Phrase checks** look for required and forbidden words |
 | **Judge** | An AI that reads an answer and decides whether it is correct and grounded in the policies. It can be wrong too, so it is measured against a person's labels before it is trusted |
@@ -53,6 +54,7 @@ with repeats from the start.
 | **False alarm** | A check fails a correct answer (for example, "not approved" matching the forbidden word "approved") |
 | **Hidden error** | A check passes a wrong answer, because the answer contains the right words but means the wrong thing |
 | **Accepted finding** | A false alarm a person has reviewed and accepted, with a reason and an expiry date |
+| **Decision check** | Reads what an answer decided (yes, no, depends, hand over, an amount) and compares it with the case's `expected_decision`. It reports but doesn't block until its reader has been measured on more answers |
 | **Review queue** | After each run, the list of findings a person should look at, and why |
 | **Repeat check** | The same cases asked again, to see how often a result changes on its own |
 
@@ -557,7 +559,7 @@ recording is a sample of one: the repeats turned an apparent 6-case gain into a 
 11. **Compare fairly:** the same session, the same settings. Otherwise a difference may be chance.
 12. **The same code with new knowledge is a new agent.** The agent's version includes its policies' version.
 13. **Boundaries are where agents fail.** "Exactly 48 hours" was fixed by saying so in the policy (GD30);
-    "exactly 4 hours" is still refused (GD18).
+    "exactly 4 hours" was fixed once code checked the limits on every message (GD18, Run 7).
 14. **Any change to an agent's knowledge needs the whole set re-run, graded for meaning.** Rewording one
     policy broke answers about two others (GD13, GD30).
 15. **Run it more than once.** At temperature 0, the judge's verdict changed in 4 tries for 13 of 24 cases.
