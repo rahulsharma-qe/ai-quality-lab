@@ -39,6 +39,12 @@ checks:
   # platform keeps it advisory, whatever this says.
   answer_judge:
     threshold: 0.9
+  # What the answer decided (yes, no, depends, hand over), read by rules from its opening and compared
+  # with the case's expected_decision. Free and repeatable. Diagnostic until the reader has been
+  # measured on more answers: it reports, it doesn't block.
+  decision:
+    threshold: 1.0
+    blocking: false
 
 # A good average must not hide a failing high-priority case.
 priority_bars:

@@ -20,8 +20,9 @@ def test_three_formats_give_identical_cases():
 
 def test_repo_golden_set_loads_with_meta_and_extra_fields():
     golden = load_golden_set(REPO_GOLDEN_SET)
-    assert golden.version == "1.13" and len(golden) == 56
+    assert golden.version == "1.14" and len(golden) == 56
     assert golden.cases[2].expected_sources == ["P1"]           # GD03 needs the refund policy
+    assert golden.cases[2].expected_decision == "no"            # GD03 refuses a refund outside the window
     first = golden.cases[0]
     assert first.must_not_include == [] and len(first.must_not_do) == 2
     assert "retrieved_policy" in first.extra          # unknown fields are kept, not dropped
@@ -31,6 +32,27 @@ def test_repo_golden_set_has_no_lint_warnings():
     """Echoed forbidden phrases and model answers that fail their own checks are fixed, not carried."""
     from aiquality.test_data.lint import lint_golden_set
     assert lint_golden_set(load_golden_set(REPO_GOLDEN_SET)) == []
+
+
+# Decision-reader limits found on the reference answers, kept visible rather than tuned away.
+REFERENCE_READER_LIMITS = {
+    "GD21": "reads as depends: its second 'If' offers another option (a date change), not the other case of the refund",
+}
+
+
+def test_repo_reference_answers_reach_their_own_expected_decision():
+    """The reference answer of every case with an expected_decision passes the decision check, or the
+    reader can't tell (NOT_APPLICABLE). A FAIL means the two disagree, so one of them is wrong."""
+    from aiquality.checks import CheckStatus, create_check
+    from aiquality.contracts import AgentResponse
+    check = create_check("decision")
+    failed = {}
+    for case in load_golden_set(REPO_GOLDEN_SET).cases:
+        if case.expected_decision and case.id not in REFERENCE_READER_LIMITS:
+            result = check.evaluate(case, AgentResponse(case.reference_answer))
+            if result.status == CheckStatus.FAIL:
+                failed[case.id] = result.reason
+    assert failed == {}
 
 
 def test_plain_list_json(tmp_path):
