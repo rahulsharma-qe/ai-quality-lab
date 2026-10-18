@@ -241,6 +241,21 @@ cases. For each check the comparison counts the cases that got better and worse,
 that split is bigger than chance (a sign test: 14 better and 2 worse is; 6 and 5 isn't), with the
 likely range of each pass rate. To measure your own noise, compare two runs of an unchanged agent.
 
+When a case changed, ask it again before believing the change:
+
+```bash
+aiquality repeat --team my_team --cases C13,C18 --times 3
+aiquality repeat --team my_team --changed-between history/before.jsonl aiquality-runs   # every case that changed
+```
+
+It asks the live agent each case `--times` times (recorded answers would be the same every time),
+scores every answer with every check, and shows per case and per check how many repeats passed:
+`3/3` holds, `1/3 *` is a coin toss whatever one run said. Each check is counted on its own,
+because a model judge can change its verdict on the same facts while a phrase check changes only
+with the wording. Every answer, its tool calls and its results are saved to
+`aiquality-runs/repeat_check.jsonl` as each repeat finishes. A model agent costs one call per answer,
+plus one judge call per answer when the team has a judge (see `examples/18_repeat_cases.py`).
+
 ## 12. Extend without forking
 
 Add a check: one class with `@register_check("name")` in a file in your team folder, list that

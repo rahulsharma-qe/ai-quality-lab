@@ -12,17 +12,20 @@ from aiquality.adapters import RecordedResponsesAgent, RecordingSummary, build_a
 from aiquality.attacks import build_attack_cases
 from aiquality.config import CompanyMinimums, TeamConfig
 from aiquality.contracts import AgentUnderTest
-from aiquality.errors import ConfigError
+from aiquality.errors import ConfigError, SetupError
 from aiquality.evaluation import evaluate_runs
 from aiquality.gate import GateDecision, ReleaseGate
 from aiquality.judges.recorded import VerdictRecordingSummary, record_verdicts
 from aiquality.judging import build_judge, judge_for_run, judge_summary
 from aiquality.reporting import RunRecord, create_reporter
+from aiquality.reporting.redaction import redact_personal_data
+from aiquality.reporting.repeats import RepeatRow, RepeatSummary, save_repeat_rows, summarise_repeats
 from aiquality.runner import Runner
 from aiquality.test_data import load_golden_set
 from aiquality.test_data.lint import lint_golden_set
 
 DEFAULT_OUTPUT_DIR = "aiquality-runs"
+REPEAT_FILE = "repeat_check.jsonl"
 JUDGE_CHECK = "answer_judge"
 
 
@@ -73,13 +76,14 @@ def _run_and_score(config, live, agent, include_golden, include_attacks, command
     return record, evaluation, check_settings
 
 
-def _check_settings_with_judge(config: TeamConfig, live: bool):
+def _check_settings_with_judge(config: TeamConfig, live: bool, judge=None):
     """The team's check settings, with its judge handed to the answer_judge check. That check may
-    block only if the config says so AND this judge version has qualified against people's labels."""
+    block only if the config says so AND this judge version has qualified against people's labels.
+    judge=... replaces the configured judge (examples and tests)."""
     settings = config.checks.get(JUDGE_CHECK)
     if settings is None:
         return config.checks, None
-    judge, mode = judge_for_run(config, live)
+    judge, mode = (judge, "given") if judge is not None else judge_for_run(config, live)
     info = judge_summary(config, judge, mode, settings.blocking)
     with_judge = dict(config.checks)
     with_judge[JUDGE_CHECK] = replace(settings, blocking=info["blocking"],
@@ -132,6 +136,63 @@ def record_team(config: TeamConfig, output_path: Optional[Path] = None) -> tuple
     live_agent = build_agent(config.live_agent, config.folder, team_name=config.team)
     _, cases = team_cases(config)
     return Path(output_path), record_responses(live_agent, cases, Path(output_path))
+
+
+def repeat_team(config: TeamConfig, case_ids: list[str], times: int = 3, output_path=None,
+                agent: Optional[AgentUnderTest] = None, judge=None) -> tuple[Path, RepeatSummary]:
+    """Ask the agent the chosen cases `times` times each and score every answer with every check,
+    to see which results hold and which vary. One row per case per repeat is saved as JSONL.
+
+    Recorded answers are the same every time, so this asks the team's live_agent (or its default agent
+    when that isn't a recording), and grades with the live judge. agent=... and judge=... replace both
+    (examples and tests). The file is started afresh, and each repeat is saved as soon as it is done,
+    so an interrupted run keeps the answers it paid for.
+    """
+    if times < 1:
+        raise SetupError("--times must be 1 or more")
+    agent = agent or _repeat_agent(config)
+    cases = _pick_cases(config, case_ids)
+    check_settings, _ = _check_settings_with_judge(config, live=True, judge=judge)
+    path = Path(output_path or Path(DEFAULT_OUTPUT_DIR) / REPEAT_FILE)
+    all_rows = []
+    for repeat in range(1, times + 1):
+        case_runs = Runner(agent, max_error_rate=config.max_error_rate).run(cases)
+        evaluation = evaluate_runs(case_runs, check_settings, default_client=config.client)
+        rows = [_repeat_row(outcome, run, repeat, agent.version)
+                for outcome, run in zip(evaluation.outcomes, case_runs)]
+        save_repeat_rows(rows, path, append=repeat > 1)
+        all_rows += rows
+    return path, summarise_repeats(all_rows)
+
+
+def _repeat_agent(config: TeamConfig) -> AgentUnderTest:
+    settings = config.live_agent or config.agent
+    if settings.get("adapter") == "recorded_responses":
+        raise ConfigError(config.source, ["repeating needs an agent that really answers: recorded answers are the "
+                                          "same every time. Add a 'live_agent' block to the team config"])
+    return build_agent(settings, config.folder, team_name=config.team)
+
+
+def _pick_cases(config: TeamConfig, case_ids: list[str]) -> list:
+    _, cases = team_cases(config)
+    by_id = {case.id: case for case in cases}
+    wanted = list(dict.fromkeys(case_ids))
+    unknown = [case_id for case_id in wanted if case_id not in by_id]
+    if unknown:
+        raise SetupError(f"no case with id {', '.join(unknown)} in team {config.team}'s golden set or attacks")
+    if not wanted:
+        raise SetupError("no cases to repeat: name them with --cases or --changed-between")
+    return [by_id[case_id] for case_id in wanted]
+
+
+def _repeat_row(outcome, case_run, repeat: int, agent_version: str) -> RepeatRow:
+    response = case_run.response
+    tool_calls = None if response is None or response.tool_calls is None else [t.to_dict() for t in response.tool_calls]
+    results = [{"check": r.check_name, "status": r.status.value, "reason": redact_personal_data(r.reason),
+                "flags": list(r.flags)} for r in outcome.results]
+    return RepeatRow(case_id=outcome.case_id, repeat=repeat, agent_version=agent_version,
+                     answer_text=redact_personal_data(outcome.answer_text), error=outcome.error,
+                     tool_calls=tool_calls, results=results)
 
 
 def record_judge_verdicts(config: TeamConfig, chat=None) -> tuple[Path, VerdictRecordingSummary]:

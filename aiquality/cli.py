@@ -7,6 +7,8 @@
   aiquality record   --team aeroassist          record the live agent's answers for replay
   aiquality record   --team aeroassist --judge  record the live judge's verdicts on those answers
   aiquality compare  history/before.jsonl aiquality-runs   what got fixed, what newly fails
+  aiquality repeat   --team aeroassist --cases GD13,GD18 --times 3   which results hold, which vary
+  aiquality repeat   --team aeroassist --changed-between before.jsonl aiquality-runs   ask again what changed
   aiquality validate-judge --team aeroassist --split holdout   measure the judge against people's labels
   aiquality review   --team aeroassist          what a person should look at from the latest run, and why
   aiquality new-team claims_assist --format json
@@ -25,13 +27,14 @@ from pathlib import Path
 
 from aiquality.attacks import describe_attacks
 from aiquality.checks import describe_checks
-from aiquality.commands import (DEFAULT_OUTPUT_DIR, attack_team, create_team_scaffold, evaluate_team, gate_team,
-                                record_judge_verdicts, record_team)
+from aiquality.commands import (DEFAULT_OUTPUT_DIR, REPEAT_FILE, attack_team, create_team_scaffold, evaluate_team,
+                                gate_team, record_judge_verdicts, record_team, repeat_team)
 from aiquality.config import TeamConfig
 from aiquality.errors import SetupError
 from aiquality.judges import available_judges
 from aiquality.judges.validation import render_validation
-from aiquality.reporting import compare_runs, pick_run, render_comparison, render_comparison_markdown
+from aiquality.reporting import (changed_cases, compare_runs, pick_run, render_comparison, render_comparison_markdown,
+                                 render_repeats)
 
 EXIT_OK = 0
 EXIT_QUALITY_FAILURE = 1
@@ -93,6 +96,23 @@ def _compare(args) -> int:
         print(f"\nmarkdown written to {args.markdown}")
     if args.fail_on_new_failures and comparison.has_new_failures:
         return EXIT_QUALITY_FAILURE
+    return EXIT_OK
+
+
+def _repeat(args) -> int:
+    config = TeamConfig.load(_team_path(args.team, args.teams_dir))
+    case_ids = [case_id.strip() for case_id in (args.cases or "").split(",") if case_id.strip()]
+    if args.changed_between:
+        before, after = (pick_run(path) for path in args.changed_between)
+        changed = changed_cases(before, after)
+        print(f"{len(changed)} cases changed between the two runs: {', '.join(changed) or 'none'}")
+        case_ids += changed
+    case_ids = list(dict.fromkeys(case_ids))
+    print(f"asking {len(case_ids)} cases {args.times} times: {len(case_ids) * args.times} answers, each scored by "
+          f"every check (with a model judge, that is one judge call per answer too)\n")
+    path, summary = repeat_team(config, case_ids, args.times, args.output or Path(args.output_dir) / REPEAT_FILE)
+    print(render_repeats(summary))
+    print(f"\nanswers and results saved in {path}")
     return EXIT_OK
 
 
@@ -206,6 +226,16 @@ def _build_parser() -> argparse.ArgumentParser:
     compare.add_argument("--fail-on-new-failures", action="store_true",
                          help="exit 1 when a case that passed before fails now")
     compare.set_defaults(handler=_compare)
+
+    repeat = commands.add_parser("repeat", help="ask chosen cases several times: which results hold, which vary")
+    add_team_arguments(repeat)
+    repeat.add_argument("--cases", help="case ids, comma separated, e.g. GD13,GD18")
+    repeat.add_argument("--changed-between", nargs=2, metavar=("BEFORE", "AFTER"),
+                        help="also every case whose result on any check differs between two saved runs")
+    repeat.add_argument("--times", type=int, default=3, help="answers per case (default: 3)")
+    repeat.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help=f"where {REPEAT_FILE} goes")
+    repeat.add_argument("--output", help="file to write instead (started afresh)")
+    repeat.set_defaults(handler=_repeat)
 
     validate = commands.add_parser("validate-judge", help="measure the team's judge against people's labels")
     add_team_arguments(validate)

@@ -214,16 +214,28 @@ def _check_changes(before: RunRecord, after: RunRecord) -> list[CheckChange]:
     return changes
 
 
+def changed_cases(before: RunRecord, after: RunRecord) -> list[str]:
+    """Cases in both runs where any check passed in one and not in the other: the ones worth asking
+    again before believing the difference (aiquality repeat --changed-between)."""
+    old, new = _verdicts(before), _verdicts(after)
+    changed = {case_id for (check, case_id), passed in new.items()
+               if (check, case_id) in old and old[(check, case_id)] != passed}
+    return [outcome["case_id"] for outcome in after.outcomes if outcome["case_id"] in changed]
+
+
+def _verdicts(record: RunRecord) -> dict:
+    """(check, case_id) -> passed, for every result that is a verdict (not NOT_APPLICABLE)."""
+    found = {}
+    for outcome in record.outcomes:
+        for result in outcome["results"]:
+            if result["status"] in ("PASS", "FAIL", "ERROR"):
+                found[(result["check"], outcome["case_id"])] = result["status"] == "PASS"
+    return found
+
+
 def _noise(before: RunRecord, after: RunRecord) -> list[CheckNoise]:
     """Per check, over cases in both runs where it gave a verdict both times: better, worse, p-value."""
-    def verdicts(record):
-        found = {}
-        for outcome in record.outcomes:
-            for result in outcome["results"]:
-                if result["status"] in ("PASS", "FAIL", "ERROR"):
-                    found[(result["check"], outcome["case_id"])] = result["status"] == "PASS"
-        return found
-    old, new = verdicts(before), verdicts(after)
+    old, new = _verdicts(before), _verdicts(after)
     noise = []
     for check in dict.fromkeys(check for check, _ in new):
         pairs = [(old[key], passed) for key, passed in new.items() if key[0] == check and key in old]
