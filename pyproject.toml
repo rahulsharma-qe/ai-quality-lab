@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aiquality"
-version = "0.1.0"
+dynamic = ["version"]              # read from aiquality/__init__.py: the version lives in one place
 description = "A self-serve quality platform for AI agents: evaluation, attack tests, a release gate and reports, driven by configuration."
 readme = "README.md"
 license = "MIT"
@@ -26,6 +26,9 @@ aeroassist = ["anthropic", "numpy", "langchain-huggingface", "sentence-transform
 # Everything needed to run the tests and examples (numpy: the AeroAssist retrieval tests;
 # opentelemetry-proto: the exported traces checked against the official definitions).
 dev = ["pytest>=7", "openpyxl>=3.1", "numpy", "opentelemetry-proto"]
+
+[tool.setuptools.dynamic]
+version = {attr = "aiquality.__version__"}
 
 [project.scripts]
 aiquality = "aiquality.cli:main"

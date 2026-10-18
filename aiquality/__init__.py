@@ -5,6 +5,8 @@ asks the agent every case, scores the answers with pluggable checks, and writes 
 RunRecord that every report reads. See docs/onboarding.md.
 """
 
+__version__ = "0.1.0"     # the one place the version is written; pyproject.toml reads it
+
 from aiquality.adapters import HttpEndpointAgent, PythonFunctionAgent, RecordedResponsesAgent, build_agent
 from aiquality.checks import Check, CheckResult, CheckStatus, register_check
 from aiquality.commands import evaluate_team, record_team
@@ -16,7 +18,6 @@ from aiquality.reporting import Reporter, RunRecord, compare_runs, pick_run, reg
 from aiquality.runner import Runner
 from aiquality.test_data import GoldenCase, GoldenCaseBuilder, GoldenSet, load_golden_set
 
-__version__ = "0.1.0"
 
 __all__ = [
     "AgentResponse", "AgentUnderTest", "Check", "CheckResult", "CheckStatus", "CompanyMinimums",

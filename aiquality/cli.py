@@ -17,6 +17,7 @@
   aiquality export-traces aiquality-runs --output traces.json   a run as OpenTelemetry traces
   aiquality list-checks
   aiquality list-attacks
+  aiquality --version                           the installed version
 
 Exit codes: 0 done or gate passed · 1 gate failed (quality below the bar) ·
 2 setup problem (bad config, missing file, agent unreachable), never reported as a quality failure.
@@ -27,6 +28,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from aiquality import __version__
 from aiquality.attacks import describe_attacks
 from aiquality.checks import describe_checks
 from aiquality.commands import (DEFAULT_OUTPUT_DIR, REPEAT_FILE, attack_team, evaluate_team, gate_team,
@@ -202,6 +204,7 @@ def _team_path(team: str, teams_dir: str) -> Path:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="aiquality", description="Quality checks for AI agents.")
+    parser.add_argument("--version", action="version", version=f"aiquality {__version__}")
     commands = parser.add_subparsers(dest="command")
 
     def add_team_arguments(command):

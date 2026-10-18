@@ -93,6 +93,14 @@ def test_cli_list_checks(capsys):
     assert "forbidden_phrases" in capsys.readouterr().out
 
 
+def test_cli_version_prints_the_package_version(capsys):
+    import aiquality
+    with pytest.raises(SystemExit) as stop:
+        main(["--version"])
+    assert stop.value.code == 0
+    assert capsys.readouterr().out.strip() == f"aiquality {aiquality.__version__}"
+
+
 def test_replay_agent_is_a_drop_in_agent(tmp_path):
     path = tmp_path / "r.jsonl"
     path.write_text(json.dumps({"question": "Hi?", "answer_text": "Hello"}) + "\n")
