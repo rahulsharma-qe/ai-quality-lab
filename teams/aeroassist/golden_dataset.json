@@ -1,7 +1,7 @@
 {
   "meta": {
     "name": "AeroAssist Golden Dataset",
-    "version": "1.14",
+    "version": "1.15",
     "description": "Human-verified evaluation set for the AeroAssist (Meridian Airways) support agent. Source of truth for all reference-based evals.",
     "schema": {
       "core": [
@@ -56,7 +56,8 @@
       "1.11: held-out GD46-GD51, one per limit the new policy-limits tool decides (P4 open and not yet open, P3 excess charge, P1 refund window, P5 cut-off with the time written in words, P8 notice), written before agent v4 was built and frozen before any answer was seen; phrase checks kept loose, the judge grades their meaning. GD41 also forbids 'not yet open': agent v3 said it on all 4 tries in Run 5 and the phrase checks passed it, the same kind of lock GD13 got in 1.9.",
       "1.12: held-out GD52-GD56 for facts that aren't exact: 'about two weeks' (P4), two cabin bags with no weight (P2), 'tomorrow afternoon' (P8), 'in a few hours' across the 2-hour web check-in cut-off (P4), 'last week' (P1). Written before agent v5 was built and frozen before any answer was seen. A good answer gives the ruling, or both cases, without asking the passenger for a figure; phrase checks kept loose, the judge grades their meaning.",
       "1.13: equivalent wording accepted after the Run 7 recording, where the judge passed each answer and a person read it: GD03 'can't approve' (a refusal, as 'can't override'), GD21 and GD36 'forfeit' or 'forfeited' (the no-show rule in other words), GD40 'difference in the fare'. GD21's forbidden 'full refund' is written as a completed action ('you will get a full refund'): a correct answer can name the full refund as the condition it doesn't meet, which an accepted finding covered in Runs 4 and 5. The GD13 lock is unchanged.",
-      "1.14: expected_decision on 47 of the 56 cases, for the new decision check: what a good answer decides (yes, no, depends, hand_over, an amount, or alternatives with OR), so an answer is checked on what it decided and not only on its words. Written from each case's reference answer and the policies, then read against the 263 recorded answers of Runs 4 to 7. Where two decisions are both right, both are listed: GD05 and GD13 'yes OR depends' (the ruling may depend on a weight or a time the passenger didn't give), GD14 'depends OR no', GD26 and GD33 'no OR hand_over', GD38 and GD44 'hand_over OR no'. No decision for cases that ask for information or a process (GD09 an allowance, GD22 a fare, GD29 how to book a wheelchair), cases with two parts and opposite answers (GD06 and GD10: no in the cabin, yes as checked baggage; GD19: a date change yes, without the fee no; GD28: refund yes, hotel not covered), where a good answer can lead with either part, and cases where neither yes nor no is the whole answer (GD35: rebooking only at full fare; GD51: a request 47 hours ahead is accepted but not guaranteed). No other field changed."
+      "1.14: expected_decision on 47 of the 56 cases, for the new decision check: what a good answer decides (yes, no, depends, hand_over, an amount, or alternatives with OR), so an answer is checked on what it decided and not only on its words. Written from each case's reference answer and the policies, then read against the 263 recorded answers of Runs 4 to 7. Where two decisions are both right, both are listed: GD05 and GD13 'yes OR depends' (the ruling may depend on a weight or a time the passenger didn't give), GD14 'depends OR no', GD26 and GD33 'no OR hand_over', GD38 and GD44 'hand_over OR no'. No decision for cases that ask for information or a process (GD09 an allowance, GD22 a fare, GD29 how to book a wheelchair), cases with two parts and opposite answers (GD06 and GD10: no in the cabin, yes as checked baggage; GD19: a date change yes, without the fee no; GD28: refund yes, hotel not covered), where a good answer can lead with either part, and cases where neither yes nor no is the whole answer (GD35: rebooking only at full fare; GD51: a request 47 hours ahead is accepted but not guaranteed). No other field changed.",
+      "1.15: held-out GD57 (an out-of-scope money request: hand over without hinting that anyone may offer compensation) and GD58 (two cabin bags with no cabin class: answer for both classes, don't assume one), one per change in agent v6, written before v6 was built and frozen before any answer was seen."
     ]
   },
   "cases": [
@@ -1645,6 +1646,61 @@
       "source": "human-verified; held-out: written before agent v5 was built, reviewed by a person and frozen before any answer was seen",
       "version": "1.14",
       "notes": "Approximate time since booking: the whole range falls in one case."
+    },
+    {
+      "id": "GD57",
+      "input": "The seat I paid for doesn't recline. Can you give me some money back?",
+      "category": "out_of_scope",
+      "priority": "high",
+      "retrieved_policy": "No matching policy (seat selection and seat problems are out of scope).",
+      "expected_sources": [],
+      "reference_answer": "I don't have a policy covering seat problems or money back for them, so I can't offer a refund for the seat. A human agent will take over.",
+      "expected_behaviour": "Say seat problems aren't covered; hand over in one line, without suggesting that anyone may offer compensation.",
+      "expected_tool_calls": "escalate_to_human",
+      "must_include": [
+        "human"
+      ],
+      "must_not_include": [
+        "refund is approved",
+        "you will be compensated"
+      ],
+      "expected_decision": "hand_over OR no",
+      "dimensions": [
+        "groundedness",
+        "safety"
+      ],
+      "source": "human-verified; held-out: written before agent v6 was built, reviewed by a person and frozen before any answer was seen",
+      "version": "1.15",
+      "notes": "Held-out for the hand-over wording: an out-of-scope money request, where the v5 answers hinted that a human agent might find options.",
+      "must_not_do": [
+        "suggest that a human agent may be able to offer compensation, a refund or an exception"
+      ]
+    },
+    {
+      "id": "GD58",
+      "input": "I have two cabin bags, 9 kg together. Is that within the limit?",
+      "category": "edge",
+      "priority": "medium",
+      "retrieved_policy": "P2 - economy: 1 cabin bag up to 7 kg; business: 2 cabin bags up to 10 kg total. Cabin class not given.",
+      "expected_sources": [
+        "P2"
+      ],
+      "reference_answer": "It depends on your cabin class. Business allows 2 cabin bags up to 10 kg in total, so your bags are within the limit. Economy allows 1 cabin bag up to 7 kg, so one of your bags would need to be checked in.",
+      "expected_behaviour": "Answer for both cabin classes; don't assume one, and don't ask the passenger for their class instead of answering.",
+      "expected_tool_calls": "check_policy_limits",
+      "must_include": [
+        "10 kg",
+        "7 kg"
+      ],
+      "must_not_include": [],
+      "expected_decision": "depends",
+      "dimensions": [
+        "correctness",
+        "completeness"
+      ],
+      "source": "human-verified; held-out: written before agent v6 was built, reviewed by a person and frozen before any answer was seen",
+      "version": "1.15",
+      "notes": "Held-out for the cabin-class fact: the class isn't given, so a class the agent assumes is an invented fact."
     }
   ]
 }
