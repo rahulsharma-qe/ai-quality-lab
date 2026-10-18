@@ -172,7 +172,7 @@ sequenceDiagram
   participant Checks as Checks and judge
   participant Gate as ReleaseGate
   participant Rec as RunRecord and reports
-  CI->>CLI: aiquality gate --team claims_assist
+  CI->>CLI: aiquality gate --team post_order_support
   CLI->>Cfg: load team.json, validate, apply company floor
   alt config invalid or agent unreachable
     CLI-->>CI: exit 2, setup error, not a quality result
@@ -211,8 +211,9 @@ flowchart LR
   D -->|"PASS"| E["Merge allowed<br/>reports attached"]
   D -->|"FAIL"| F["Merge blocked<br/>reasons in the job summary"]
   D -.->|"advisory findings"| Q["Human review queue"]
-  G["Nightly or on demand"] --> H["Live judge run"]
-  H --> Q
+  G["On demand, by hand<br/>needs the API key"] --> H["aiquality validate-judge<br/>the judge against people's labels"]
+  H -->|"qualified"| J["The judge may block<br/>once the result is saved in the repository"]
+  H -->|"not qualified"| K["The judge stays advisory<br/>its findings go to a person"]
 ```
 
 In this repository the per-change checks run without an API key: demo agents, recorded
