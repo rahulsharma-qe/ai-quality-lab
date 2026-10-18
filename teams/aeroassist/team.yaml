@@ -47,18 +47,18 @@ priority_bars:
 # Reviewed false alarms: a person read each answer and it is correct; phrase matching can't read
 # meaning ("not", or the same point in other words). They expire, and they match a case and a check,
 # not an answer, so each is re-read whenever the recording CI replays changes. Run 5 dropped GD16,
-# GD21 and GD36; Run 6 dropped GD03: those answers pass without one.
+# GD21 and GD36; Run 6 dropped GD03; Run 7 dropped GD44: those answers pass without one.
 accepted_findings:
-  - case: GD44
-    check: forbidden_phrases
-    reason: "Quoted, not promised: 'I can't tell you whether Meridian will pay for your hotel' contains the forbidden 'will pay for your hotel'. The answer says the topic isn't covered and hands over; the judge passes it"
-    approved_by: rahulsharma-qe
-    expires: 2026-11-14
   - case: GD31
     check: forbidden_phrases
-    reason: "Negation false alarm: the answer says requests inside 48 hours are 'best-effort only and not guaranteed'. The judge separately flags its hand-over as a hint; that stays open"
+    reason: "Negation false alarm: the answer says the request is 'best-effort and not guaranteed'. The judge separately flags its hand-over as a hint; that stays open"
     approved_by: rahulsharma-qe
     expires: 2026-11-14
+  - case: GD13
+    check: forbidden_phrases
+    reason: "Conditional, not a claim: 'If your flight is fewer than 2 hours away, web check-in is closed'. The lock exists for an answer that says it is closed outright (Run 4); this one says when it is open. Short expiry: to be pinned to this answer once acceptances record the answer they were given for"
+    approved_by: rahulsharma-qe
+    expires: 2026-11-01
 
 # The judge grades meaning (an AI, so it is measured against people's labels first). It may block a
 # release only when this exact version has qualified; until then it is advisory.

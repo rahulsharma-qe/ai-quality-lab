@@ -22,10 +22,11 @@ def load_agent_module(monkeypatch, version=None):
 
 def test_agent_versions_and_default(monkeypatch):
     default = load_agent_module(monkeypatch)
-    assert default.VERSION == "v3"                                     # the default since Run 5
-    assert default.AGENT_VERSION.endswith(f":v3-top3:policies-{default.POLICIES_VERSION}")
+    assert default.VERSION == "v5"                                     # the default since Run 7
+    assert default.AGENT_VERSION.endswith(f":v5-top3:limits-2:policies-{default.POLICIES_VERSION}")
     assert default.POLICIES_VERSION == "1.3"                           # read from policies.md
-    assert default.VERSIONS["v3"]["system_prompt"] == default.PROMPT_V3
+    v3 = load_agent_module(monkeypatch, "v3")
+    assert v3.AGENT_VERSION.endswith(":v3-top3:policies-1.3") and v3.VERSIONS["v3"]["system_prompt"] == v3.PROMPT_V3
     v1 = load_agent_module(monkeypatch, "v1")
     assert ":v1-top2:policies-" in v1.AGENT_VERSION and v1.VERSIONS["v1"]["system_prompt"] is None
     v2 = load_agent_module(monkeypatch, "v2")
@@ -34,7 +35,7 @@ def test_agent_versions_and_default(monkeypatch):
     assert ":v4-top3:limits-2:policies-" in v4.AGENT_VERSION and v4.VERSIONS["v4"]["policy_limits_tool"] is True
     v5 = load_agent_module(monkeypatch, "v5")
     assert ":v5-top3:limits-2:policies-" in v5.AGENT_VERSION and v5.VERSIONS["v5"]["understanding_step"] is True
-    assert ":limits-" not in default.AGENT_VERSION                    # a version without the tool doesn't name it
+    assert ":limits-" not in v3.AGENT_VERSION                         # a version without the tool doesn't name it
     with pytest.raises(ValueError, match="must be one of: v1, v2, v3, v4, v5"):
         load_agent_module(monkeypatch, "v9")
 

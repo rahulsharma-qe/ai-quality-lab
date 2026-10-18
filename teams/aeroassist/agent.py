@@ -15,7 +15,7 @@ versions live side by side, so a change can be recorded and compared against the
       can't skip it, and the timing rule says to pass a range when a time isn't exact and never to
       ask the passenger for a figure. The tool rules on ranges and partial facts (limits version 2)
 
-Pick one with the environment variable AEROASSIST_AGENT_VERSION (default: v3, since Run 5). The choice is part
+Pick one with the environment variable AEROASSIST_AGENT_VERSION (default: v5, since Run 7). The choice is part
 of AGENT_VERSION, and so is the version of policies.md it answers from: the same code with new
 policies is a different agent, and every run record says which one answered.
 
@@ -129,7 +129,7 @@ VERSIONS = {
 }
 TEMPERATURE = 0          # comparable runs: every version is recorded with the same setting
 
-VERSION = os.environ.get("AEROASSIST_AGENT_VERSION", "v3")
+VERSION = os.environ.get("AEROASSIST_AGENT_VERSION", "v5")
 if VERSION not in VERSIONS:
     raise ValueError(f"AEROASSIST_AGENT_VERSION must be one of: {', '.join(VERSIONS)} (got {VERSION!r})")
 SETTINGS = VERSIONS[VERSION]
