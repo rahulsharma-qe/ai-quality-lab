@@ -30,8 +30,12 @@ or hands over to a person.
 - **Code decides limits, and the code decides when to ask.** With limits moved into a tool, every
   ruling was right for the facts given, but the agent asked for one in only 13 of 30 cases. Making
   the code run the check on every message got the right rule in 35 of 35 cases and fixed the
-  long-running time-window errors on every try; the judge's pass rate went from 54% to 75%. Next:
-  check that the answer agrees with the ruling.
+  long-running time-window errors on every try; the judge's pass rate went from 54% to 75%.
+- **One recording can mislead; repeats don't.** Moving the hand-over sentence into code removed the
+  hinted exceptions, and one recording showed 6 more passing answers. Asked again, old and new agent
+  in one session, the hand-over cases moved by one try in 27: the model still hands over when the
+  policy already answers. Code can own how something is said, not whether it should be said. Next:
+  code decides when to hand over.
 
 The full story, run by run, with the evidence and every open problem:
 **[`docs/quality-log.md`](docs/quality-log.md)**.
@@ -287,8 +291,9 @@ and `.env` is gitignored. Data is privacy-safe synthetic only (no real PII).
 - [x] **Second quality loop on AeroAssist (done)** — agent v3 with a rule per kind of error, a held-out case per kind, and a repeat check: half the hinted exceptions, worse answers on time windows.
 - [x] **Limit decisions in code, first try (done)** — time windows, allowances and fees ruled on by code the agent calls as a tool; right whenever called, but the agent called it in only 13 of 30 cases.
 - [x] **Code consults the limits on every message (done)** — an understanding step the model can't skip, and limits that rule on approximate facts: the right rule in 35 of 35 cases.
-- [ ] **Answers checked against their decision (next)** — the platform compares what an answer decided with what the case expects, and the agent can't contradict the ruling it was given.
-- [ ] **Compare with repeats** — ask the cases that changed again and report how often each result holds, so noise isn't read as a fix or a regression.
+- [x] **Decisions and repeats in the platform (done)** — a decision check (what an answer decided, read by rules and measured on 263 recorded answers before use), whether a difference between two runs is bigger than chance, and `aiquality repeat` to ask changed cases again.
+- [x] **Hand-over written by code (done)** — the hinted exceptions went, but the model still hands over when the policy already answers; on repeats the hand-over cases barely moved, so v5 stays the default.
+- [ ] **Code decides when to hand over (next)** — hand over only when no policy answers the question, measured with repeats from the start.
 - [ ] **Parallel runs** — worker limit, rate-limit retries and a per-run budget cap.
 
 ---
