@@ -255,6 +255,9 @@ because a model judge can change its verdict on the same facts while a phrase ch
 with the wording. Every answer, its tool calls and its results are saved to
 `aiquality-runs/repeat_check.jsonl` as each repeat finishes. A model agent costs one call per answer,
 plus one judge call per answer when the team has a judge (see `examples/18_repeat_cases.py`).
+In a notebook whose key is a notebook secret (Colab), run it from Python, where the secret can be read:
+`repeat_team(TeamConfig.load(...), ["C13"], times=3)` from `aiquality.commands`; a shell command such as
+`!aiquality repeat` runs in a separate process and only sees a key set as an environment variable.
 
 ## 12. Extend without forking
 
