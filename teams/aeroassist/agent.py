@@ -11,6 +11,9 @@ versions live side by side, so a change can be recorded and compared against the
       calls the check_policy_limits tool (policy_limits.py, next to this file) and words its ruling.
       One rule changes (work out timing yourself -> use the tool), and one sentence that pointed at
       working out totals now points at the tool
+  v5  v4 with an understanding step: the code makes the model call the tool on every message, so it
+      can't skip it, and the timing rule says to pass a range when a time isn't exact and never to
+      ask the passenger for a figure. The tool rules on ranges and partial facts (limits version 2)
 
 Pick one with the environment variable AEROASSIST_AGENT_VERSION (default: v3, since Run 5). The choice is part
 of AGENT_VERSION, and so is the version of policies.md it answers from: the same code with new
@@ -31,6 +34,7 @@ if str(TEAM_FOLDER) not in sys.path:
     sys.path.insert(0, str(TEAM_FOLDER))              # for aeroassist_rag.py, the agent's own code
 
 from aiquality.models import AGENT_MODEL  # noqa: E402  (light import: model name only)
+import policy_limits  # noqa: E402  (light import: no model, no network)
 
 # General rules, written for kinds of error, never for one golden case (a test checks this).
 RULES_V2 = [
@@ -101,11 +105,27 @@ PROMPT_V2 = _prompt(RULES_V2)
 PROMPT_V3 = _prompt(RULES_V3)
 PROMPT_V4 = _prompt(RULES_V4)
 
+# v5: the tool now runs on every message (the understanding step), so the timing rule says how to fill
+# it in and forbids asking the passenger for a figure. Every other rule is v4's, word for word.
+UNDERSTANDING_RULE = (
+    "Before you answer, the check_policy_limits tool runs on every message: give it the topics the "
+    "passenger asks about (none if no time, weight or charge is involved) and the facts the "
+    "conversation gives. If a time isn't exact, give a range it is certainly inside instead of a guess. "
+    "Give the tool's ruling; never work these out yourself. If the ruling depends on a fact the "
+    "passenger didn't give, answer for each case in a sentence; never ask the passenger for a figure "
+    "instead of answering."
+)
+RULES_V5 = list(RULES_V4)
+RULES_V5[3] = UNDERSTANDING_RULE
+PROMPT_V5 = _prompt(RULES_V5)
+
 VERSIONS = {
     "v1": {"system_prompt": None, "top_n": 2, "use_conversation": False},       # None: the original prompt
     "v2": {"system_prompt": PROMPT_V2, "top_n": 3, "use_conversation": True},
     "v3": {"system_prompt": PROMPT_V3, "top_n": 3, "use_conversation": True},
     "v4": {"system_prompt": PROMPT_V4, "top_n": 3, "use_conversation": True, "policy_limits_tool": True},
+    "v5": {"system_prompt": PROMPT_V5, "top_n": 3, "use_conversation": True, "policy_limits_tool": True,
+           "understanding_step": True},
 }
 TEMPERATURE = 0          # comparable runs: every version is recorded with the same setting
 
@@ -115,7 +135,9 @@ if VERSION not in VERSIONS:
 SETTINGS = VERSIONS[VERSION]
 POLICIES_PATH = TEAM_FOLDER / "policies.md"
 POLICIES_VERSION = re.search(r"_Version ([\d.]+)", POLICIES_PATH.read_text(encoding="utf-8")).group(1)
-AGENT_VERSION = f"aeroassist-rag:{AGENT_MODEL}:{VERSION}-top{SETTINGS['top_n']}:policies-{POLICIES_VERSION}"
+LIMITS_PART = f":limits-{policy_limits.LIMITS_VERSION}" if SETTINGS.get("policy_limits_tool") else ""
+AGENT_VERSION = (f"aeroassist-rag:{AGENT_MODEL}:{VERSION}-top{SETTINGS['top_n']}{LIMITS_PART}"
+                 f":policies-{POLICIES_VERSION}")
 
 _agent = None
 
@@ -145,8 +167,9 @@ def _get_agent():
         system_prompt = SETTINGS["system_prompt"] or DEFAULT_SYSTEM_PROMPT
         tools = {}
         if SETTINGS.get("policy_limits_tool"):
-            import policy_limits
             tools = {"tools": [policy_limits.TOOL_SCHEMA], "run_tool": policy_limits.run_tool}
+        if SETTINGS.get("understanding_step"):
+            tools["force_first_tool"] = policy_limits.TOOL_NAME
         _agent = AeroAssistRAG(POLICIES_PATH, make_embedder(), client, model=AGENT_MODEL,
                                top_n=SETTINGS["top_n"], system_prompt=system_prompt, temperature=TEMPERATURE,
                                **tools)

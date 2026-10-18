@@ -31,8 +31,11 @@ def test_agent_versions_and_default(monkeypatch):
     v2 = load_agent_module(monkeypatch, "v2")
     assert ":v2-top3:policies-" in v2.AGENT_VERSION and v2.VERSIONS["v2"]["system_prompt"] == v2.PROMPT_V2
     v4 = load_agent_module(monkeypatch, "v4")
-    assert ":v4-top3:policies-" in v4.AGENT_VERSION and v4.VERSIONS["v4"]["policy_limits_tool"] is True
-    with pytest.raises(ValueError, match="must be one of: v1, v2, v3, v4"):
+    assert ":v4-top3:limits-2:policies-" in v4.AGENT_VERSION and v4.VERSIONS["v4"]["policy_limits_tool"] is True
+    v5 = load_agent_module(monkeypatch, "v5")
+    assert ":v5-top3:limits-2:policies-" in v5.AGENT_VERSION and v5.VERSIONS["v5"]["understanding_step"] is True
+    assert ":limits-" not in default.AGENT_VERSION                    # a version without the tool doesn't name it
+    with pytest.raises(ValueError, match="must be one of: v1, v2, v3, v4, v5"):
         load_agent_module(monkeypatch, "v9")
 
 
@@ -44,7 +47,7 @@ CASE_SPECIFIC = ["vip", "influencer", "instagram", "social media", "attendant", 
                  "check-in", "web check", "no-show", "refund", "kg"]
 
 
-@pytest.mark.parametrize("prompt_name", ["PROMPT_V2", "PROMPT_V3", "PROMPT_V4"])
+@pytest.mark.parametrize("prompt_name", ["PROMPT_V2", "PROMPT_V3", "PROMPT_V4", "PROMPT_V5"])
 def test_prompt_rules_are_general_not_written_for_golden_cases(monkeypatch, prompt_name):
     """A fix tuned to the golden cases would pass them and fail real passengers."""
     module = load_agent_module(monkeypatch, "v3")
@@ -53,7 +56,7 @@ def test_prompt_rules_are_general_not_written_for_golden_cases(monkeypatch, prom
     assert re.search(r"\bgd\d+", prompt) is None                   # no golden case ids
 
 
-@pytest.mark.parametrize("rules_name", ["RULES_V3", "RULES_V4"])
+@pytest.mark.parametrize("rules_name", ["RULES_V3", "RULES_V4", "RULES_V5"])
 def test_rules_name_no_numbers(monkeypatch, rules_name):
     """A rule with a number in it ("4 hours", "15 kg") is a fix for the case that has that number."""
     rules = getattr(load_agent_module(monkeypatch, "v3"), rules_name)
@@ -68,6 +71,13 @@ def test_v4_changes_only_the_timing_rule_and_the_totals_sentence(monkeypatch):
     assert changed == [4, 5] and len(module.RULES_V4) == len(module.RULES_V3)
     assert "check_policy_limits" in module.RULES_V4[3] and "check_policy_limits" in module.RULES_V4[4]
     assert module.RULES_V4[4].startswith(module.RULES_V3[4].split(" Working out")[0])
+
+
+def test_v5_changes_only_the_timing_rule_of_v4(monkeypatch):
+    module = load_agent_module(monkeypatch, "v5")
+    changed = [number for number, (old, new) in enumerate(zip(module.RULES_V4, module.RULES_V5), start=1)
+               if old != new]
+    assert changed == [4] and "never ask the passenger for a figure" in module.RULES_V5[3]
 
 
 class FakeRAG:
@@ -88,3 +98,25 @@ def test_answer_reports_tool_calls_only_for_a_version_with_tools(monkeypatch, ve
 def test_the_v4_tool_is_the_policy_limits_tool(monkeypatch):
     import policy_limits
     assert policy_limits.TOOL_NAME == "check_policy_limits"         # the name the v4 rules use
+
+
+@pytest.mark.parametrize("version, expected_tools, expected_forced", [
+    ("v3", None, None), ("v4", ["check_policy_limits"], None), ("v5", ["check_policy_limits"], "check_policy_limits")])
+def test_each_version_builds_its_agent_with_the_right_tools(monkeypatch, version, expected_tools, expected_forced):
+    """Without a key or a download: the agent's parts are replaced, and what it is built with is recorded."""
+    import sys
+    import types
+    built = {}
+
+    class CapturingRAG:
+        def __init__(self, *args, **options):
+            built.update(options)
+
+    monkeypatch.setitem(sys.modules, "aeroassist_rag", types.SimpleNamespace(
+        DEFAULT_SYSTEM_PROMPT="default", AeroAssistRAG=CapturingRAG, make_embedder=lambda: None))
+    monkeypatch.setitem(sys.modules, "anthropic", types.SimpleNamespace(Anthropic=lambda api_key: None))
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "not-a-real-key")
+    module = load_agent_module(monkeypatch, version)
+    module.prepare()
+    assert [tool["name"] for tool in built.get("tools") or []] == (expected_tools or [])
+    assert built.get("force_first_tool") == expected_forced
