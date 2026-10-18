@@ -124,7 +124,8 @@ classDiagram
 - An adapter that can't see something leaves it `None` ("unknown"), which is different from an empty
   list ("the agent called no tools"). A check that needs it reports `NOT_APPLICABLE`.
 - Every check is scored the same way: pass rate = PASS / (PASS + FAIL), compared with its threshold.
-  `NOT_APPLICABLE` and `ERROR` are counted and shown, never folded into the rate.
+  `NOT_APPLICABLE` and `ERROR` are counted and shown, never folded into the rate. The release gate
+  is stricter: there an `ERROR` counts as a failure (section 5).
 
 ## 3. Extension points
 
@@ -134,7 +135,7 @@ classDiagram
 | An attack family | an `Attack` subclass with `build_cases(goal) -> list[GoldenCase]` | `@register_attack("name")` | `attacks.families` |
 | A judge kind | a `Judge` subclass with `version` and `verdict(case, answer_text)` | `@register_judge("kind")` | `judge.kind` |
 | A report format | a `Reporter` subclass with `write(record, output_dir)` | `@register_reporter("name")` | `reports: [...]` |
-| A way to reach an agent | an `AgentUnderTest` subclass; pass it as `agent=` to `evaluate_team()` or `gate_team()` | (a built-in adapter name is added in `build_agent()`) | `agent.adapter` |
+| A way to reach an agent | an `AgentUnderTest` subclass | no registry: pass the object as `agent=` to `evaluate_team()` or `gate_team()`; to make it a built-in adapter, add its name to `build_agent()` in `adapters/__init__.py` | `agent.adapter` (built-in adapters only) |
 
 A team's own plugin file is listed under `plugins:` in its config and loaded before the run, so a
 team adds a check without changing the package:
@@ -155,7 +156,7 @@ class MentionsHumanHandover(Check):
 | File | Format | Written by | Read by |
 |---|---|---|---|
 | `team.yaml` or `team.json` | the settings below | the team | every command |
-| golden set | JSON (`{"meta": {...}, "cases": [...]}`), CSV or Excel; list columns split on `\|` | the team | the runner, checks, lint |
+| golden set | JSON (`{"meta": {...}, "cases": [...]}`), CSV or Excel; list columns split on `\|`. Only JSON carries a version (`meta.version`): a CSV or Excel set loads as "unversioned", so a team that compares runs uses JSON | the team | the runner, checks, lint |
 | `recorded_answers.jsonl` | one line per case: `case_id`, `question`, `conversation`, `answer_text`, `tool_calls`, `retrieved_documents`, `latency_ms`, `agent_version`, `recorded_at` | `aiquality record` | `RecordedResponsesAgent` (keyed by question and conversation) |
 | `judge_verdicts.jsonl` | `case_id`, `answer_sha`, `verdict`, `reason`, `judge_version`, `recorded_at` | `aiquality record --judge` | `RecordedJudge` (keyed by case and the answer's hash, so a new answer gets no old verdict) |
 | `run_records.jsonl` | one RunRecord per line (below) | every run | reports, compare, review, dashboard, trace export |
