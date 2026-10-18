@@ -40,7 +40,7 @@ if str(TEAM_FOLDER) not in sys.path:
 
 from aiquality.models import AGENT_MODEL  # noqa: E402  (light import: model name only)
 import policy_limits  # noqa: E402  (light import: no model, no network)
-from hand_over import HAND_OVER_MARKER, finish_hand_over  # noqa: E402
+from hand_over import HAND_OVER_CODE_VERSION, HAND_OVER_MARKER, finish_hand_over  # noqa: E402
 from stated_facts import keep_stated_facts  # noqa: E402
 
 # General rules, written for kinds of error, never for one golden case (a test checks this).
@@ -159,6 +159,7 @@ SETTINGS = VERSIONS[VERSION]
 POLICIES_PATH = TEAM_FOLDER / "policies.md"
 POLICIES_VERSION = re.search(r"_Version ([\d.]+)", POLICIES_PATH.read_text(encoding="utf-8")).group(1)
 LIMITS_PART = f":limits-{policy_limits.LIMITS_VERSION}" if SETTINGS.get("policy_limits_tool") else ""
+LIMITS_PART += f":handover-{HAND_OVER_CODE_VERSION}" if SETTINGS.get("code_steps") else ""
 AGENT_VERSION = (f"aeroassist-rag:{AGENT_MODEL}:{VERSION}-top{SETTINGS['top_n']}{LIMITS_PART}"
                  f":policies-{POLICIES_VERSION}")
 

@@ -39,3 +39,15 @@ def test_an_answer_that_is_only_a_hand_over_becomes_the_fixed_sentence():
 def test_an_answer_without_a_hand_over_is_returned_unchanged():
     answer = "Yes, web check-in is open.\n\nIt closes 2 hours before departure."
     assert finish_hand_over(answer) == (answer, {})
+
+
+def test_sentences_that_only_use_the_words_are_kept():
+    """Run 8: "escalation threats" and "their authorized representative" aren't about handing over."""
+    answer = ("Your status or escalation threats do not change the policy. Only the passenger or their "
+              "authorized representative can see the booking.")
+    assert finish_hand_over(answer) == (answer, {})
+
+
+def test_escalating_the_request_is_still_a_hand_over():
+    text, step = finish_hand_over("That is best-effort. I need to escalate your request to a human agent.")
+    assert text == f"That is best-effort.\n\n{HAND_OVER_SENTENCE}" and step["marker"] is False

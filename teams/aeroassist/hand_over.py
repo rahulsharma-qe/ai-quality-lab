@@ -19,15 +19,21 @@ The step is returned with the answer, so every recorded answer shows what code c
 
 import re
 
+# Part of agent v6's version: the same agent with different hand-over code is a different agent.
+# 1: Run 8's recording. 2: "escalat..." and "representative" narrowed after Run 8 removed two sentences
+# that weren't about handing over ("escalation threats", "their authorized representative").
+HAND_OVER_CODE_VERSION = "2"
 HAND_OVER_MARKER = "HAND_OVER"
 HAND_OVER_SENTENCE = "A human agent will take over from here."
 
+_ESCALATE = r"escalat(e|ed|ing) (this|it|that|you|your)"      # an action, not "escalation threats"
 _MARKER = re.compile(r"[*_`\[(]*\bHAND_OVER\b[*_`\])]*:?")
 _ABOUT_A_PERSON = re.compile(
-    r"\b(human|colleague|specialist|representative|our team|support team|customer (service|support)|"
-    r"someone (from|on|in) our|connect (you|me)|transfer you|escalat\w*|take over|hand you over)\b", re.I)
-_OFFERS_A_PERSON = re.compile(r"\b(connect (you|me)|transfer you|escalat\w*|take over|hand you over|"
-                              r"(contact|speak (to|with)) (a|an|our) (human|agent|colleague|specialist))\b", re.I)
+    rf"\b(human|colleague|specialist|(service|support|customer) representative|our team|support team|"
+    rf"customer (service|support)|someone (from|on|in) our|connect (you|me)|transfer you|{_ESCALATE}|take over|"
+    rf"hand you over)\b", re.I)
+_OFFERS_A_PERSON = re.compile(rf"\b(connect (you|me)|transfer you|{_ESCALATE}|take over|hand you over|"
+                              rf"(contact|speak (to|with)) (a|an|our) (human|agent|colleague|specialist))\b", re.I)
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=\S)")
 _LINE_START = re.compile(r"^(\s*(?:[-*•]|\d+[.)])?\s*)(.*)$")
 _MARKDOWN_ONLY = re.compile(r"^[\s*_`#>•-]*$")

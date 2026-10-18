@@ -37,7 +37,7 @@ def test_agent_versions_and_default(monkeypatch):
     assert ":v5-top3:limits-2:policies-" in v5.AGENT_VERSION and v5.VERSIONS["v5"]["understanding_step"] is True
     assert ":limits-" not in v3.AGENT_VERSION                         # a version without the tool doesn't name it
     v6 = load_agent_module(monkeypatch, "v6")
-    assert ":v6-top3:limits-2:policies-" in v6.AGENT_VERSION and v6.VERSIONS["v6"]["code_steps"] is True
+    assert ":v6-top3:limits-2:handover-2:policies-" in v6.AGENT_VERSION and v6.VERSIONS["v6"]["code_steps"] is True
     with pytest.raises(ValueError, match="must be one of: v1, v2, v3, v4, v5, v6"):
         load_agent_module(monkeypatch, "v9")
 
