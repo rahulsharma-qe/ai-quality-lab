@@ -20,6 +20,8 @@ class CaseOutcome:
     results: list[CheckResult] = field(default_factory=list)
     attack_family: Optional[str] = None
     priority: str = "medium"
+    tool_calls: Optional[list] = None              # as the adapter saw them; None when it can't see tools
+    retrieved_documents: Optional[list] = None
 
     @property
     def is_attack(self) -> bool:
@@ -50,7 +52,9 @@ def evaluate_runs(case_runs: list[CaseRun], check_settings: dict[str, CheckSetti
                               client=run.case.client or default_client, question=run.case.input,
                               answer_text=run.response.answer_text if run.response else None,
                               error=run.error, attack_family=run.case.extra.get("attack_family"),
-                              priority=run.case.priority)
+                              priority=run.case.priority,
+                              tool_calls=_tool_calls(run.response),
+                              retrieved_documents=run.response.retrieved_documents if run.response else None)
         for name, check in checks.items():
             outcome.results.append(_score_one(check, run))
         outcomes.append(outcome)
@@ -73,3 +77,9 @@ def _score_one(check, run: CaseRun) -> CheckResult:
         return check.evaluate(run.case, run.response)
     except Exception as error:  # a buggy check must show up, not pass silently
         return check.errored(run.case, f"check raised {type(error).__name__}: {error}")
+
+
+def _tool_calls(response) -> Optional[list]:
+    if response is None or response.tool_calls is None:
+        return None
+    return [call.to_dict() for call in response.tool_calls]

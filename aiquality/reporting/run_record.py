@@ -55,7 +55,7 @@ class RunRecord:
                 "attack_family": o.attack_family,
                 "question": redact_personal_data(o.question),
                 "answer_text": redact_personal_data(o.answer_text),
-                "error": o.error,
+                "error": o.error, "tool_calls": _redacted(o.tool_calls), "retrieved_documents": o.retrieved_documents,
                 "results": [{**r.to_dict(), "evidence": redact_personal_data(r.evidence)} for r in o.results],
             })
         return cls(command=command, team=team, client=client, run_mode=run_mode, agent_name=agent_name,
@@ -75,6 +75,13 @@ class RunRecord:
         with path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(self.to_dict(), ensure_ascii=False) + "\n")
         return path
+
+
+def _redacted(value):
+    """Personal data redacted inside any string of a JSON-like value (tool arguments)."""
+    if value is None:
+        return None
+    return json.loads(redact_personal_data(json.dumps(value, ensure_ascii=False)))
 
 
 def load_run_records(path: Path) -> list[RunRecord]:

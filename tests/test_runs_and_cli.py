@@ -97,3 +97,19 @@ def test_replay_agent_is_a_drop_in_agent(tmp_path):
     path = tmp_path / "r.jsonl"
     path.write_text(json.dumps({"question": "Hi?", "answer_text": "Hello"}) + "\n")
     assert RecordedResponsesAgent(path).answer("hi?").answer_text == "Hello"
+
+
+def test_run_records_keep_each_answers_tool_calls_with_personal_data_redacted(tmp_path):
+    from aiquality import AgentResponse, ToolCall
+    from conftest import BASE_CONFIG, GOLDEN_ROWS, write_team
+
+    def agent(question):
+        return AgentResponse("ok", tool_calls=[ToolCall("lookup", {"email": "jane.doe@example.com", "hours": 3})],
+                             retrieved_documents=["P1"])
+
+    folder = write_team(tmp_path / "team", dict(BASE_CONFIG), GOLDEN_ROWS)
+    record = evaluate_team(TeamConfig.load(folder), agent=PythonFunctionAgent(agent), output_dir=tmp_path / "runs",
+                           print_reports=False)
+    outcome = record.outcomes[0]
+    assert outcome["tool_calls"][0]["name"] == "lookup" and outcome["tool_calls"][0]["arguments"]["hours"] == 3
+    assert "jane.doe@example.com" not in json.dumps(outcome) and outcome["retrieved_documents"] == ["P1"]
