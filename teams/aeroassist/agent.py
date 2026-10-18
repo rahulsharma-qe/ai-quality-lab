@@ -14,6 +14,11 @@ versions live side by side, so a change can be recorded and compared against the
   v5  v4 with an understanding step: the code makes the model call the tool on every message, so it
       can't skip it, and the timing rule says to pass a range when a time isn't exact and never to
       ask the passenger for a figure. The tool rules on ranges and partial facts (limits version 2)
+  v6  v5, with two steps moved from the model to code: the hand-over sentence (hand_over.py; the
+      model only marks that the passenger needs a person) and the cabin class passed to the tool,
+      kept only when the passenger stated it (stated_facts.py). Two rules change, the hand-over rule
+      and the no-policy rule's "offer to connect" clause. Each answer's tool calls also list what code
+      changed: removed_by_code in a tool call's arguments, and a hand_over_wording step
 
 Pick one with the environment variable AEROASSIST_AGENT_VERSION (default: v5, since Run 7). The choice is part
 of AGENT_VERSION, and so is the version of policies.md it answers from: the same code with new
@@ -35,6 +40,8 @@ if str(TEAM_FOLDER) not in sys.path:
 
 from aiquality.models import AGENT_MODEL  # noqa: E402  (light import: model name only)
 import policy_limits  # noqa: E402  (light import: no model, no network)
+from hand_over import HAND_OVER_MARKER, finish_hand_over  # noqa: E402
+from stated_facts import keep_stated_facts  # noqa: E402
 
 # General rules, written for kinds of error, never for one golden case (a test checks this).
 RULES_V2 = [
@@ -119,6 +126,20 @@ RULES_V5 = list(RULES_V4)
 RULES_V5[3] = UNDERSTANDING_RULE
 PROMPT_V5 = _prompt(RULES_V5)
 
+# v6: code writes the hand-over, so the hand-over rule asks only for a marker, and the no-policy rule
+# hands over instead of offering to connect. Every other rule is v5's, word for word.
+HAND_OVER_RULE = (
+    f"When the passenger needs a human agent, don't write the hand-over yourself: put {HAND_OVER_MARKER} "
+    "alone on the last line, and the hand-over sentence is added for you. Never write what a human "
+    "agent, a colleague or a team can or can't do."
+)
+_OFFER_CLAUSE = "and offer to connect the passenger with a human agent"
+RULES_V6 = list(RULES_V5)
+assert _OFFER_CLAUSE in RULES_V6[5]
+RULES_V6[5] = RULES_V6[5].replace(_OFFER_CLAUSE, "and hand over")
+RULES_V6[8] = HAND_OVER_RULE
+PROMPT_V6 = _prompt(RULES_V6)
+
 VERSIONS = {
     "v1": {"system_prompt": None, "top_n": 2, "use_conversation": False},       # None: the original prompt
     "v2": {"system_prompt": PROMPT_V2, "top_n": 3, "use_conversation": True},
@@ -126,6 +147,8 @@ VERSIONS = {
     "v4": {"system_prompt": PROMPT_V4, "top_n": 3, "use_conversation": True, "policy_limits_tool": True},
     "v5": {"system_prompt": PROMPT_V5, "top_n": 3, "use_conversation": True, "policy_limits_tool": True,
            "understanding_step": True},
+    "v6": {"system_prompt": PROMPT_V6, "top_n": 3, "use_conversation": True, "policy_limits_tool": True,
+           "understanding_step": True, "code_steps": True},
 }
 TEMPERATURE = 0          # comparable runs: every version is recorded with the same setting
 
@@ -149,9 +172,14 @@ def prepare() -> None:
 
 def answer(question: str, conversation: list = None) -> dict:
     """Answer one passenger question; also return the policies the agent retrieved and, for a
-    version with tools, the tools it called (None for a version without tools: nothing to see)."""
+    version with tools, the tools it called (None for a version without tools: nothing to see).
+    From v6, code finishes the answer's hand-over, and that step is listed after the tool calls."""
     earlier_turns = conversation if SETTINGS["use_conversation"] else None
     answer_text, retrieved_policies, tool_calls = _get_agent().answer_with_tool_calls(question, earlier_turns)
+    if SETTINGS.get("code_steps"):
+        answer_text, step = finish_hand_over(answer_text)
+        if step:
+            tool_calls = list(tool_calls) + [{"name": "hand_over_wording", "arguments": step}]
     return {"answer_text": answer_text, "retrieved_documents": retrieved_policies,
             "tool_calls": tool_calls if SETTINGS.get("policy_limits_tool") else None}
 
@@ -170,6 +198,8 @@ def _get_agent():
             tools = {"tools": [policy_limits.TOOL_SCHEMA], "run_tool": policy_limits.run_tool}
         if SETTINGS.get("understanding_step"):
             tools["force_first_tool"] = policy_limits.TOOL_NAME
+        if SETTINGS.get("code_steps"):
+            tools["check_tool_arguments"] = keep_stated_facts
         _agent = AeroAssistRAG(POLICIES_PATH, make_embedder(), client, model=AGENT_MODEL,
                                top_n=SETTINGS["top_n"], system_prompt=system_prompt, temperature=TEMPERATURE,
                                **tools)
