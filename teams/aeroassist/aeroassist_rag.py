@@ -48,11 +48,13 @@ class AeroAssistRAG:
       tools          tool definitions the model may call (None: no tools, the original behaviour)
       run_tool       run_tool(name, arguments) -> result, called for each tool the model asks for
       max_tool_rounds  how many rounds of tool calls before a plain hand-over
+      force_first_tool the name of a tool the model must call before it answers, on every message
+                       (an understanding step: the code, not the model, decides that it runs)
     """
 
     def __init__(self, policies_path, embedder, gen_client, model=MODEL, top_n=2,
                  system_prompt=DEFAULT_SYSTEM_PROMPT, temperature=None, tools=None, run_tool=None,
-                 max_tool_rounds=3):
+                 max_tool_rounds=3, force_first_tool=None):
         self.embedder = embedder          # raw langchain embeddings (embed_documents/embed_query)
         self.gen_client = gen_client      # raw Anthropic client (the SUT's generator)
         self.model = model
@@ -65,6 +67,9 @@ class AeroAssistRAG:
         self.tools = tools
         self.run_tool = run_tool
         self.max_tool_rounds = max_tool_rounds
+        if force_first_tool and force_first_tool not in [tool["name"] for tool in tools or []]:
+            raise ValueError(f"force_first_tool {force_first_tool!r} is not one of the tools")
+        self.force_first_tool = force_first_tool
         self.chunks = self._load_and_chunk(policies_path)
         self.chunk_vectors = np.array(self.embedder.embed_documents(self.chunks))
 
@@ -113,7 +118,8 @@ class AeroAssistRAG:
             return _reply_text(self._create(messages)), []
         messages, tool_calls = list(messages), []
         for round_number in range(self.max_tool_rounds + 1):
-            reply = self._create(messages)
+            forced = self.force_first_tool if round_number == 0 else None
+            reply = self._create(messages, forced_tool=forced)
             tool_uses = [block for block in reply.content if getattr(block, "type", None) == "tool_use"]
             if not tool_uses:
                 return _reply_text(reply), tool_calls
@@ -135,10 +141,12 @@ class AeroAssistRAG:
         except Exception as error:            # a broken tool must not crash the answer; the model sees why
             return {"error": f"{type(error).__name__}: {error}"}
 
-    def _create(self, messages):
+    def _create(self, messages, forced_tool=None):
         params = dict(model=self.model, max_tokens=500, system=self.system_prompt, messages=messages)
         if self.tools:
             params["tools"] = self.tools
+        if forced_tool:
+            params["tool_choice"] = {"type": "tool", "name": forced_tool}
         if self._send_temperature:
             try:
                 return self.gen_client.messages.create(**params, temperature=self.temperature)

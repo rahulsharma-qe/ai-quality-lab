@@ -161,3 +161,18 @@ def test_too_many_tool_rounds_end_in_a_plain_hand_over(tmp_path):
 def test_tools_without_a_runner_are_refused(tmp_path):
     with pytest.raises(ValueError, match="run_tool"):
         make_rag(tmp_path, RecordingClient(), tools=[LIMITS_TOOL])
+
+
+def test_a_forced_first_tool_runs_on_every_message_then_the_model_answers(tmp_path):
+    client = ScriptedToolClient([("tool", "check_limits", {"topics": []}), ("text", "We don't carry pets.")])
+    rag = make_rag(tmp_path, client, tools=[LIMITS_TOOL], run_tool=lambda name, arguments: [],
+                   force_first_tool="check_limits")
+    text, _, tool_calls = rag.answer_with_tool_calls("Can my parrot fly with me?")
+    assert text == "We don't carry pets." and tool_calls == [{"name": "check_limits", "arguments": {"topics": []}}]
+    assert client.calls[0]["tool_choice"] == {"type": "tool", "name": "check_limits"}
+    assert "tool_choice" not in client.calls[1]                     # only the first call is forced
+
+
+def test_a_forced_tool_must_be_one_of_the_tools(tmp_path):
+    with pytest.raises(ValueError, match="not one of the tools"):
+        make_rag(tmp_path, RecordingClient(), tools=[LIMITS_TOOL], run_tool=lambda n, a: [], force_first_tool="other")
