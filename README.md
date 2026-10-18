@@ -120,14 +120,14 @@ flowchart LR
     MDL["ChatModel<br/>provider-neutral"]
     GATE["ReleaseGate<br/>PASS or FAIL<br/>+ advisory findings"]
     RR["RunRecord - JSONL<br/>personal data redacted"]
-    MON["Monitoring<br/>tracing · drift"]
+    MON["Monitoring - later<br/>needs live traffic"]
   end
   subgraph OUT["Outputs"]
     EXIT["Exit code<br/>CI blocks or passes"]
     REP["Reports - register_reporter<br/>console · HTML · JUnit XML · GitHub summary"]
     HRQ["Human review queue<br/>aiquality review"]
-    GV["Gate view<br/>static HTML"]
-    OTEL["OpenTelemetry to Phoenix or Langfuse<br/>optional, off by default"]
+    GV["Dashboard<br/>every team, run by run"]
+    OTEL["OpenTelemetry traces<br/>for Phoenix or Langfuse"]
   end
   CFG --> TC
   GS --> TD
@@ -148,15 +148,14 @@ flowchart LR
   RR --> REP
   RR --> HRQ
   RR --> GV
-  RUN -.->|"traces"| MON
-  RR -->|"history"| MON
-  MON --> OTEL
+  RR --> OTEL
+  RR -.->|"history"| MON
   classDef later stroke-dasharray: 5 5
-  class MON,GV,OTEL later
+  class MON later
 ```
 
-Solid boxes are in the package today; dashed boxes are scripts in [`demos/`](demos/) moving into it,
-or planned. Details: [`docs/architecture.md`](docs/architecture.md) ·
+Solid boxes are in the package today; the dashed box, monitoring, is studied in
+[`demos/observability/`](demos/observability/) and waits for live traffic to watch. Details: [`docs/architecture.md`](docs/architecture.md) ·
 onboarding: [`docs/onboarding.md`](docs/onboarding.md) · runnable examples: [`examples/`](examples/).
 
 ---

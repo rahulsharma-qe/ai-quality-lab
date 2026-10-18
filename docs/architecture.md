@@ -2,10 +2,10 @@
 
 `aiquality` turns this repository's evaluation work into a self-serve platform. A team
 connects its agent and brings one config file and a golden set, with no test code. It gets
-evaluation, attack tests, a release gate, a human review queue, monitoring and reports.
+evaluation, attack tests, a release gate, a human review queue, reports, a dashboard and trace export.
 
-**Status key:** solid boxes are in the `aiquality` package today. Dashed boxes are either
-standalone scripts in this repository that are moving into the package, or planned.
+**Status key:** solid boxes are in the `aiquality` package today. The dashed box, monitoring, is
+studied in `demos/observability/` and waits for live traffic to watch.
 
 ## 1. Components
 
@@ -28,15 +28,15 @@ flowchart LR
     MDL["ChatModel<br/>provider-neutral"]
     GATE["ReleaseGate<br/>PASS or FAIL<br/>+ advisory findings"]
     RR["RunRecord - JSONL<br/>personal data redacted"]
-    MON["Monitoring<br/>tracing · drift"]
+    MON["Monitoring - later<br/>needs live traffic"]
   end
   subgraph OUT["Outputs"]
     EXIT["Exit code<br/>CI blocks or passes"]
     REP["Reports - register_reporter<br/>console · HTML · JUnit XML · GitHub summary"]
-    CMP["Compare two runs<br/>fixed · newly failing · still failing"]
+    CMP["Compare and repeat<br/>fixed · newly failing · bigger than the noise?"]
     HRQ["Human review queue<br/>aiquality review"]
-    GV["Gate view<br/>static HTML"]
-    OTEL["OpenTelemetry to Phoenix or Langfuse<br/>optional, off by default"]
+    GV["Dashboard<br/>every team, run by run"]
+    OTEL["OpenTelemetry traces<br/>for Phoenix or Langfuse"]
   end
   CFG --> TC
   GS --> TD
@@ -58,19 +58,21 @@ flowchart LR
   RR --> CMP
   RR --> HRQ
   RR --> GV
-  RUN -.->|"traces"| MON
-  RR -->|"history"| MON
-  MON --> OTEL
+  RR --> OTEL
+  RR -.->|"history"| MON
   classDef later stroke-dasharray: 5 5
-  class MON,GV,OTEL later
+  class MON later
 ```
 
 | Part | Status |
 |---|---|
-| Contracts, adapters, team config, company minimums, test data, runner, checks registry, attacks registry, release gate (per team and client, accepted findings), RunRecord, console / HTML / JUnit XML / GitHub summary reports, run comparison, command line | In the package |
+| Contracts, adapters, team config, company minimums, test data, runner, checks registry, attacks registry, release gate (per team and client, accepted findings), RunRecord, console / HTML / JUnit XML / GitHub summary reports, command line | In the package |
 | Model layer, judges registry, judge validation and status per version, answer_judge check (advisory until qualified), recorded verdicts, human review queue | In the package (the study scripts `demos/llm.py`, `demos/answer_judge.py` and `demos/judge_validation.py` now wrap it) |
-| Monitoring | Standalone scripts in this repo (`demos/observability/`), moving into the package |
-| Reusable CI workflow, gate view, tracing export | Planned |
+| Decision check (`expected_decision`), run comparison with noise statistics, `aiquality repeat` | In the package |
+| Dashboard (`aiquality dashboard`), OpenTelemetry trace export (`aiquality export-traces`) | In the package |
+| A second team onboarded with configuration only (`teams/post_order_support/`) | In the repository |
+| Monitoring | Studied in `demos/observability/`; moves into the package when there is live traffic |
+| Reusable CI workflow, agent tracing (the agent tracing its own steps) | Later: when another repository runs the gate; when there are live runs |
 
 ## 2. One gate run, step by step
 
@@ -100,15 +102,15 @@ sequenceDiagram
   CLI-->>CI: exit 0 for pass, 1 for fail
 ```
 
-`aiquality gate` runs all of these steps; the human review queue for advisory (judge) findings is
-planned. `aiquality evaluate` runs the same steps without the decision and never blocks.
+`aiquality gate` runs all of these steps, and `aiquality review` lists the advisory (judge) findings
+a person should look at. `aiquality evaluate` runs the same steps without the decision and never blocks.
 Exit codes: 0 done or pass · 1 quality below the bar (release gate) · 2 setup error.
 
-## 3. How a team uses it in CI (target design: the reusable workflow and review queue are planned)
+## 3. How a team uses it in CI (today each team adds one step; a reusable workflow comes when another repository runs the gate)
 
 ```mermaid
 flowchart LR
-  A["Pull request<br/>prompt, model, policy or config change"] --> B["Team workflow calls<br/>reusable-quality-gate.yml"]
+  A["Pull request<br/>prompt, model, policy or config change"] --> B["One step per team<br/>in the CI workflow"]
   B --> C["aiquality gate --team name"]
   C --> D{"Gate decision"}
   D -->|"PASS"| E["Merge allowed<br/>reports attached"]
