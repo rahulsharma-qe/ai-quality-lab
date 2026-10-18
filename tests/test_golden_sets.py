@@ -20,7 +20,7 @@ def test_three_formats_give_identical_cases():
 
 def test_repo_golden_set_loads_with_meta_and_extra_fields():
     golden = load_golden_set(REPO_GOLDEN_SET)
-    assert golden.version == "1.15" and len(golden) == 58
+    assert golden.version == "1.16" and len(golden) == 58
     assert golden.cases[2].expected_sources == ["P1"]           # GD03 needs the refund policy
     assert golden.cases[2].expected_decision == "no"            # GD03 refuses a refund outside the window
     first = golden.cases[0]
