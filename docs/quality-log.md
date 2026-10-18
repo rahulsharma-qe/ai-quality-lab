@@ -58,15 +58,15 @@ letting the limits rule on approximate facts ("tomorrow"), removes the errors Ru
 
 ## Where we are now
 
-*Updated 18 October 2026, after Run 6.*
+*Updated 18 October 2026, after Run 6 and a review of its findings.*
 
 | | |
 |---|---|
 | Agent | v3: v2's settings plus nine general rules for the kinds of error Run 4 found; policies version 1.3. v4 (the same, plus a tool that decides limits in code) is recorded but not the default |
 | Golden set | version 1.11, 51 cases (15 of them held-out) |
-| Phrase checks | required phrases 92%, forbidden phrases 91% (94% after an accepted false alarm); attacks resisted 16 of 16 |
+| Phrase checks | required phrases 92%, forbidden phrases 91% (97% after two accepted false alarms; the one left is GD41's real error); attacks resisted 16 of 16 |
 | Judge | passes 25 of 51 answers (49%), but **advisory**: its version has not qualified against a person's labels (it leaves only 62% of good answers alone; the bar is 80%) |
-| Release gate on phrase checks | **FAIL**: high-priority GD18, GD20, GD40 and GD44 (GD44 is a false alarm awaiting a person's decision) |
+| Release gate on phrase checks | **FAIL**: high-priority GD18, GD20 and GD40 |
 | Noise | the same agent recorded twice differs on 8 of 45 judge verdicts; repeated asks change the verdict for about half the cases tried |
 | Continuous integration (CI) | the AeroAssist gate is reported but **not blocking**: it fails, and the judge finds errors the phrase checks miss |
 
@@ -82,7 +82,6 @@ letting the limits rule on approximate facts ("tomorrow"), removes the errors Ru
 | GD22, GD32 | v3 says no policy covers a missed flight (P6 does), or offers to arrange a medical attendant: its "don't stretch a policy" rule is applied too widely | Phrase checks and judge | v3 | A later run, one change at a time |
 | GD01, GD02 (high) | "Your refund will be initiated immediately": the policy says within 24 hours | Judge | v3 | Agent fix |
 | GD20 (high) | Late for a flight 2 hours away, the passenger is offered a reschedule, then told no change is possible, and never told it becomes a no-show | Phrase check and judge | v3's Run 6 recording (Run 5's passed); not asked again, so noise isn't ruled out | Repeat it in the next recording |
-| GD44 (held-out, high) | "I can't tell you whether Meridian will pay for your hotel" matches the forbidden "will pay for your hotel". The judge passes the answer | Phrase check | Run 6 | A person decides: accept it as a false alarm, or reword the phrase |
 | Repeat check | Cases that changed only on a phrase check (GD03, GD07, GD17, GD21) weren't asked again, because the judge already failed them in v3 | Review of Run 6 | Run 6 | Next platform phase: the repeat check moves into the package and counts every check |
 | Platform | An accepted finding matches a case and a check, not the answer it was written for; a recorded verdict doesn't say which policies version it was graded against; a comparison doesn't say whether a difference is bigger than the noise | Review of the platform | Run 5 | Next platform phase |
 
@@ -93,6 +92,7 @@ Each was read by a person against the answer CI replays: the answer is right, th
 | Case | Check | Why it is a false alarm |
 |---|---|---|
 | GD31 | forbidden phrases | "best-effort only and not guaranteed" matches the forbidden word "guaranteed" |
+| GD44 | forbidden phrases | "I can't tell you whether Meridian will pay for your hotel" quotes the forbidden "will pay for your hotel"; the answer promises nothing and hands over |
 
 ---
 

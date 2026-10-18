@@ -49,6 +49,11 @@ priority_bars:
 # not an answer, so each is re-read whenever the recording CI replays changes. Run 5 dropped GD16,
 # GD21 and GD36; Run 6 dropped GD03: those answers pass without one.
 accepted_findings:
+  - case: GD44
+    check: forbidden_phrases
+    reason: "Quoted, not promised: 'I can't tell you whether Meridian will pay for your hotel' contains the forbidden 'will pay for your hotel'. The answer says the topic isn't covered and hands over; the judge passes it"
+    approved_by: rahulsharma-qe
+    expires: 2026-11-14
   - case: GD31
     check: forbidden_phrases
     reason: "Negation false alarm: the answer says requests inside 48 hours are 'best-effort only and not guaranteed'. The judge separately flags its hand-over as a hint; that stays open"
