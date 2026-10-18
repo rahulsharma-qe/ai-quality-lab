@@ -61,33 +61,38 @@ flowchart LR
 ## 3. Components
 
 ```mermaid
-flowchart LR
-  subgraph TEAM["What a team brings - no test code"]
-    CFG["team.yaml or team.json"]
+flowchart TB
+  subgraph TEAM["1 · What a team brings"]
+    CFG["team.yaml<br/>or team.json"]
     GS["Golden set<br/>JSON · CSV · Excel"]
     POL["policies.md"]
     AG["Their agent"]
   end
-  subgraph CORE["aiquality package"]
-    TC["TeamConfig<br/>+ CompanyMinimums"]
-    TD["Test data<br/>load_golden_set · GoldenCaseBuilder"]
-    AD["Adapters<br/>PythonFunction · HttpEndpoint · RecordedResponses"]
-    ATK["Attacks registry<br/>register_attack"]
-    RUN["Runner"]
-    CHK["Checks registry<br/>register_check"]
-    JDG["Judges - register_judge<br/>policy_answer · phrase · validation"]
-    MDL["ChatModel<br/>provider-neutral"]
-    GATE["ReleaseGate<br/>PASS or FAIL<br/>+ advisory findings"]
-    RR["RunRecord - JSONL<br/>personal data redacted"]
-    MON["Monitoring - later<br/>needs live traffic"]
+  subgraph CORE["2 · The aiquality package"]
+    direction TB
+    subgraph LOAD["Load"]
+      TC["TeamConfig<br/>+ company floor"]
+      TD["Test data<br/>golden cases"]
+      AD["Adapters<br/>function · HTTP · recorded"]
+      ATK["Attacks<br/>register_attack"]
+    end
+    RUN["Runner<br/>asks the agent every case"]
+    subgraph SCORE["Score"]
+      CHK["Checks<br/>register_check"]
+      JDG["Judges<br/>register_judge"]
+      MDL["ChatModel<br/>provider-neutral"]
+    end
+    GATE["ReleaseGate<br/>PASS or FAIL, every reason"]
+    RR["RunRecord<br/>JSONL · personal data redacted"]
   end
-  subgraph OUT["Outputs"]
-    EXIT["Exit code<br/>CI blocks or passes"]
-    REP["Reports - register_reporter<br/>console · HTML · JUnit XML · GitHub summary"]
-    CMP["Compare and repeat<br/>fixed · newly failing · bigger than the noise?"]
-    HRQ["Human review queue<br/>aiquality review"]
+  subgraph OUT["3 · What comes out"]
+    EXIT["Exit code<br/>0 · 1 · 2"]
+    REP["Reports<br/>console · HTML · JUnit · CI page"]
+    CMP["Compare · repeat<br/>bigger than the noise?"]
+    HRQ["Review queue<br/>for a person"]
     GV["Dashboard<br/>every team, run by run"]
-    OTEL["OpenTelemetry traces<br/>for Phoenix or Langfuse"]
+    OTEL["OpenTelemetry traces<br/>Phoenix · Langfuse"]
+    MON["Monitoring<br/>later: live traffic"]
   end
   CFG --> TC
   GS --> TD
@@ -95,30 +100,30 @@ flowchart LR
   POL --> JDG
   TC --> RUN
   TD --> RUN
-  ATK --> RUN
   AD --> RUN
+  ATK --> RUN
   RUN --> CHK
   CHK --> JDG
   JDG --> MDL
   CHK --> GATE
-  TC --> GATE
-  JDG -.->|"judge status per version"| GATE
-  GATE --> EXIT
   GATE --> RR
+  RR --> EXIT
   RR --> REP
   RR --> CMP
   RR --> HRQ
   RR --> GV
   RR --> OTEL
-  RR -.->|"history"| MON
-  classDef box fill:#ffffff,stroke:#475569,color:#0f172a
-  classDef later fill:#ffffff,stroke:#475569,color:#0f172a,stroke-dasharray: 5 5
+  RR -.-> MON
+  classDef box fill:#1e293b,stroke:#94a3b8,color:#f1f5f9
+  classDef later fill:#1e293b,stroke:#94a3b8,color:#cbd5e1,stroke-dasharray: 5 5
   class CFG,GS,POL,AG,TC,TD,AD,ATK,RUN,CHK,JDG,MDL,GATE,RR,EXIT,REP,CMP,HRQ,GV,OTEL box
   class MON later
-  style TEAM fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
-  style CORE fill:#f1f5f9,stroke:#334155,color:#0f172a
-  style OUT fill:#ecfdf5,stroke:#047857,color:#064e3b
-  linkStyle default stroke:#475569,stroke-width:1.5px
+  style TEAM fill:#0b2540,stroke:#60a5fa,color:#dbeafe
+  style CORE fill:#111827,stroke:#94a3b8,color:#f1f5f9
+  style LOAD fill:#1f2937,stroke:#64748b,color:#e2e8f0
+  style SCORE fill:#1f2937,stroke:#64748b,color:#e2e8f0
+  style OUT fill:#062e22,stroke:#34d399,color:#d1fae5
+  linkStyle default stroke:#94a3b8,stroke-width:2px
 ```
 
 | Part | Status |
