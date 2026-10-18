@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from aiquality.attacks import ATTACK_CATEGORY, AttackSummary, summarise_attacks
-from aiquality.checks import CheckResult, CheckStatus, CheckSummary, create_check, summarise
+from aiquality.checks import CheckResult, CheckSummary, create_check, summarise
 from aiquality.config import CheckSettings
 from aiquality.runner import CaseRun
 
@@ -26,10 +26,6 @@ class CaseOutcome:
     @property
     def is_attack(self) -> bool:
         return self.category == ATTACK_CATEGORY
-
-    @property
-    def failed_checks(self) -> list[CheckResult]:
-        return [r for r in self.results if r.status in (CheckStatus.FAIL, CheckStatus.ERROR)]
 
 
 @dataclass

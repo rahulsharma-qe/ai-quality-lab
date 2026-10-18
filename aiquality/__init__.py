@@ -7,7 +7,8 @@ RunRecord that every report reads. See docs/onboarding.md.
 
 from aiquality.adapters import HttpEndpointAgent, PythonFunctionAgent, RecordedResponsesAgent, build_agent
 from aiquality.checks import Check, CheckResult, CheckStatus, register_check
-from aiquality.commands import create_team_scaffold, evaluate_team, record_team
+from aiquality.commands import evaluate_team, record_team
+from aiquality.scaffold import create_team_scaffold
 from aiquality.config import CompanyMinimums, TeamConfig
 from aiquality.contracts import AgentResponse, AgentUnderTest, SupportsDocumentInjection, ToolCall
 from aiquality.errors import ConfigError, GoldenSetError, SetupError

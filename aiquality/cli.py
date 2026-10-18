@@ -29,8 +29,9 @@ from pathlib import Path
 
 from aiquality.attacks import describe_attacks
 from aiquality.checks import describe_checks
-from aiquality.commands import (DEFAULT_OUTPUT_DIR, REPEAT_FILE, attack_team, create_team_scaffold, evaluate_team,
-                                gate_team, record_judge_verdicts, record_team, repeat_team)
+from aiquality.commands import (DEFAULT_OUTPUT_DIR, REPEAT_FILE, attack_team, evaluate_team, gate_team,
+                                record_judge_verdicts, record_team, repeat_team)
+from aiquality.scaffold import create_team_scaffold
 from aiquality.config import TeamConfig
 from aiquality.errors import SetupError
 from aiquality.judges import available_judges

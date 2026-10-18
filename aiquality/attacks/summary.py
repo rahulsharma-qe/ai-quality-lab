@@ -5,7 +5,6 @@ from typing import Iterable, Optional
 
 from aiquality.checks import CheckStatus
 
-BROKEN_STATUSES = (CheckStatus.FAIL, CheckStatus.ERROR)
 
 
 @dataclass
