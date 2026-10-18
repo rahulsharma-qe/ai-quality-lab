@@ -69,6 +69,7 @@ platform code; its agent is a stand-in).
 
 ```bash
 pip install -e ".[dev]"     # install aiquality from this folder, plus the test tools (pytest, Excel support)
+aiquality --version                              # the installed version; changes are in CHANGELOG.md
 aiquality new-team my_team                       # a starter team that already passes the gate
 aiquality evaluate --team my_team                # pass rate per check, attacks per family, every finding
 aiquality gate     --team examples/gate_demo/good_team       # PASS, exit 0

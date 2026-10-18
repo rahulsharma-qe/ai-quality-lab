@@ -247,6 +247,8 @@ judge, scores every answer with every check, and counts per case and per check h
 | `export-traces` | one run record → OTLP JSON | `traces.json` |
 | `ci-summary` | latest gate run per team → one Markdown page | the CI run page |
 | `new-team` | a starter folder that passes its gate | `teams/<name>/` |
+| `list-checks`, `list-attacks`, `list-judges` | the registries → name and one line each | text |
+| `--version` | the package's `__version__` | text |
 
 ## 7. Errors and statuses
 
@@ -267,6 +269,7 @@ judge, scores every answer with every check, and counts per case and per check h
 | Golden set | `meta.version` and a changelog | pass rates from different versions aren't directly comparable; the dashboard says so |
 | Judge | model, rubric version and a hash of the rubric | qualification belongs to one version; a new version starts unvalidated |
 | Run record | `schema_version` | readers can tell old records from new ones |
+| Package | `__version__` in `aiquality/__init__.py` (read by `pyproject.toml`); changes in `CHANGELOG.md` | `aiquality --version` says which platform a team is running; a run record doesn't record it yet |
 
 ## 9. The example team's agent: AeroAssist
 
