@@ -9,33 +9,29 @@ release only after it agrees with people's labels, and a queue of what a person 
 
 It is tested here on **AeroAssist**, a support agent for the fictional **Meridian Airways** that
 answers passengers from eight policies ([`teams/aeroassist/policies.md`](teams/aeroassist/policies.md))
-or hands over to a person.
+or hands over to a person. Terms such as *golden set*, *held-out case*, *phrase check* and *judge*
+are explained in [Words used here](docs/quality-log.md#words-used-here).
 
 ### What testing AeroAssist found
 
 - **An average hid a critical failure.** 89% against an 85% bar would have passed while three
   high-priority cases failed; a bar per priority now fails the gate for the right reason.
-- **One quality loop, proven on unseen cases.** Diagnosing by layer showed two errors were retrieval
-  misses and one was a gap in the policy. After general fixes, retrieval went from 94% to 100%, no
-  case newly failed, and every held-out case written after the fix passed.
-- **A sentence, not the model, was wrong.** "Allowed up to 4 hours before departure" was read two ways
-  by the agent and by a person; rewording the policy fixed the case the prompt rules hadn't.
-- **Each layer catches what another misses.** An advisory AI judge found real errors the phrase checks
-  passed (a passenger told web check-in isn't open when it is), and a phrase check caught an answer
-  the judge passed. So the AeroAssist gate stays non-blocking in CI until the errors are fixed.
-- **Prompt rules trade errors, and one run is not enough.** General rules halved the answers that
-  hint at an exception, but broke others, including a held-out case that works out a time window.
-  Asked again, the judge's verdict changed for 13 of 24 cases, so a change of a few cases is
-  noise until it is repeated.
-- **Code decides limits, and the code decides when to ask.** With limits moved into a tool, every
-  ruling was right for the facts given, but the agent asked for one in only 13 of 30 cases. Making
-  the code run the check on every message got the right rule in 35 of 35 cases and fixed the
-  long-running time-window errors on every try; the judge's pass rate went from 54% to 75%.
-- **One recording can mislead; repeats don't.** Moving the hand-over sentence into code removed the
-  hinted exceptions, and one recording showed 6 more passing answers. Asked again, old and new agent
-  in one session, the hand-over cases moved by one try in 27: the model still hands over when the
-  policy already answers. Code can own how something is said, not whether it should be said. Next:
-  code decides when to hand over.
+- **One quality loop, proven on unseen cases.** Diagnosed by layer (two retrieval misses, one policy
+  gap); after general fixes retrieval went 94% to 100%, nothing newly failed, and every held-out case
+  written after the fix passed.
+- **A sentence, not the model, was wrong.** "Allowed up to 4 hours before departure" was read two ways,
+  by the agent and by a person; rewording the policy fixed what prompt rules hadn't.
+- **Each layer catches what another misses.** The AI judge found real errors the phrase checks passed,
+  and a phrase check caught one the judge passed. With real errors open, the AeroAssist gate stays
+  non-blocking in CI.
+- **Prompt rules trade errors, and one run is not enough.** General rules halved hinted exceptions but
+  broke time-window answers; asked again, the judge changed its verdict for 13 of 24 cases.
+- **Code decides limits, and the code decides when to ask.** As a tool, every ruling was right but the
+  agent asked in only 13 of 30 cases; run by code on every message, the right rule in 35 of 35 cases,
+  time windows right on every try, and the judge's pass rate from 54% to 75%.
+- **One recording can mislead; repeats don't.** A code-written hand-over removed the hints, and one
+  recording showed 6 more passes; on repeats the hand-over cases moved one try in 27. Code can own how
+  something is said, not whether. Next: code decides when to hand over.
 
 The full story, run by run, with the evidence and every open problem:
 **[`docs/quality-log.md`](docs/quality-log.md)**.
@@ -74,7 +70,7 @@ aiquality new-team my_team                       # a starter team that already p
 aiquality evaluate --team my_team                # pass rate per check, attacks per family, every finding
 aiquality gate     --team examples/gate_demo/good_team       # PASS, exit 0
 aiquality gate     --team examples/gate_demo/regressed_team  # FAIL, exit 1, every reason listed
-aiquality compare  before.jsonl aiquality-runs        # what a change fixed, and what it newly broke
+aiquality compare  before.jsonl aiquality-runs        # what a change fixed, and what it newly broke (before.jsonl: an earlier saved run)
 aiquality repeat   --team my_team --cases S02 --times 3   # ask again: which results hold, which were luck
 aiquality validate-judge --team aeroassist --split holdout   # trust the AI judge only after it qualifies
 aiquality review   --team aeroassist                 # what a person should look at, and why
@@ -169,8 +165,7 @@ flowchart TB
 ```
 
 Solid boxes are in the package today; the dashed box, monitoring, is studied in
-[`demos/observability/`](demos/observability/) and waits for live traffic to watch. High-level design: [`docs/architecture.md`](docs/architecture.md) · low-level design: [`docs/lld.md`](docs/lld.md) ·
-onboarding: [`docs/onboarding.md`](docs/onboarding.md) · runnable examples: [`examples/`](examples/).
+[`demos/observability/`](demos/observability/) and waits for live traffic to watch.
 
 ---
 
@@ -194,7 +189,7 @@ onboarding: [`docs/onboarding.md`](docs/onboarding.md) · runnable examples: [`e
 
 ---
 
-## The headline finding (the story this repo tells)
+## The first finding: a poisoned fact (where "the code rules" began)
 
 1. The first red-team came back **0 breaches / 10**. I treated that as a warning, not a win —
    a clean security result usually means the attack is too weak.
@@ -254,9 +249,10 @@ can't block a release.
 
 ---
 
-## Run it
+## Run it (most of these need an API key)
 
 ```bash
+# The studies in demos/
 pip install -e ".[dev]" -r demos/requirements.txt
 export ANTHROPIC_API_KEY=your-key   # or: cp .env.example .env, add the key, then  set -a; source .env; set +a
 
@@ -275,8 +271,9 @@ python demos/eval_harness.py regressed  # the first gate study: seeded regressio
 python demos/build_label_set.py                                  # 15 agent + 15 seeded answers to label
 python demos/judge_validation.py --judge llm --split tune        # improve the judge on the tuning half
 python demos/judge_validation.py --judge llm --split holdout     # measure once; exit 0 = qualified to gate
-python -m pytest -q                                              # key-free tests for the tools themselves
 
+# The platform
+python -m pytest -q                                              # key-free tests for the tools themselves
 aiquality record   --team aeroassist     # record the live agent's golden and attack answers (needs the key + the aeroassist extra)
 aiquality evaluate --team aeroassist     # replay them: key-free and repeatable
 aiquality gate     --team aeroassist     # the release gate on the recorded answers

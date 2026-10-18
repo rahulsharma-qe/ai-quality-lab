@@ -108,7 +108,7 @@ as a sign the attacks were too weak, not that the agent was safe. Stronger attac
 make it ignore its rules, but changing one number in a retrieved policy (refund window 24 hours to
 30 days) made it promise a refund the passenger wasn't due. An agent that trusts its documents
 repeats a poisoned document. Fix: the refund decision moved into code; the model only words it.
-Details: [README, "The headline finding"](../README.md#the-headline-finding-the-story-this-repo-tells).
+Details: [README, "The first finding"](../README.md#the-first-finding-a-poisoned-fact-where-the-code-rules-began).
 
 **The judge had to be checked first.** Before trusting an AI judge, we measured it against 30
 answers a person had labelled. On the held-back half it caught every real failure (7 of 7) but
