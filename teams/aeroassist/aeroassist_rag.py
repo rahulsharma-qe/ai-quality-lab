@@ -50,11 +50,14 @@ class AeroAssistRAG:
       max_tool_rounds  how many rounds of tool calls before a plain hand-over
       force_first_tool the name of a tool the model must call before it answers, on every message
                        (an understanding step: the code, not the model, decides that it runs)
+      check_tool_arguments  check_tool_arguments(name, arguments, passenger_text) -> (arguments, removed):
+                       code that checks the facts the model passes to a tool against what the passenger
+                       wrote, before the tool runs; what it removed is kept with the tool call
     """
 
     def __init__(self, policies_path, embedder, gen_client, model=MODEL, top_n=2,
                  system_prompt=DEFAULT_SYSTEM_PROMPT, temperature=None, tools=None, run_tool=None,
-                 max_tool_rounds=3, force_first_tool=None):
+                 max_tool_rounds=3, force_first_tool=None, check_tool_arguments=None):
         self.embedder = embedder          # raw langchain embeddings (embed_documents/embed_query)
         self.gen_client = gen_client      # raw Anthropic client (the SUT's generator)
         self.model = model
@@ -70,6 +73,7 @@ class AeroAssistRAG:
         if force_first_tool and force_first_tool not in [tool["name"] for tool in tools or []]:
             raise ValueError(f"force_first_tool {force_first_tool!r} is not one of the tools")
         self.force_first_tool = force_first_tool
+        self.check_tool_arguments = check_tool_arguments
         self.chunks = self._load_and_chunk(policies_path)
         self.chunk_vectors = np.array(self.embedder.embed_documents(self.chunks))
 
@@ -104,7 +108,8 @@ class AeroAssistRAG:
         contexts = self.retrieve(self._retrieval_query(query, conversation))
         user = "Policy context:\n" + "\n\n".join(contexts) + f"\n\nPassenger: {query}"
         messages = _alternating_turns(list(conversation or []) + [{"role": "user", "content": user}])
-        answer_text, tool_calls = self._generate(messages)
+        passenger_text = " ".join([t["content"] for t in (conversation or []) if t.get("role") == "user"] + [query])
+        answer_text, tool_calls = self._generate(messages, passenger_text)
         return answer_text, contexts, tool_calls
 
     @staticmethod
@@ -112,7 +117,7 @@ class AeroAssistRAG:
         earlier = [t["content"] for t in (conversation or []) if t.get("role") == "user"][-RETRIEVAL_TURNS:]
         return " ".join(earlier + [query])
 
-    def _generate(self, messages):
+    def _generate(self, messages, passenger_text=""):
         """The model's reply, and the tools it called on the way. Without tools: one call, as before."""
         if not self.tools:
             return _reply_text(self._create(messages)), []
@@ -129,7 +134,12 @@ class AeroAssistRAG:
             results = []
             for use in tool_uses:
                 arguments = dict(use.input)
-                tool_calls.append({"name": use.name, "arguments": arguments})
+                call = {"name": use.name, "arguments": arguments}
+                if self.check_tool_arguments:
+                    arguments, removed = self.check_tool_arguments(use.name, arguments, passenger_text)
+                    call = {"name": use.name, "arguments": {**arguments, "removed_by_code": removed} if removed
+                            else arguments}
+                tool_calls.append(call)
                 results.append({"type": "tool_result", "tool_use_id": use.id,
                                 "content": json.dumps(self._run_tool(use.name, arguments), ensure_ascii=False)})
             messages.append({"role": "user", "content": results})

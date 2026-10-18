@@ -176,3 +176,21 @@ def test_a_forced_first_tool_runs_on_every_message_then_the_model_answers(tmp_pa
 def test_a_forced_tool_must_be_one_of_the_tools(tmp_path):
     with pytest.raises(ValueError, match="not one of the tools"):
         make_rag(tmp_path, RecordingClient(), tools=[LIMITS_TOOL], run_tool=lambda n, a: [], force_first_tool="other")
+
+
+def test_tool_arguments_are_checked_against_the_passenger_before_the_tool_runs(tmp_path):
+    client = ScriptedToolClient([("tool", "check_limits", {"bags": 3, "cabin_class": "economy"}),
+                                 ("text", "Three bags are over the allowance in either class.")])
+    ran, seen = [], []
+
+    def drop_class(name, arguments, passenger_text):
+        seen.append(passenger_text)
+        return {k: v for k, v in arguments.items() if k != "cabin_class"}, ["cabin_class"]
+
+    rag = make_rag(tmp_path, client, tools=[LIMITS_TOOL], check_tool_arguments=drop_class,
+                   run_tool=lambda name, arguments: ran.append(arguments) or {"outcome": "over the allowance"})
+    _, _, tool_calls = rag.answer_with_tool_calls("And 3 bags?", [{"role": "user", "content": "I fly soon."},
+                                                                  {"role": "assistant", "content": "Sure."}])
+    assert ran == [{"bags": 3}]                                     # the tool never saw the unstated class
+    assert tool_calls == [{"name": "check_limits", "arguments": {"bags": 3, "removed_by_code": ["cabin_class"]}}]
+    assert seen == ["I fly soon. And 3 bags?"]                     # the passenger's own words only
