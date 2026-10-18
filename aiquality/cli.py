@@ -13,6 +13,7 @@
   aiquality review   --team aeroassist          what a person should look at from the latest run, and why
   aiquality new-team claims_assist --format json
   aiquality lint     --team aeroassist          golden-set mistakes that would cause false alarms
+  aiquality dashboard --output dashboard.html   every team now, and run by run (from saved run records)
   aiquality list-checks
   aiquality list-attacks
 
@@ -113,6 +114,13 @@ def _repeat(args) -> int:
     path, summary = repeat_team(config, case_ids, args.times, args.output or Path(args.output_dir) / REPEAT_FILE)
     print(render_repeats(summary))
     print(f"\nanswers and results saved in {path}")
+    return EXIT_OK
+
+
+def _dashboard(args) -> int:
+    from aiquality.reporting.dashboard import write_dashboard
+    path = write_dashboard(args.output, args.output_dir, args.teams_dir)
+    print(f"dashboard written to {path}")
     return EXIT_OK
 
 
@@ -268,6 +276,12 @@ def _build_parser() -> argparse.ArgumentParser:
     ci_summary = commands.add_parser("ci-summary", help="one run page: an overview of every team's gate, then each team")
     ci_summary.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="where the run records are")
     ci_summary.set_defaults(handler=_ci_summary)
+
+    dashboard = commands.add_parser("dashboard", help="one page: every team's latest gate and its saved runs over time")
+    dashboard.add_argument("--output", default=f"{DEFAULT_OUTPUT_DIR}/dashboard.html", help="the HTML file to write")
+    dashboard.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="where the latest run records are")
+    dashboard.add_argument("--teams-dir", default="teams", help="folder holding team folders and their history")
+    dashboard.set_defaults(handler=_dashboard)
 
     list_judges = commands.add_parser("list-judges", help="show the judge kinds a team can use")
     list_judges.set_defaults(handler=_list_judges)
