@@ -20,6 +20,19 @@ aiquality gate --team my_team              # the starter already passes the gate
 
 This creates `teams/my_team/` with `team.yaml`, `golden_set.csv` and a starter `agent.py`.
 
+**A worked example.** [`teams/post_order_support/`](../teams/post_order_support/) was onboarded this
+way: a fictional grocery app's post-order support, with four files and no platform code.
+
+| File | What the team wrote |
+|---|---|
+| `policies.md` | the rules its agent must follow (4 policies, and what is not covered) |
+| `golden_set.json` | 10 cases with a version and a changelog: one per rule edge, plus out-of-scope and adversarial cases; 9 of them say what decision a good answer reaches |
+| `agent.py` | its agent; here a stand-in made of rules, where a real team calls its own agent |
+| `team.yaml` | the checks and their bars, a bar for high-priority cases, and the attacks to run |
+
+Then one step in CI: `aiquality gate --team post_order_support`. A test loads every folder in
+`teams/` and lints its golden set, so a broken config fails in the same pull request.
+
 ## 3. Connect your agent
 
 Pick one adapter in the config:

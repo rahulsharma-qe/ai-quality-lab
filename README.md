@@ -62,7 +62,10 @@ This repository is the **"quality of AI"** side of my work. Its sibling,
 
 The studies in [`demos/`](demos/) proved each technique on one agent. `aiquality` packages them
 into a self-serve platform: a team connects its agent and brings one config file (YAML or JSON) and a
-golden set (JSON, CSV or Excel). No test code.
+golden set (JSON, CSV or Excel). No test code. Two teams use it: [`teams/aeroassist/`](teams/aeroassist/),
+the real agent under test, and [`teams/post_order_support/`](teams/post_order_support/), a fictional
+grocery app's support desk onboarded with configuration only (four files and one CI step, no
+platform code; its agent is a stand-in).
 
 ```bash
 pip install -e ".[dev]"     # install aiquality from this folder, plus the test tools (pytest, Excel support)
@@ -162,7 +165,7 @@ onboarding: [`docs/onboarding.md`](docs/onboarding.md) · runnable examples: [`e
 |---|---|---|
 | **Platform** | `aiquality/`, `teams/`, `examples/`, `tests/`, `docs/` | *Can another team use this without writing test code?* Agent adapters, team configs, golden sets from JSON/CSV/Excel, pluggable checks, a company floor, run records and a command line. See the section above. |
 | **Quality log** | `docs/quality-log.md` | *What did testing find, what changed, and what is still open?* Every run in order, the open problems, and the lessons that carry over to other agents. |
-| **Golden dataset** | `teams/aeroassist/golden_dataset.json` | *What is the human-verified source of truth?* 40 labelled cases (happy / edge / adversarial / out-of-scope, 4 of them held-out), versioned with a changelog, plus a schema validator (`demos/loader_cell.py`). |
+| **Golden dataset** | `teams/aeroassist/golden_dataset.json` | *What is the human-verified source of truth?* 58 labelled cases (happy / edge / adversarial / out-of-scope, 22 of them held-out), versioned with a changelog, plus a schema validator (`demos/loader_cell.py`). |
 | **RAG evaluation** | `demos/rag_eval.py` | *Is the agent accurate and grounded?* Scores a policy-RAG with **RAGAS** — context precision/recall (retrieval) and faithfulness/answer-relevancy (generation), judged by Claude, embedded locally (no OpenAI). |
 | **Red-teaming** | `demos/red_team.py`, `demos/red_team_v2.py` | *Can I break it?* OWASP-LLM-mapped attacks — prompt injection (direct & indirect), jailbreak, data-leak, excessive agency — plus strengthened vectors (obfuscation, multi-turn, poisoned knowledge base). |
 | **The fix** | `demos/guardrail_fix.py` | *How do I close a breach?* A deterministic **policy-of-record at the execution gate** — money decisions live in code, not in the model. |
@@ -285,7 +288,8 @@ and `.env` is gitignored. Data is privacy-safe synthetic only (no real PII).
 - [x] **Platform core (done)** — `aiquality` package: one agent contract, three adapters, team configs in YAML or JSON, golden sets from JSON/CSV/Excel, pluggable checks, a company floor, run records, a command line.
 - [x] **Release gate per team and client (done)** — attack tests as plugins, accepted findings with expiry, exit codes 0/1/2, HTML / JUnit XML / GitHub summary reports.
 - [x] **Judges in the platform (done)** — judges registry, validation and status per version, an advisory-until-qualified judge check, recorded verdicts, a human review queue.
-- [ ] **A second team and monitoring in the platform** — a second (fictional) team onboarded with configuration only, a reusable CI workflow, monitoring moved into the package.
+- [x] **A second team (done)** — a fictional grocery app's post-order support onboarded with configuration only: four files, one CI step, no platform code. A reusable CI workflow waits until another repository, such as `aeroassist-qa-agent`, runs the gate.
+- [ ] **Monitoring in the platform** — the drift alert from `demos/observability/` moved into the package, reading run records.
 - [ ] **Gate view and tracing export** — a static gate dashboard and OpenTelemetry export to an open-source tracing tool.
 - [x] **Quality loop on AeroAssist (done)** — retrieval checked on its own, run comparison case by case, agent v2 with general rules, held-out cases, no regressions.
 - [x] **Second quality loop on AeroAssist (done)** — agent v3 with a rule per kind of error, a held-out case per kind, and a repeat check: half the hinted exceptions, worse answers on time windows.
