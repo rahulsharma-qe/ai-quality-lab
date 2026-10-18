@@ -78,6 +78,7 @@ aiquality repeat   --team my_team --cases C13 --times 3   # ask again: which res
 aiquality validate-judge --team aeroassist --split holdout   # trust the AI judge only after it qualifies
 aiquality review   --team aeroassist                 # what a person should look at, and why
 aiquality dashboard                                  # one page: every team now, and run by run
+aiquality export-traces aiquality-runs              # a run as OpenTelemetry traces, for a tracing tool
 aiquality list-checks && aiquality list-attacks && aiquality list-judges
 ```
 
@@ -291,7 +292,8 @@ and `.env` is gitignored. Data is privacy-safe synthetic only (no real PII).
 - [x] **Judges in the platform (done)** — judges registry, validation and status per version, an advisory-until-qualified judge check, recorded verdicts, a human review queue.
 - [x] **A second team (done)** — a fictional grocery app's post-order support onboarded with configuration only: four files, one CI step, no platform code. A reusable CI workflow waits until another repository, such as `aeroassist-qa-agent`, runs the gate.
 - [x] **Dashboard (done)** — one static page for every team: the latest gate, accepted findings and their expiry, and every saved run from oldest to newest, built in CI after every gate.
-- [ ] **Tracing export** — run records exported as OpenTelemetry traces to an open-source tracing tool.
+- [x] **Tracing export (done)** — a run as OpenTelemetry traces (OTLP JSON, no new dependency): one trace per case, a span per tool call and per check; loaded into Phoenix as a check.
+- [ ] **Agent tracing (later)** — the agent traces its own steps (retrieval, model calls, tools), linked to the test case, so each trace shows where time and errors went; needs live runs.
 - [ ] **Monitoring in the platform (later)** — studied in `demos/observability/`; it moves into the package when there is live traffic to watch, reusing the platform's checks and its noise statistics.
 - [x] **Quality loop on AeroAssist (done)** — retrieval checked on its own, run comparison case by case, agent v2 with general rules, held-out cases, no regressions.
 - [x] **Second quality loop on AeroAssist (done)** — agent v3 with a rule per kind of error, a held-out case per kind, and a repeat check: half the hinted exceptions, worse answers on time windows.

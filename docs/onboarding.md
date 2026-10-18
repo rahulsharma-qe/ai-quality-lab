@@ -179,6 +179,14 @@ expiring within 14 days stand out), and its saved runs from oldest to newest, re
 versions. It is a static file: build it again after new runs; CI builds it after every gate and keeps
 it with the reports (see `examples/19_build_the_dashboard.py`).
 
+`aiquality export-traces aiquality-runs --output traces.json` writes a run as OpenTelemetry traces
+(OTLP in its JSON encoding), so a team's own tracing tool (Phoenix, Langfuse, or anything behind an
+OpenTelemetry collector) shows the test results: one trace per case, with the question and the
+answer, a span for each tool the agent called, and a span for each check; a failed check is an
+error span carrying its reason. Exporting needs nothing extra; `pip install "aiquality[tracing]"`
+adds the official definitions to check the file against (see `examples/20_export_traces.py`). The spans carry the run's time, not measured durations: the
+platform sees the agent from the outside, so timings per step need the agent to trace itself.
+
 ## 8. Accept a reviewed finding (for a limited time)
 
 When a person has read an answer and agrees a finding is a false alarm (for example "not
