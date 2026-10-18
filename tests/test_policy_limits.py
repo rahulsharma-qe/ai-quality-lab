@@ -69,10 +69,50 @@ def test_the_tool_rules_on_each_topic_asked_for():
     assert [(r["policy"], r["outcome"]) for r in rulings] == [("P5", "allowed"), ("P4", "open")]
 
 
-def test_the_tool_says_what_is_missing_instead_of_guessing():
-    assert check_policy_limits({"topics": ["refund"]}) == [{"topic": "refund", "error": "missing: hours_since_booking"}]
+def test_the_tool_never_answers_missing_a_topic_without_a_figure_gets_the_rule():
+    [ruling] = check_policy_limits({"topics": ["refund"]})
+    assert ruling["outcome"] == "depends on a time not given" and "within 24 hours of booking" in ruling["explanation"]
     assert "unknown topic" in check_policy_limits({"topics": ["meals"]})[0]["error"]
-    assert check_policy_limits({}) == []
+    assert check_policy_limits({}) == [] and check_policy_limits({"topics": []}) == []
+
+
+@pytest.mark.parametrize("topic, more_than, less_than, outcome", [
+    ("special_assistance", None, 48, "best-effort, not guaranteed"),     # "tomorrow"
+    ("web_check_in", 300, None, "not open yet"),                         # "in about two weeks"
+    ("date_change", 144, None, "allowed"),                               # "in a week"
+    ("refund", 100, None, "taxes and statutory charges only"),           # "booked last week"
+    ("web_check_in", None, 48, "depends on the exact time"),             # "tomorrow": open unless within 2 hours
+    ("date_change", 2, 6, "depends on the exact time"),                  # "in a few hours"
+    ("web_check_in", 2, 48, "open"),
+])
+def test_a_time_range_gets_one_outcome_or_depends(topic, more_than, less_than, outcome):
+    from policy_limits import time_range_ruling
+    assert time_range_ruling(topic, more_than, less_than).outcome == outcome
+
+
+def test_a_range_ruling_carries_the_rule_so_the_answer_can_cover_each_case():
+    [ruling] = check_policy_limits({"topics": ["web_check_in"], "hours_until_departure_less_than": 48})
+    assert "Departure in less than 48 hours" in ruling["explanation"] and "closes 2 hours before" in ruling["explanation"]
+
+
+def test_an_exact_time_wins_over_a_range():
+    facts = {"topics": ["date_change"], "hours_until_departure": 6, "hours_until_departure_less_than": 3}
+    assert check_policy_limits(facts)[0]["outcome"] == "allowed"
+
+
+@pytest.mark.parametrize("cabin, bags, kg, outcome", [
+    ("economy", 2, None, "over the allowance"),
+    ("business", 2, None, "within the allowance if they weigh up to 10 kg in total"),
+    ("economy", None, 12, "over the allowance"),
+    ("business", None, 8, "within the allowance if it is no more than 2 bag(s)"),
+    ("economy", None, None, "depends on the bags"),
+])
+def test_cabin_baggage_rules_on_the_count_or_the_weight_alone(cabin, bags, kg, outcome):
+    assert cabin_baggage_ruling(cabin, bags, kg).outcome == outcome
+
+
+def test_checked_baggage_without_a_weight_states_the_allowance():
+    assert checked_baggage_ruling("economy").outcome == "depends on the weight"
 
 
 def test_baggage_without_a_class_gets_a_ruling_for_each_class():
@@ -116,3 +156,11 @@ def test_every_limit_in_code_is_stated_in_the_policy(policy_id, sentence):
 
 def test_the_refund_boundary_in_code_is_the_inclusive_one_the_policy_states():
     assert "exactly 24h qualifies" in _policy_text("P1") and refund_ruling(24).outcome == "full refund"
+
+
+def test_the_tool_description_gives_the_model_no_golden_case_wording():
+    """The model reads the tool's description: examples taken from golden or held-out cases would teach
+    it those cases, not the rule (the same guard the agent's rules have)."""
+    import json
+    text = json.dumps(limits.TOOL_SCHEMA).lower()
+    assert [w for w in ("tomorrow", "two weeks", "last week", "few hours", "yesterday") if w in text] == []
