@@ -2,7 +2,8 @@
 # Two jobs (the key-free / live split):
 #   eval-gate : no API key, same result every run -> every pull request and push to main
 #               tests, examples, the aiquality release gates (good demo must pass, regressed demo
-#               must fail, AeroAssist reported), then the original eval harness with the mock judge
+#               must fail, post-order support must pass, AeroAssist reported), then the original
+#               eval harness with the mock judge
 #   eval-live : the real language-model judge -> needs a secret -> run by hand or nightly
 name: eval-gate
 
@@ -41,6 +42,8 @@ jobs:
           code=$?
           set -e
           if [ "$code" -ne 1 ]; then echo "expected exit 1 (quality failure), got $code"; exit 1; fi
+      - name: Post-order support release gate must PASS (the second team, onboarded with config only)
+        run: env -u GITHUB_STEP_SUMMARY aiquality gate --team post_order_support
       - name: AeroAssist release gate (reported, not blocking)
         # It fails on real high-priority errors (time windows above all), and the judge finds more that
         # the phrase checks pass (see docs/quality-log.md, "Where we are now"). Switch to blocking once
