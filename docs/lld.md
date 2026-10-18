@@ -33,7 +33,7 @@ wins, and this page should be fixed.
 **How the parts depend on each other.** A run flows one way, and three rules hold in the code:
 
 ```mermaid
-flowchart LR
+flowchart TB
   CF["config<br/>(validates names against the registries)"] --> CM["commands"]
   AD["adapters"] --> RU["runner"]
   TD["test_data"] --> RU
@@ -44,6 +44,9 @@ flowchart LR
   GT --> CM
   RP --> CM
   CM --> CLI["cli"]
+  classDef box fill:#1e293b,stroke:#94a3b8,color:#f1f5f9
+  class CF,CM,AD,RU,TD,EV,CK,GT,RP,CLI box
+  linkStyle default stroke:#94a3b8,stroke-width:2px
 ```
 
 - Only `cli.py` prints results for the command line and knows exit codes; every other module
@@ -59,7 +62,9 @@ time, so a typo fails before any agent is called.
 ## 2. Core types
 
 ```mermaid
+%%{init: {"theme": "dark", "themeVariables": {"primaryColor": "#1e293b", "primaryTextColor": "#f1f5f9", "primaryBorderColor": "#94a3b8", "lineColor": "#94a3b8", "background": "#0d1117", "fontSize": "15px"}}}%%
 classDiagram
+  direction LR
   class AgentUnderTest {
     <<abstract>>
     name
@@ -268,7 +273,7 @@ The platform treats the agent as a black box; this is what is inside the agent t
 `teams/aeroassist/` tests, as an example of an agent built to be testable.
 
 ```mermaid
-flowchart LR
+flowchart TB
   Q["Passenger message<br/>+ earlier turns"] --> RET["Retrieval<br/>top 3 policies, local embeddings"]
   RET --> M1["Model, first call<br/>must call the limits tool"]
   M1 -->|"topics and facts"| SF["Stated facts<br/>drop a cabin class<br/>the passenger didn't give"]
@@ -276,6 +281,9 @@ flowchart LR
   LIM -->|"ruling"| M2["Model<br/>words the answer"]
   M2 --> HO["Hand-over written by code<br/>(v6)"]
   HO --> A["Answer + tool calls<br/>+ retrieved policies"]
+  classDef box fill:#1e293b,stroke:#94a3b8,color:#f1f5f9
+  class Q,RET,M1,SF,LIM,M2,HO,A box
+  linkStyle default stroke:#94a3b8,stroke-width:2px
 ```
 
 - **Retrieval** (`aeroassist_rag.py`): one policy per chunk, cosine similarity on a local embedding
