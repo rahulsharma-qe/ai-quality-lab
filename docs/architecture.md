@@ -111,8 +111,14 @@ flowchart LR
   RR --> GV
   RR --> OTEL
   RR -.->|"history"| MON
-  classDef later stroke-dasharray: 5 5
+  classDef box fill:#ffffff,stroke:#475569,color:#0f172a
+  classDef later fill:#ffffff,stroke:#475569,color:#0f172a,stroke-dasharray: 5 5
+  class CFG,GS,POL,AG,TC,TD,AD,ATK,RUN,CHK,JDG,MDL,GATE,RR,EXIT,REP,CMP,HRQ,GV,OTEL box
   class MON later
+  style TEAM fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
+  style CORE fill:#f1f5f9,stroke:#334155,color:#0f172a
+  style OUT fill:#ecfdf5,stroke:#047857,color:#064e3b
+  linkStyle default stroke:#475569,stroke-width:1.5px
 ```
 
 | Part | Status |
