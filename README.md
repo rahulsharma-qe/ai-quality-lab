@@ -155,7 +155,7 @@ flowchart LR
 ```
 
 Solid boxes are in the package today; the dashed box, monitoring, is studied in
-[`demos/observability/`](demos/observability/) and waits for live traffic to watch. Details: [`docs/architecture.md`](docs/architecture.md) ·
+[`demos/observability/`](demos/observability/) and waits for live traffic to watch. High-level design: [`docs/architecture.md`](docs/architecture.md) · low-level design: [`docs/lld.md`](docs/lld.md) ·
 onboarding: [`docs/onboarding.md`](docs/onboarding.md) · runnable examples: [`examples/`](examples/).
 
 ---
