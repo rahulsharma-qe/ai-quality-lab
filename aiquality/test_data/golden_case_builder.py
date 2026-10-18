@@ -40,6 +40,12 @@ class GoldenCaseBuilder:
         self._data["must_not_do"].extend(behaviours)
         return self
 
+    def expected_decision(self, decision: str) -> "GoldenCaseBuilder":
+        """What a good answer decides: "yes", "no", "depends", "hand_over", "₹1500", "yes, ₹2000",
+        or alternatives joined by " OR "."""
+        self._data["expected_decision"] = decision
+        return self
+
     def expected_sources(self, *source_ids: str) -> "GoldenCaseBuilder":
         """Ids of the documents a good answer needs, e.g. "P1"; checked by expected_sources."""
         self._data["expected_sources"].extend(source_ids)

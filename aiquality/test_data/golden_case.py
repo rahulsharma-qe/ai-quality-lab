@@ -3,11 +3,13 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
+from aiquality.test_data.expected_decision import parse_expected_decision
+
 LIST_FIELDS = ("must_include", "must_not_include", "must_not_do", "expected_sources", "dimensions")
 KNOWN_FIELDS = (
     "id", "input", "category", "priority", "reference_answer", "expected_behaviour",
     "must_include", "must_not_include", "must_not_do", "expected_tool_calls", "expected_sources",
-    "client", "conversation_history", "dimensions",
+    "client", "conversation_history", "dimensions", "expected_decision",
 )
 
 
@@ -19,6 +21,8 @@ class GoldenCase:
     must_not_include  literal phrases a good answer never contains (cheap, blocking signal)
     must_not_do       descriptions of forbidden behaviour, checked by a judge, not by phrases
     expected_sources  ids of the documents a good answer needs, e.g. ["P1"] (for retrieval agents)
+    expected_decision what a good answer decides: "yes", "no", "depends", "hand_over", an amount
+                      like "₹1500", or alternatives joined by " OR " (see expected_decision.py)
     client            optional tag, so results can be gated per client
     extra             any other fields from the source file, kept untouched
     """
@@ -37,6 +41,7 @@ class GoldenCase:
     client: Optional[str] = None
     conversation_history: list[dict] = field(default_factory=list)
     dimensions: list[str] = field(default_factory=list)
+    expected_decision: Optional[str] = None
     extra: dict = field(default_factory=dict)
 
     @classmethod
@@ -56,6 +61,11 @@ class GoldenCase:
         history = data.get("conversation_history") or []
         if not isinstance(history, list):
             problems.append("'conversation_history' must be a list of {role, content} turns")
+        if data.get("expected_decision") is not None:
+            try:
+                parse_expected_decision(data["expected_decision"])
+            except ValueError as error:
+                problems.append(f"'expected_decision': {error}")
         if problems:
             raise ValueError("; ".join(problems))
 

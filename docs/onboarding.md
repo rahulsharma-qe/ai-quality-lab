@@ -53,6 +53,7 @@ JSON, CSV or Excel. One case per row:
 | `must_not_include` | Literal phrases a good answer never contains |
 | `must_not_do` | Descriptions of forbidden behaviour, for a judge (not phrase-matched) |
 | `expected_sources` | Optional ids of the documents a good answer needs, e.g. `P1\|P6` (retrieval agents) |
+| `expected_decision` | Optional: what a good answer decides: `yes`, `no`, `depends`, `hand_over`, an amount such as `₹1500`, both (`yes, ₹2000`), or alternatives (`no OR hand_over`) |
 | `client` | Optional tag, so results can be compared per client |
 | `conversation_history` | Optional earlier turns, as JSON text |
 
@@ -95,6 +96,18 @@ Keep it as a diagnostic, so the answer checks decide the release:
 ```yaml
 checks:
   expected_sources: {threshold: 0.9, blocking: false}   # see examples/13_check_retrieved_sources.py
+```
+
+Phrase checks look for words, so a right answer in other words fails, and a wrong answer with the
+right words passes ("No, you can't check in online. Check-in is open until 2 hours before departure").
+Add `expected_decision` to the cases where the answer has to decide something, and the `decision`
+check reads the decision from the answer's opening and compares. When it can't tell what was decided,
+the case doesn't count and is flagged, rather than guessed. It is rules, not a model, so it is free and
+repeatable; measure it against a person's reading of your own answers before letting it block:
+
+```yaml
+checks:
+  decision: {threshold: 1.0, blocking: false}           # see examples/17_check_the_decision.py
 ```
 
 ## 6. Add attack tests
