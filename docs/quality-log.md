@@ -30,9 +30,10 @@ Terms such as *held-out case* and *judge* are explained in [Words used here](#wo
 | [5](#run-5-general-rules-for-the-kinds-of-error-run-4-found-golden-set-19-to-110) | Can prompt rules fix whole kinds of error? | Partly: hinted exceptions halved, but time-window answers broke, and results change from try to try | Agent v3 kept as the default; next, limits are decided in code |
 | [6](#run-6-limits-decided-in-code-through-a-tool-the-agent-calls-golden-set-111) | Does deciding limits in code fix the time-window errors? | Where the agent called the code, its ruling was right; but the agent called it in only 13 of 30 cases, and began asking passengers for exact figures | v3 kept as the default; next, code consults the limits on every question |
 | [7](#run-7-an-understanding-step-on-every-message-golden-set-112-to-113) | If the code runs the limits check on every message, are the time-window errors fixed? | Yes: the right topic in 35 of 35 cases and the time-window cases right on every try; the judge passes 42 of 56 answers (v3: 30). One answer contradicts the code's ruling, and phrase checks now fail correct wording | v5 becomes the default; next, check that the answer agrees with the ruling |
+| [8](#run-8-the-hand-over-written-by-code-golden-set-114-to-116) | If code writes the hand-over sentence, do the hinted exceptions go away? | The hints went, but on repeats the hand-over cases barely moved (12 to 13 of 27 judge passes): the model hands over when the policy already answers, and the judge reads that as a hint. One recording alone had suggested a big gain | v5 stays the default; next, code decides *when* to hand over, not only *how* |
 
-Next: the platform learns to check that an answer agrees with the ruling behind it, and to tell a
-real difference from noise; then Run 8 tests a guard that stops the agent contradicting the ruling.
+Next: code decides when an answer hands over (only when no policy answers the question), measured
+with repeats from the start.
 
 ---
 
@@ -59,31 +60,33 @@ real difference from noise; then Run 8 tests a guard that stops the agent contra
 
 ## Where we are now
 
-*Updated 18 October 2026, after Run 7.*
+*Updated 18 October 2026, after Run 8.*
 
 | | |
 |---|---|
 | Agent | v5: v3's rules, with the limits decided in code (`policy_limits.py`, limits version 2) through a tool the code makes the model call on every message; policies version 1.3 |
-| Golden set | version 1.13, 56 cases (20 of them held-out) |
-| Phrase checks | required phrases 96%, forbidden phrases 95% (100% after two accepted false alarms); attacks resisted 16 of 16 |
-| Judge | passes 42 of 56 answers (75%), but **advisory**: its version has not qualified against a person's labels (it leaves only 62% of good answers alone; the bar is 80%) |
-| Release gate on phrase checks | **FAIL**: high-priority GD07 and GD20, both real errors |
-| Noise | the same agent recorded in two sessions differs on 8 to 11 of about 50 judge verdicts; only differences that hold when repeated count |
-| Continuous integration (CI) | the AeroAssist gate is reported but **not blocking**: it fails on two real high-priority errors |
+| Golden set | version 1.16, 58 cases (22 of them held-out); 47 cases say what a good answer decides (`expected_decision`) |
+| Phrase checks | required phrases 98%, forbidden phrases 95% (100% after two accepted false alarms); attacks resisted 16 of 16 |
+| Decision check | 44 pass, 2 fail (GD32, GD46), 12 not counted; reports, doesn't block |
+| Judge | passes 43 of 58 answers (74%), but **advisory**: its version has not qualified against a person's labels (it leaves only 62% of good answers alone; the bar is 80%) |
+| Release gate on phrase checks | **FAIL**: high-priority GD07, a real error |
+| Noise | the same agent recorded in two sessions differs on 8 to 11 of about 50 judge verdicts; `aiquality compare` now says whether a difference is bigger than chance, and `aiquality repeat` asks a case again |
+| Continuous integration (CI) | the AeroAssist gate is reported but **not blocking**: it fails on a real high-priority error |
+| Recording CI replays | v5's Run 7 recording, plus GD57 and GD58 from Run 8's repeat check (the first of three tries; v5 never answered them in Run 7) |
 
 ### Open problems
 
 | Case | What is wrong, in plain words | Found by | Since | Next step |
 |---|---|---|---|---|
-| GD46 (held-out) | The code rules web check-in "open" 3 hours before departure, and the answer says "No, you cannot check in online", on every try | Judge; a person compared the answer with the recorded ruling | v5 (v4 got it wrong without calling the tool) | Run 8: a guard that checks the answer's yes or no against the ruling; the platform's decision check |
-| GD07 (high) | Asked for 3 cabin bags with no class given, the agent assumes economy instead of giving both classes' allowance | Phrase check and judge | v3 to v5 | Agent fix |
-| GD20 (high) | Late for a flight 2 hours away: the change is refused correctly, but the answer never says it becomes a no-show, and hints that a person may help | Phrase check and judge | v3 to v5 | Agent fix |
-| GD19, GD24, GD13, GD55 | When the time isn't given, v5 answers for each case and then asks for the time (GD13, GD55), or asks instead of answering (GD19, GD24). GD19 also says "4 hours or less" where exactly 4 hours still qualifies | Repeat check (asks for a figure); judge | v4 and v5 | Run 8: no question after a conditional answer |
+| GD46 (held-out) | The code rules web check-in "open" 3 hours before departure, and the answer says "No, you cannot check in online", on every try | Judge; the decision check | v5 (v4 got it wrong without calling the tool) | A guard that checks the answer against the ruling (parked) |
+| GD07 (high) | Asked for 3 cabin bags with no class given, the agent assumes economy instead of giving both classes' allowance | Phrase check and judge | v3 to v5 | v6 drops a class the passenger didn't state: the judge passed it 3 of 3, but the answer said "2 cabin bags" only 1 of 3 times |
+| GD20 (high) | Late for a flight 2 hours away: the change is refused correctly, and the answer hints that a person may help | Judge | v3 to v5 | With the hand-over decision below. Its wording ("forfeited" for no-show) is accepted since golden 1.16 |
+| GD19, GD24, GD13, GD55 | When the time isn't given, v5 answers for each case and then asks for the time (GD13, GD55), or asks instead of answering (GD19, GD24). GD19 also says "4 hours or less" where exactly 4 hours still qualifies | Repeat check (asks for a figure); judge | v4 and v5 | Parked |
 | GD10, GD15, GD53 | Invented details around a right ruling: a 40 kg split the passenger never gave, a promise that a person will send the check-in link, a "personal items" rule | Judge | v5 | Agent fix |
-| 7 answers | The hand-over still hints that an exception might be possible (GD11, GD20, GD27, GD31, GD32, GD38, GD50) | Judge (rubric rule 7) | Since v2 | A later run: the hand-over sentence comes from code |
+| 7 answers | The hand-over still hints that an exception might be possible (GD11, GD20, GD27, GD31, GD32, GD38, GD50). Run 8's v6 wrote the hand-over in code: the hints went, but the model now hands over when the policy already answers (GD50 every time; GD15, GD27), which the judge also fails | Judge (rubric rule 7) | Since v2 | Next run: code decides when to hand over |
 | GD14 | Exactly 2 hours before departure: the policy doesn't say whether web check-in is still open. The limits code says so instead of deciding | Reading the policy | Since the start | The policy owner decides |
-| Phrase checks | Correct answers fail on wording more often as the agent improves: 4 of v5's 6 high-priority phrase failures were correct answers, fixed in golden 1.13 or accepted | A person reading each failure | Run 7 | Next platform phase: a decision check that compares what was decided, not the words |
-| Platform | An accepted finding matches a case and a check, not the answer it was written for (GD13's acceptance has a short expiry for this reason); a recorded verdict doesn't say which policies version it was graded against; a comparison doesn't say whether a difference is bigger than the noise; the repeat check lives in a notebook | Review of Runs 5 to 7 | Run 5 | Next platform phase |
+| Phrase checks | Correct answers fail on wording more often as the agent improves: 4 of v5's 6 high-priority phrase failures were correct answers, fixed in golden 1.13 or accepted | A person reading each failure | Run 7 | The decision check (Run 8) compares what was decided; it reports until its reader has been measured on more answers |
+| Platform | An accepted finding matches a case and a check, not the answer it was written for (GD13's acceptance has a short expiry for this reason); a recorded verdict doesn't say which policies version it was graded against | Review of Runs 5 to 7 | Run 5 | Parked until needed. Done in Run 8: noise in comparisons, the repeat command |
 
 ### Accepted findings
 
@@ -457,6 +460,83 @@ checking what was decided, not which words were used.
 
 ---
 
+### Run 8: the hand-over written by code (golden set 1.14 to 1.16)
+
+**Question.** After Run 7, 9 of v5's 14 judge failures were about the hand-over: "a human agent may be
+able to discuss options", a promise, or a claim about what a person can't do. If the model only marks
+that the passenger needs a person and code writes the hand-over sentence, do those failures go away?
+
+**Success criteria, set before the run.** If all are met, v6 becomes the default.
+
+| Criterion | Result |
+|---|---|
+| Judge failures about the hand-over drop from 9 to at most 2, and hold when the cases are asked again | Not met: 2 in the recording, but on repeats the 9 cases passed the judge 13 of 27 times (v5: 12) |
+| GD07 passes | Partly: the judge passed it 3 of 3, its phrase check 1 of 3 |
+| No new failure that holds up when the case is asked again | Not met: GD27 (v5 3 of 3, v6 0 of 3) and GD15 (2 of 3 to 0 of 3) |
+| Both new held-out cases pass | **Met**: GD57 2 of 3, GD58 3 of 3 (judge) |
+| All 16 attacks resisted | **Met** |
+
+**What we changed first.**
+
+- **The platform** learned three things, all without a key: a **decision check** (each case can say
+  what a good answer decides: yes, no, depends, hand over, an amount; a rule-based reader reads the
+  answer's opening and reports, without blocking); a **noise section** in `aiquality compare` (per
+  check, how many cases got better and worse, and whether that split is bigger than chance); and
+  `aiquality repeat`, which asks chosen cases again and counts each check on its own.
+- **The decision reader was measured before use.** On 263 recorded answers from Runs 4 to 7 it read a
+  decision in 239; of its 28 disagreements with the expected decision, 25 were real wrong decisions,
+  2 were its own misreadings and 1 was debatable. It also caught one wrong decision the judge passed.
+- **Golden set 1.14 to 1.16**: `expected_decision` on 47 cases (the changelog lists the ones left
+  without one, and why); two held-out cases for v6, frozen before it was built (GD57: a money request
+  outside the policies; GD58: two cabin bags, no class given); GD20 accepts "forfeit" for no-show, as
+  GD21 and GD36 do.
+- **Agent v6**: v5, with two steps moved from the model to code. The model marks a hand-over with
+  `HAND_OVER`, and code removes every sentence about what a human agent, a colleague or a team might do
+  and adds one fixed sentence ([`hand_over.py`](../teams/aeroassist/hand_over.py)). A cabin class reaches
+  the limits tool only if the passenger stated it ([`stated_facts.py`](../teams/aeroassist/stated_facts.py)).
+  Two rules change. Each answer lists what code changed.
+
+**What we ran.** v6 recorded once (58 golden and 16 attack cases), compared with Run 7's v5 recording
+graded again with golden set 1.15. Then 18 cases (the 9 hand-over cases, the 2 held-out cases, and the
+7 other cases whose judge, decision or phrase result changed) asked 3 times each with v6 **and** with
+v5, in one session. The recording used hand-over code 1. Reading the 11 sentences it removed found 2
+that weren't about handing over ("escalation threats", "authorized representative"); code 2 keeps them.
+The repeats ran with code 2 (agent version `…handover-2`). Neither removal changed a verdict.
+
+**What we found.**
+
+| Judge passes | v5 | v6 |
+|---|---|---|
+| The recording, 56 cases both versions answered | 42 | 48 |
+| Repeats: the 9 hand-over cases (27 tries) | 12 | 13 |
+| Repeats: all 18 cases (54 tries) | 31 | 34 |
+| Attacks resisted | 16 of 16 | 16 of 16 |
+
+- **One recording overstated the gain.** The recording showed 42 to 48, with 8 cases better and 2 worse
+  (p = 0.11 without the held-out cases, which only v6 had answered). Asked again, the hand-over cases
+  barely moved. Without the repeats, v6 would have become the default on luck.
+- **The hints went; the hand-over decision is the problem.** Code removed the hint sentences as
+  designed, but the model also marks a hand-over after an answer the policy fully covers, and the judge
+  reads any hand-over there as a hint that an exception might exist: GD50 on all 3 tries, GD27 and GD15
+  on one each. GD27's other two tries invented an upgrade rule or a "sales team"; GD20's got past the
+  code's list in new words ("speak with an agent about your options").
+- **Facts from the passenger only.** The cabin class the model added for GD07 was dropped by code, and
+  the judge passed GD07 on every try; but its answer said "2 cabin bags" only once in three.
+- **The decision check agreed with the judge** on its two failures (GD32, GD46), and its one new
+  failure (GD55, "No, if your flight is within 2 hours…") was its own misreading of a conditional answer.
+
+**What we changed after.**
+
+- v5 stays the default. v6 stays in the repository, with this result.
+- CI replays v5's Run 7 recording, plus its answers to GD57 and GD58 from this run's repeat check (the
+  first of three tries; v5 never answered them in Run 7). With golden 1.16 the gate fails only on GD07.
+
+**What we learned.** Code can own *how* something is said, but not *whether* it should be said: the
+hand-over sentence moved to code, and the failures moved to the decision to hand over. And a single
+recording is a sample of one: the repeats turned an apparent 6-case gain into a 1-try difference.
+
+---
+
 ## Lessons that carry over to any AI agent
 
 1. **A clean result is a warning.** Zero breaches in the first attack run meant the attacks were too weak.
@@ -504,6 +584,13 @@ checking what was decided, not which words were used.
 25. **As the agent improves, phrase checks start failing correct answers.** Four of six high-priority
     phrase failures were right answers in other words. Move the gate toward meaning: decisions checked in
     code, and a judge that has qualified.
+26. **Moving the wording to code doesn't move the decision.** v6 wrote every hand-over in code, and the
+    failures moved to *when* the model chose to hand over. Find which part of the behaviour fails before
+    choosing what to move into code.
+27. **Measure a new check before it gates.** The decision reader was read against 263 recorded answers
+    first: 25 of its 28 disagreements were real errors, 2 its own misreadings. It reports; it doesn't block.
+28. **Repeat before you believe.** One recording showed 6 more judge passes; the repeats showed 1. Ask the
+    changed cases again, with the old version too, in the same session.
 
 ---
 
