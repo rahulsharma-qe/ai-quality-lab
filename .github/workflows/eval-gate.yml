@@ -2,9 +2,10 @@
 # Two jobs (the key-free / live split):
 #   eval-gate : no API key, same result every run -> every pull request and push to main
 #               tests, examples, the aiquality release gates (good demo must pass, regressed demo
-#               must fail, post-order support must pass, AeroAssist reported), then the original
-#               eval harness with the mock judge
-#   eval-live : the real language-model judge -> needs a secret -> run by hand or nightly
+#               must fail, post-order support must pass, AeroAssist reported), the run page and the
+#               dashboard, then a smoke test that the first gate study in demos/ still runs
+#   eval-live : the real language-model judge measured against people's labels -> needs a secret ->
+#               run by hand (live agent runs are recorded in a notebook, where their cost is watched)
 name: eval-gate
 
 on:
@@ -62,8 +63,8 @@ jobs:
         with:
           name: aiquality-reports-py${{ matrix.python-version }}   # artifact names must be unique per run
           path: aiquality-runs/
-      - name: Run the eval gate (mock judge, no API key)
-        run: python demos/eval_harness.py  # exit 1 on any failed threshold -> build goes red
+      - name: "Smoke test: the first gate study in demos/ still runs (mock judge, no API key)"
+        run: python demos/eval_harness.py
 
   eval-live:                       # the expensive, real-judge arm — not on every PR
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
@@ -75,17 +76,12 @@ jobs:
           python-version: "3.12"
       - name: Install the platform with the model client
         run: pip install -e ".[live]"
-      - name: Re-check the judge against human labels (held-back half)
-        continue-on-error: true    # a judge that doesn't qualify isn't a failed build — the
-                                   # next step then runs it in ADVISORY mode (reports, can't block)
+      - name: Measure the judge against people's labels (held-back half)
+        continue-on-error: true    # a judge that doesn't qualify isn't a failed build: it stays
+                                   # advisory in the gate (reports, can't block)
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: python demos/judge_validation.py --judge llm --split holdout
-      - name: Run with the live LLM judge
-        env:
-          LLM_PROVIDER: anthropic
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: python demos/eval_harness.py
+        run: aiquality validate-judge --team aeroassist --split holdout
 
 # Schedule the live arm nightly (optional):
 #   add  `schedule: [{cron: "0 2 * * *"}]`  to the `on:` block above.
