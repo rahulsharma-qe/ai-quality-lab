@@ -77,6 +77,7 @@ aiquality compare  before.jsonl aiquality-runs        # what a change fixed, and
 aiquality repeat   --team my_team --cases C13 --times 3   # ask again: which results hold, which were luck
 aiquality validate-judge --team aeroassist --split holdout   # trust the AI judge only after it qualifies
 aiquality review   --team aeroassist                 # what a person should look at, and why
+aiquality dashboard                                  # one page: every team now, and run by run
 aiquality list-checks && aiquality list-attacks && aiquality list-judges
 ```
 
@@ -289,8 +290,9 @@ and `.env` is gitignored. Data is privacy-safe synthetic only (no real PII).
 - [x] **Release gate per team and client (done)** — attack tests as plugins, accepted findings with expiry, exit codes 0/1/2, HTML / JUnit XML / GitHub summary reports.
 - [x] **Judges in the platform (done)** — judges registry, validation and status per version, an advisory-until-qualified judge check, recorded verdicts, a human review queue.
 - [x] **A second team (done)** — a fictional grocery app's post-order support onboarded with configuration only: four files, one CI step, no platform code. A reusable CI workflow waits until another repository, such as `aeroassist-qa-agent`, runs the gate.
-- [ ] **Monitoring in the platform** — the drift alert from `demos/observability/` moved into the package, reading run records.
-- [ ] **Gate view and tracing export** — a static gate dashboard and OpenTelemetry export to an open-source tracing tool.
+- [x] **Dashboard (done)** — one static page for every team: the latest gate, accepted findings and their expiry, and every saved run from oldest to newest, built in CI after every gate.
+- [ ] **Tracing export** — run records exported as OpenTelemetry traces to an open-source tracing tool.
+- [ ] **Monitoring in the platform (later)** — studied in `demos/observability/`; it moves into the package when there is live traffic to watch, reusing the platform's checks and its noise statistics.
 - [x] **Quality loop on AeroAssist (done)** — retrieval checked on its own, run comparison case by case, agent v2 with general rules, held-out cases, no regressions.
 - [x] **Second quality loop on AeroAssist (done)** — agent v3 with a rule per kind of error, a held-out case per kind, and a repeat check: half the hinted exceptions, worse answers on time windows.
 - [x] **Limit decisions in code, first try (done)** — time windows, allowances and fees ruled on by code the agent calls as a tool; right whenever called, but the agent called it in only 13 of 30 cases.

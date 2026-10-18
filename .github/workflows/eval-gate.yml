@@ -53,6 +53,9 @@ jobs:
       - name: Summarise every gate on the run page
         if: always()
         run: aiquality ci-summary --output-dir aiquality-runs >> "$GITHUB_STEP_SUMMARY"
+      - name: Build the dashboard (every team, run by run; kept with the reports)
+        if: always()
+        run: aiquality dashboard --output aiquality-runs/dashboard.html
       - name: Keep the reports
         if: always()
         uses: actions/upload-artifact@v4

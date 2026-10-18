@@ -172,6 +172,13 @@ gate on one run page: an overview table first, then each team led by its answer 
 problems, or FAIL) and four numbers, with the detail folded underneath. A team that exists to test the
 gate itself sets `expected_result: FAIL` (or `PASS`), and the page says whether the gate gave it.
 
+`aiquality dashboard --output aiquality-runs/dashboard.html` builds one page for every team from the
+run records already saved: each team's latest gate, its accepted findings with their expiry (those
+expiring within 14 days stand out), and its saved runs from oldest to newest, read from
+`aiquality-runs/` and `teams/<team>/history/*/`. The page says when runs used different golden set
+versions. It is a static file: build it again after new runs; CI builds it after every gate and keeps
+it with the reports (see `examples/19_build_the_dashboard.py`).
+
 ## 8. Accept a reviewed finding (for a limited time)
 
 When a person has read an answer and agrees a finding is a false alarm (for example "not
