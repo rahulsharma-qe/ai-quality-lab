@@ -3,7 +3,9 @@
 Saved runs, so any change to the agent can be compared with what came before. Each folder holds
 its own answers, so a run can be replayed and compared after the default agent has moved on.
 `../recorded_answers.jsonl` and `../judge_verdicts.jsonl`, the files CI replays, are a copy of the
-current default agent's latest recording: `v5-policies-1.3/`.
+current default agent's latest recording: `v5-policies-1.3/`, plus v5's answers to GD57 and GD58 (and
+their verdicts), taken from the first try of Run 8's repeat check because v5 never answered them in
+Run 7. Those two rows say so in a `source` field.
 
 | Folder | Agent and policies | Golden set | What it holds |
 |---|---|---|---|
@@ -17,6 +19,7 @@ current default agent's latest recording: `v5-policies-1.3/`.
 | `v4-policies-1.3/` | v4 (limits decided by the `check_policy_limits` tool), policies 1.3 | 1.11 | Answers with the tool calls the model made, verdicts, run record, comparison with v3 in the same session, and `repeat_check.jsonl` (Run 6) |
 | `v3-policies-1.3-run7/` | v3 again, Run 7's baseline | 1.12 | Answers, verdicts, run record, and the comparison with Run 6's v3 (noise) |
 | `v5-policies-1.3/` | v5 (the limits tool called on every message; limits rule on ranges), limits 2, policies 1.3 | 1.12 | Answers with tool calls, verdicts, run record, comparison with v3 in the same session, and `repeat_check.jsonl` (Run 7) |
+| `v6-policies-1.3/` | v6 (the hand-over sentence and the cabin class handled by code), limits 2, policies 1.3 | 1.15 | Answers with tool calls and code steps, verdicts, run record, comparison with v5, `baseline-v5-golden-1.15/` (Run 7's v5 recording graded with golden 1.15), and the repeat check for v6 (`repeat_check.jsonl`) and v5 (`repeat_check_v5.jsonl`) in one session (Run 8) |
 
 Runs that are compared were recorded in one session with the same settings (temperature 0), so a
 difference between them comes from the change or from the model's own variation, not from a
@@ -35,6 +38,10 @@ GD46 to GD51. 23 cases, 69 rows. Run 7's `repeat_check.jsonl` for v5 counts a ca
 check changes, not only the judge, and marks answers that ask the passenger for a figure: 25 cases,
 75 rows.
 
+Run 8's repeat files come from `aiquality repeat`: one row per case per try, with every check's result
+on that answer. The recording used hand-over code 1 and the repeats code 2 (agent version
+`...:handover-2`); `docs/quality-log.md`, Run 8, says what differs.
+
 Compare again, or against a later run:
 
 ```bash
@@ -42,5 +49,6 @@ aiquality compare teams/aeroassist/history/v1 teams/aeroassist/history/v2
 aiquality compare teams/aeroassist/history/v2-policies-1.3 teams/aeroassist/history/v3-policies-1.3
 aiquality compare teams/aeroassist/history/v3-policies-1.3-run6 teams/aeroassist/history/v4-policies-1.3
 aiquality compare teams/aeroassist/history/v3-policies-1.3-run7 teams/aeroassist/history/v5-policies-1.3
+aiquality compare teams/aeroassist/history/v6-policies-1.3/baseline-v5-golden-1.15 teams/aeroassist/history/v6-policies-1.3
 aiquality compare teams/aeroassist/history/v5-policies-1.3 aiquality-runs --fail-on-new-failures
 ```

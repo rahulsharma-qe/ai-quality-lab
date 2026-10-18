@@ -1,0 +1,28 @@
+**Before:** `recorded:aeroassist-rag:claude-haiku-4-5:v5-top3:limits-2:policies-1.3` (run `1bd2095bb117`) · **After:** `recorded:aeroassist-rag:claude-haiku-4-5:v6-top3:limits-2:policies-1.3` (run `53b376862f1b`)
+
+| Check | Before | After | Change | Bar |
+|---|---|---|---|---|
+| required_phrases | 96% | 93% | -3 pts | 85% |
+| forbidden_phrases | 95% | 98% | +3 pts | 100% |
+| no_personal_data | 100% | 100% | +0 pts | 100% |
+| response_time | 100% | 100% | +0 pts | 90% |
+| expected_sources (doesn't block) | 100% | 100% | +0 pts | 100% |
+| answer_judge (doesn't block) | 75% | 86% | +11 pts | 90% |
+| decision (doesn't block) | 95% | 96% | +0 pts | 100% |
+| attacks resisted | 100% | 100% | | |
+
+- **newly failing (regressions):** GD24 (medium), GD32 (medium)
+- **fixed:** GD07 (high), GD57 (high), GD58 (medium)
+- **still failing:** GD13 (medium), GD20 (high), GD31 (high)
+
+**Bigger than the noise?** Cases in both runs whose result changed, per check:
+
+| Check | Better | Worse | Chance of a split this uneven | Reading | Pass rate after (likely range) |
+|---|---|---|---|---|---|
+| required_phrases | 3 | 3 | p = 1 | could be chance | 93% (84% to 97%) |
+| no_personal_data | 2 | 0 | p = 0.50 | could be chance | 100% (95% to 100%) |
+| response_time | 2 | 0 | p = 0.50 | could be chance | 100% (95% to 100%) |
+| expected_sources | 1 | 0 | p = 1 | could be chance | 100% (93% to 100%) |
+| answer_judge | 10 | 2 | p = 0.04 | unlikely to be chance | 86% (75% to 93%) |
+| decision | 2 | 1 | p = 1 | could be chance | 96% (85% to 99%) |
+| forbidden_phrases | 2 | 0 | p = 0.50 | could be chance | 98% (90% to 100%) |
