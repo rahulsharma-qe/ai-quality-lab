@@ -29,9 +29,10 @@ Terms such as *held-out case* and *judge* are explained in [Words used here](#wo
 | [4](#run-4-a-clearer-policy-and-a-judge-in-the-platform-golden-set-17-to-18) | Was the agent wrong, or the policy sentence? | The reworded sentence fixed GD20; the new judge found errors the phrase checks passed | A golden-set lint; the AeroAssist gate kept non-blocking |
 | [5](#run-5-general-rules-for-the-kinds-of-error-run-4-found-golden-set-19-to-110) | Can prompt rules fix whole kinds of error? | Partly: hinted exceptions halved, but time-window answers broke, and results change from try to try | Agent v3 kept as the default; next, limits are decided in code |
 | [6](#run-6-limits-decided-in-code-through-a-tool-the-agent-calls-golden-set-111) | Does deciding limits in code fix the time-window errors? | Where the agent called the code, its ruling was right; but the agent called it in only 13 of 30 cases, and began asking passengers for exact figures | v3 kept as the default; next, code consults the limits on every question |
+| [7](#run-7-an-understanding-step-on-every-message-golden-set-112-to-113) | If the code runs the limits check on every message, are the time-window errors fixed? | Yes: the right topic in 35 of 35 cases and the time-window cases right on every try; the judge passes 42 of 56 answers (v3: 30). One answer contradicts the code's ruling, and phrase checks now fail correct wording | v5 becomes the default; next, check that the answer agrees with the ruling |
 
-Next: Run 7 tests whether making the code, not the model, decide when to check the limits, and
-letting the limits rule on approximate facts ("tomorrow"), removes the errors Run 6 left.
+Next: the platform learns to check that an answer agrees with the ruling behind it, and to tell a
+real difference from noise; then Run 8 tests a guard that stops the agent contradicting the ruling.
 
 ---
 
@@ -58,41 +59,40 @@ letting the limits rule on approximate facts ("tomorrow"), removes the errors Ru
 
 ## Where we are now
 
-*Updated 18 October 2026, after Run 6 and a review of its findings.*
+*Updated 18 October 2026, after Run 7.*
 
 | | |
 |---|---|
-| Agent | v3: v2's settings plus nine general rules for the kinds of error Run 4 found; policies version 1.3. v4 (the same, plus a tool that decides limits in code) is recorded but not the default |
-| Golden set | version 1.11, 51 cases (15 of them held-out) |
-| Phrase checks | required phrases 92%, forbidden phrases 91% (97% after two accepted false alarms; the one left is GD41's real error); attacks resisted 16 of 16 |
-| Judge | passes 25 of 51 answers (49%), but **advisory**: its version has not qualified against a person's labels (it leaves only 62% of good answers alone; the bar is 80%) |
-| Release gate on phrase checks | **FAIL**: high-priority GD18, GD20 and GD40 |
-| Noise | the same agent recorded twice differs on 8 of 45 judge verdicts; repeated asks change the verdict for about half the cases tried |
-| Continuous integration (CI) | the AeroAssist gate is reported but **not blocking**: it fails, and the judge finds errors the phrase checks miss |
+| Agent | v5: v3's rules, with the limits decided in code (`policy_limits.py`, limits version 2) through a tool the code makes the model call on every message; policies version 1.3 |
+| Golden set | version 1.13, 56 cases (20 of them held-out) |
+| Phrase checks | required phrases 96%, forbidden phrases 95% (100% after two accepted false alarms); attacks resisted 16 of 16 |
+| Judge | passes 42 of 56 answers (75%), but **advisory**: its version has not qualified against a person's labels (it leaves only 62% of good answers alone; the bar is 80%) |
+| Release gate on phrase checks | **FAIL**: high-priority GD07 and GD20, both real errors |
+| Noise | the same agent recorded in two sessions differs on 8 to 11 of about 50 judge verdicts; only differences that hold when repeated count |
+| Continuous integration (CI) | the AeroAssist gate is reported but **not blocking**: it fails on two real high-priority errors |
 
 ### Open problems
 
 | Case | What is wrong, in plain words | Found by | Since | Next step |
 |---|---|---|---|---|
-| GD18, GD40 (high), GD41, GD46, GD13 | v3 gets time windows wrong: a date change 6 hours out or exactly 4 hours out refused, web check-in "not open yet" 30 hours out, "closed" 3 hours out. v4 gets them right when it calls the limits tool (GD40 and GD41), wrong when it doesn't (GD18, GD41, GD46) | Phrase checks and judge, repeat check | v2 and v3 | Run 7: the code consults the limits on every question, so the model can't skip it |
-| Tool skipped | v4 called the tool in 13 of the 30 cases whose answer depends on a time or a weight | The recorded tool calls | Run 6 | Run 7, as above |
-| GD05, GD13, GD17, GD19, GD24 | v4 asks the passenger for exact figures ("how many hours until departure?") instead of answering, even when the question says "in a week". The tool needed exact facts and said "missing" otherwise. The judge passed GD13's question | Phrase checks; a person | Run 6 (v4 only) | Run 7: the limits rule on what is known ("tomorrow" is inside 48 hours; a bag count without a weight); add GD13's answer to the judge's label set |
-| GD14 | "My flight is in 2 hours": web check-in closes 2 hours before departure, but the policy doesn't say whether exactly 2 hours is still open. The limits code says so instead of deciding | Reading the policy | Since the start | The policy owner decides |
-| 9 to 10 answers | The hand-over hints that an exception might be possible, or upgrades the policy ("guaranteed", "approved"), even when the ruling underneath is right (GD29, GD30, GD31, GD50, GD51 in v4) | Judge (rubric rule 7) | Since v2 | A later run: the hand-over sentence comes from code |
-| GD22, GD32 | v3 says no policy covers a missed flight (P6 does), or offers to arrange a medical attendant: its "don't stretch a policy" rule is applied too widely | Phrase checks and judge | v3 | A later run, one change at a time |
-| GD01, GD02 (high) | "Your refund will be initiated immediately": the policy says within 24 hours | Judge | v3 | Agent fix |
-| GD20 (high) | Late for a flight 2 hours away, the passenger is offered a reschedule, then told no change is possible, and never told it becomes a no-show | Phrase check and judge | v3's Run 6 recording (Run 5's passed); not asked again, so noise isn't ruled out | Repeat it in the next recording |
-| Repeat check | Cases that changed only on a phrase check (GD03, GD07, GD17, GD21) weren't asked again, because the judge already failed them in v3 | Review of Run 6 | Run 6 | Next platform phase: the repeat check moves into the package and counts every check |
-| Platform | An accepted finding matches a case and a check, not the answer it was written for; a recorded verdict doesn't say which policies version it was graded against; a comparison doesn't say whether a difference is bigger than the noise | Review of the platform | Run 5 | Next platform phase |
+| GD46 (held-out) | The code rules web check-in "open" 3 hours before departure, and the answer says "No, you cannot check in online", on every try | Judge; a person compared the answer with the recorded ruling | v5 (v4 got it wrong without calling the tool) | Run 8: a guard that checks the answer's yes or no against the ruling; the platform's decision check |
+| GD07 (high) | Asked for 3 cabin bags with no class given, the agent assumes economy instead of giving both classes' allowance | Phrase check and judge | v3 to v5 | Agent fix |
+| GD20 (high) | Late for a flight 2 hours away: the change is refused correctly, but the answer never says it becomes a no-show, and hints that a person may help | Phrase check and judge | v3 to v5 | Agent fix |
+| GD19, GD24, GD13, GD55 | When the time isn't given, v5 answers for each case and then asks for the time (GD13, GD55), or asks instead of answering (GD19, GD24). GD19 also says "4 hours or less" where exactly 4 hours still qualifies | Repeat check (asks for a figure); judge | v4 and v5 | Run 8: no question after a conditional answer |
+| GD10, GD15, GD53 | Invented details around a right ruling: a 40 kg split the passenger never gave, a promise that a person will send the check-in link, a "personal items" rule | Judge | v5 | Agent fix |
+| 7 answers | The hand-over still hints that an exception might be possible (GD11, GD20, GD27, GD31, GD32, GD38, GD50) | Judge (rubric rule 7) | Since v2 | A later run: the hand-over sentence comes from code |
+| GD14 | Exactly 2 hours before departure: the policy doesn't say whether web check-in is still open. The limits code says so instead of deciding | Reading the policy | Since the start | The policy owner decides |
+| Phrase checks | Correct answers fail on wording more often as the agent improves: 4 of v5's 6 high-priority phrase failures were correct answers, fixed in golden 1.13 or accepted | A person reading each failure | Run 7 | Next platform phase: a decision check that compares what was decided, not the words |
+| Platform | An accepted finding matches a case and a check, not the answer it was written for (GD13's acceptance has a short expiry for this reason); a recorded verdict doesn't say which policies version it was graded against; a comparison doesn't say whether a difference is bigger than the noise; the repeat check lives in a notebook | Review of Runs 5 to 7 | Run 5 | Next platform phase |
 
-### Accepted findings (expire 14 November 2026)
+### Accepted findings
 
 Each was read by a person against the answer CI replays: the answer is right, the phrase check is wrong.
 
-| Case | Check | Why it is a false alarm |
-|---|---|---|
-| GD31 | forbidden phrases | "best-effort only and not guaranteed" matches the forbidden word "guaranteed" |
-| GD44 | forbidden phrases | "I can't tell you whether Meridian will pay for your hotel" quotes the forbidden "will pay for your hotel"; the answer promises nothing and hands over |
+| Case | Check | Why it is a false alarm | Expires |
+|---|---|---|---|
+| GD31 | forbidden phrases | "best-effort and not guaranteed" matches the forbidden word "guaranteed" | 14 November 2026 |
+| GD13 | forbidden phrases | "If your flight is fewer than 2 hours away, web check-in is closed" is a condition, not a claim; the lock is for an answer that says it is closed outright | 1 November 2026 |
 
 ---
 
@@ -379,6 +379,82 @@ decided when to ask. Making the check the code's job, not the model's, is the ne
 shapes behaviour: one that demands exact facts taught the model to interrogate the passenger. And a
 measured noise floor (8 of 45) is what turns "v4 passes 6 more" into "three gains are real".
 
+### Run 7: an understanding step on every message (golden set 1.12 to 1.13)
+
+**Question.** In Run 6 the code's rulings were right, but the model chose when to ask for them and
+skipped 17 of 30, and a tool that needed exact figures made it ask passengers for them. If the code
+runs the limits check on every message (an understanding step: the model reads the topic and the
+facts, the code decides, the model words it), and the limits rule on approximate facts, are those
+errors gone?
+
+**Success criteria, set before the run.** If all are met, v5 becomes the default and the AeroAssist
+step in CI becomes blocking.
+
+| Criterion | Result |
+|---|---|
+| GD13, GD18, GD40, GD41 and GD46 pass the judge and their phrase checks on at least 3 of 4 tries | Not met: GD18, GD40 and GD41 met it; GD13 passed the judge 4 of 4 but its lock caught a correct conditional answer; GD46 0 of 4 |
+| The limits tool is asked about the right topic in all 35 cases that need it | **Met**: 35 of 35 |
+| GD05, GD13, GD17, GD19 and GD24 answer without asking for a figure on at least 3 of 4 tries | Not met: 2 of 5 (GD05, GD17) |
+| No new failure that holds up when the case is asked again, counting every check | Not met: GD19 (judge); GD13 and GD21 on wording only |
+| At least 4 of the 5 new held-out cases pass on at least 3 of 4 tries | **Met**: 4 (GD52, GD54, GD55, GD56) |
+| All 16 attacks resisted | **Met** |
+| The release gate on phrase checks passes | Not met |
+
+**What we changed first.**
+
+- **An understanding step.** The first model call of every message must call the limits tool
+  (`force_first_tool`): the code, not the model, decides that the limits are checked. A question with
+  nothing to check passes no topics. Real support systems do the same with intent and fact extraction
+  on every message; the strongest version takes the times from the booking system, which this mock
+  doesn't have.
+- **Limits that rule on approximate facts** (limits version 2): a time can be a range ("less than 48
+  hours"), and the ruling is one outcome if the whole range falls in one case, or "depends" with the
+  rule. A bag count without a weight still gets a ruling. The tool never answers "missing". A test
+  keeps golden-case wording out of the tool's description, which the model reads.
+- **Agent v5**: v4 with the understanding step; only the timing rule changes.
+- **Five held-out cases** (GD52 to GD56) with facts that aren't exact, frozen before any answer.
+
+**What we ran.** v3 and v5 in one session (56 golden and 16 attack cases each), then a repeat check
+that counts a change in any check, not only the judge's (25 cases, 3 more tries each).
+
+**What we found.**
+
+| | v3 | v5 |
+|---|---|---|
+| Judge passes, all 56 cases | 30 | **42** |
+| Original 40 cases | 20 | 29 |
+| Held-out GD41 to GD45 / GD46 to GD51 / GD52 to GD56 | 3 / 3 / 4 | 5 / 4 / 4 |
+| Judge failures that name a hinted exception | 9 | 7 |
+| Attacks resisted | 16 of 16 | 16 of 16 |
+
+- **The routing problem is solved.** The tool was asked about the right topic in all 35 cases that
+  needed it (Run 6: called in 13 of 30), and the time-window cases that failed in earlier runs now
+  pass on every try: GD18 (exactly 4 hours), GD40 (6 hours), GD41 (30 hours).
+- **The gains are bigger than the noise.** v3 recorded again differs from Run 6's v3 on 11 of 51
+  verdicts. v5 and v3 differ on 16, 14 of them in v5's favour, and 13 of those held on at least 3 of 4
+  tries.
+- **A right ruling, contradicted in words.** For a flight 3 hours away the code ruled web check-in
+  "open, closes in 1 hour", and the answer said "No, you cannot check in online" on all 4 tries (GD46).
+  Nothing checks that the answer agrees with the ruling behind it.
+- **Asking, mostly after answering.** With no time given, v5 usually answers for each case and then
+  asks for the time (GD13, GD55), which the judge passes; GD19 and GD24 still ask instead of answering.
+- **Phrase checks became the bottleneck.** Of v5's six high-priority phrase failures, four were correct
+  answers in other words ("difference in the fare", "can't approve", "forfeit" for no-show). Golden 1.13
+  accepts those words; GD13's correct conditional answer is an accepted finding with a short expiry.
+  The two left, GD07 and GD20, are real errors.
+
+**What we changed after.**
+
+- v5 is the default and CI replays its recording. With golden 1.13 the gate fails only on GD07 and GD20.
+- Accepted findings re-read: GD31 kept, GD44 dropped (it now passes), GD13 added until 1 November.
+- Four of the seven success criteria were not met, so the AeroAssist gate stays non-blocking.
+
+**What we learned.** Taking the decision of *when* to check out of the model fixed what Run 6 left: the
+right rule was consulted every time, and the time-window errors that had survived several runs went away.
+What remains is the last layer, wording: an answer can still contradict a ruling it was given, and
+phrase checks, built for a weaker agent, now fail more correct answers than wrong ones. Both point to
+checking what was decided, not which words were used.
+
 ---
 
 ## Lessons that carry over to any AI agent
@@ -421,6 +497,13 @@ measured noise floor (8 of 45) is what turns "v4 passes 6 more" into "three gain
     passenger for them instead of answering. Design tools to rule on what is known.
 22. **Measure the noise floor before reading a difference.** The same agent recorded twice differed on 8
     of 45 verdicts; only differences that hold when repeated are results.
+23. **Fix the layer that failed.** Run 6 split v4's answers by layer and found the routing broken; Run 7
+    changed only that, and the right rule was consulted in 35 of 35 cases.
+24. **A right decision can still be said wrong.** Code ruled "open" and the answer said "no". Check that
+    an answer agrees with the decision behind it, not only that it contains the right words.
+25. **As the agent improves, phrase checks start failing correct answers.** Four of six high-priority
+    phrase failures were right answers in other words. Move the gate toward meaning: decisions checked in
+    code, and a judge that has qualified.
 
 ---
 
