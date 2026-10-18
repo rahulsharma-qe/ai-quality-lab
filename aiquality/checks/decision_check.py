@@ -25,6 +25,7 @@ _SENTENCES = re.compile(r"(?<=[.!?:])\s+|\n+")
 _DEPENDS = re.compile(r"\b(it depends|that depends|depends on|depending on)\b|^whether\b", re.I)
 _CONDITION = re.compile(r"\b(if|unless)\b(?! so\b)", re.I)
 _OTHER_CASE = re.compile(r"^(if|otherwise|after that|else|unless)\b", re.I)
+_OTHER_CASE_INSIDE = re.compile(r"[;,]\s*(otherwise|after that|if not)\b", re.I)   # "...; after that, ..."
 _YES_OPENING = re.compile(
     r"^(yes\b|yeah\b|yep\b|sure\b|absolutely\b|of course\b|good news\b|no problem\b|no issues?\b|"
     r"that'?s (fine|okay|ok|allowed)\b|that is (fine|okay|ok|allowed)\b|"
@@ -35,7 +36,7 @@ _NO_OPENING = re.compile(
     r"that'?s not\b|that is not\b|it'?s not\b|it is not\b)", re.I)
 _NEGATIVE = re.compile(r"\b(can'?t|cannot|can not|not allowed|not possible|isn'?t|is not|aren'?t|not eligible|"
                        r"not open|not yet|no longer|won'?t|unable|not available|not guaranteed|no refund|"
-                       r"forfeit(ed)?|doesn'?t qualify|does not qualify|is closed|has closed|exceeds?|"
+                       r"forfeit(ed)?|doesn'?t qualify|does not qualify|(is|'s|are|'re) closed|has closed|exceeds?|"
                        r"over the (allowance|limit))\b", re.I)
 _POSITIVE = re.compile(r"\b(you can|is open|are open|is allowed|are allowed|eligible|qualif(y|ies)|"
                        r"is fine|no extra charge|free of charge)\b", re.I)
@@ -78,9 +79,11 @@ def read_decision(answer_text: str) -> ReadDecision:
 
 def _sentence_decision(sentence: str, following: str = "") -> Optional[str]:
     """yes, no or depends, as this sentence states it; None if it states no decision. A condition counts
-    as 'depends' only when the next sentence gives the other case ("If ... you can. If not, ..."), so
+    as 'depends' only when the other case follows, in the next sentence ("If ... you can. If not, ...") or
+    after a semicolon or comma ("If ... you can; after that, ..."), so
     "If you miss your flight, the ticket is forfeited" still reads as a decision."""
-    if _DEPENDS.search(sentence) or (_CONDITION.search(sentence) and _OTHER_CASE.match(following)):
+    other_case = _OTHER_CASE.match(following) or _OTHER_CASE_INSIDE.search(sentence)
+    if _DEPENDS.search(sentence) or (_CONDITION.search(sentence) and other_case):
         return "depends"
     if sentence.endswith(":"):          # an introduction ("Here's why:", "If it's more than 2 hours away:")
         return None

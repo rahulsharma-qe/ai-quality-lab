@@ -42,7 +42,9 @@ def test_a_golden_case_with_a_wrong_expected_decision_does_not_load():
     ("No issue, as long as your 2 cabin bags weigh 10 kg in total or less.", "yes"),
     ("Whether web check-in is open depends on the hours until departure.", "depends"),
     ("If your flight is more than 2 hours away, you can check in online. If not, use the counter.", "depends"),
+    ("If your flight is more than 2 hours away you can check in online; after that, only at the counter.", "depends"),
     ("If you miss your flight, the ticket is forfeited with no refund.", "no"),
+    ("At 30 minutes out it's closed. Please go to the airport counter.", "no"),
     ("Your request is **best-effort and not guaranteed**.", "no"),
     ("I have no policy for pets in the cabin. I'll connect you with a human agent.", "hand_over"),
     ("I can help with that. What time does your flight leave?", None),
@@ -82,3 +84,4 @@ def test_an_unreadable_answer_does_not_count_and_is_flagged():
 def test_a_case_without_an_expected_decision_does_not_count():
     case = GoldenCase.from_dict({"id": "X1", "input": "question"})
     assert create_check("decision").evaluate(case, AgentResponse(answer_text="Yes.")).status == CheckStatus.NOT_APPLICABLE
+
