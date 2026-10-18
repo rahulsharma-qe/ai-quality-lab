@@ -1,7 +1,9 @@
 """
-Key-free tests for the judge-validation pieces
-==============================================
-Tests for the testing tools themselves: no API key, no network, runs on every pull request.
+Key-free smoke tests for the studies in demos/
+=============================================
+The studies (the judge, its label set and validation, the first eval harness, the model layer) are
+the repository's evidence; most now wrap the aiquality package, which has its own tests. These
+check that the studies still run: no API key, no network, runs on every pull request.
 
   python -m pytest -q
 """
