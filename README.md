@@ -49,7 +49,7 @@ aiquality review --team aeroassist     # what a person should look at, and why
 ```
 
 **Start here:** [quality log](docs/quality-log.md) · [onboarding a team](docs/onboarding.md) ·
-[architecture](docs/architecture.md) · [runnable examples](examples/) ·
+design ([high-level](docs/architecture.md) · [low-level](docs/lld.md)) · [runnable examples](examples/) ·
 [the studies that came first](demos/)
 
 This repository is the **"quality of AI"** side of my work. Its sibling,
@@ -185,7 +185,7 @@ onboarding: [`docs/onboarding.md`](docs/onboarding.md) · runnable examples: [`e
 | **The fix** | `demos/guardrail_fix.py` | *How do I close a breach?* A deterministic **policy-of-record at the execution gate** — money decisions live in code, not in the model. |
 | **Agentic testing** | `demos/aeroassist_agent.py`, `demos/trajectory_eval.py`, `demos/consistency_check.py` | *Is the agent's whole journey right, not just its answer?* A tool-using agent that emits a **trajectory**, graded on tool choice, arguments, termination and **multi-intent completeness** — run N times to measure a reliability rate (a probabilistic agent isn't certified by a single pass). |
 | **Completeness fix** | `demos/completeness_guardrail.py` | *How do I stop a silently dropped intent?* A code-owned **intent checklist** that re-asks for any missed request. Before/after: fully-complete rate `80% → 100%`. |
-| **Eval harness / CI gate** | `demos/eval_harness.py`, `.github/workflows/eval-gate.yml` | *How do I stop a regression shipping?* A metric **registry** with per-metric thresholds + direction and a build-failing **exit code** — evals become a **gate**, not a report. Key-free **mock judge** runs on every PR (deterministic, no API key); the **live judge** runs on demand, and may only block a release once it has qualified against human labels (otherwise it's advisory). Demo: healthy outputs PASS (exit 0), a seeded regression FAILS (exit 1). |
+| **CI gate** | `.github/workflows/eval-gate.yml`; the first study in `demos/eval_harness.py` | *How do I stop a regression shipping?* Every pull request runs `aiquality gate` for each team on recorded answers (no API key); a failing gate exits with **code** 1 and fails the build — evals become a **gate**, not a report. AeroAssist's gate is reported but not blocking while it fails on a real high-priority error. The live judge is measured against human labels on demand (`aiquality validate-judge`), and may only block a release once it has qualified (otherwise it's advisory). The first study, `demos/eval_harness.py` (a metric registry with per-metric thresholds and a mock judge), still runs in CI as a smoke test. |
 | **Model layer** | `aiquality/models`, `demos/llm.py` | *Can I switch models without touching every file?* One place for model clients: provider and model are settings (`LLM_PROVIDER`, `AGENT_MODEL`, `JUDGE_MODEL`); the judge uses a different, stronger model than the agent, so nothing grades its own work. |
 | **Judge validation** | `demos/answer_judge.py`, `demos/build_label_set.py`, `demos/judge_validation.py`; labels and results in `teams/aeroassist/` | *Can I trust the AI judge that gates my releases?* Thirty answers labelled blind by a person, split into a tuning half and a held-back half; two numbers against the human labels — **catches real failures** and **leaves good answers alone**; per-category breakdown; results saved per judge version. A judge that hasn't qualified runs in **advisory mode**. |
 | **Tests for the test tools** | `tests/` | *Do the evaluation tools themselves work?* Key-free tests (fake judges, local servers, no network) run on every PR. |
@@ -268,8 +268,8 @@ python demos/trajectory_eval.py     # grade the agent's trajectory (tool/args/te
 python demos/consistency_check.py   # N-run completeness rate (catches silent multi-intent drops)
 python demos/completeness_guardrail.py  # the completeness fix: before/after rate
 
-python demos/eval_harness.py            # CI GATE: healthy outputs -> PASS (exit 0)
-python demos/eval_harness.py regressed  # CI GATE: seeded regression -> FAIL (exit 1)
+python demos/eval_harness.py            # the first gate study: healthy outputs -> PASS (exit 0)
+python demos/eval_harness.py regressed  # the first gate study: seeded regression -> FAIL (exit 1)
 
 python demos/build_label_set.py                                  # 15 agent + 15 seeded answers to label
 python demos/judge_validation.py --judge llm --split tune        # improve the judge on the tuning half
@@ -292,29 +292,36 @@ and `.env` is gitignored. Data is privacy-safe synthetic only (no real PII).
 
 ## Roadmap (QA-of-AI stack, growing)
 
-- [x] **Eval harness (done)** — run the full golden set in CI with score thresholds that *fail the build* (an eval you run by hand is a report; wired into CI it's a gate), with judge-call retries + pinned, containerized deps.
-- [ ] **Runtime guardrails gateway** — the four guardrail layers enforced live on every request/response, not just at test time.
-- [x] **Observability loop (done)** — trace every run; track hallucination-rate, guardrail-breach-rate, cost, latency; detect drift.
-- [x] **Judge validation (done, round 1)** — human labels, tuning and held-back halves, two numbers, advisory mode until qualified.
-- [ ] **Judge validation, round 2** — a labelling guide with quiet-failure examples, a second labeller, narrower single-purpose judges, and a fresh held-back set with the bars set beforehand.
-- [ ] **One model layer for every judge** — move the RAGAS, red-team and completeness judges onto the package's model layer (`aiquality/models`).
-- [ ] **Clearer policy boundaries** — P5's cut-off reworded and P8's 48 hours stated as inclusive (done); the agent still refuses at exactly 4 hours (GD18), and P4 doesn't say whether exactly 2 hours before departure is still open (GD14).
+Done items first, in the order they were built; then what is still open.
+
+### The platform (`aiquality`)
+
 - [x] **Platform core (done)** — `aiquality` package: one agent contract, three adapters, team configs in YAML or JSON, golden sets from JSON/CSV/Excel, pluggable checks, a company floor, run records, a command line.
 - [x] **Release gate per team and client (done)** — attack tests as plugins, accepted findings with expiry, exit codes 0/1/2, HTML / JUnit XML / GitHub summary reports.
 - [x] **Judges in the platform (done)** — judges registry, validation and status per version, an advisory-until-qualified judge check, recorded verdicts, a human review queue.
+- [x] **Decisions and repeats in the platform (done)** — a decision check (what an answer decided, read by rules and measured on 263 recorded answers before use), whether a difference between two runs is bigger than chance, and `aiquality repeat` to ask changed cases again.
 - [x] **A second team (done)** — a fictional grocery app's post-order support onboarded with configuration only: four files, one CI step, no platform code. A reusable CI workflow waits until another repository, such as `aeroassist-qa-agent`, runs the gate.
 - [x] **Dashboard (done)** — one static page for every team: the latest gate, accepted findings and their expiry, and every saved run from oldest to newest, built in CI after every gate.
 - [x] **Tracing export (done)** — a run as OpenTelemetry traces (OTLP JSON, no new dependency): one trace per case, a span per tool call and per check; loaded into Phoenix as a check.
+- [ ] **One model layer for every judge** — move the RAGAS, red-team and completeness judges onto the package's model layer (`aiquality/models`).
+- [ ] **Parallel runs** — worker limit, rate-limit retries and a per-run budget cap.
 - [ ] **Agent tracing (later)** — the agent traces its own steps (retrieval, model calls, tools), linked to the test case, so each trace shows where time and errors went; needs live runs.
 - [ ] **Monitoring in the platform (later)** — studied in `demos/observability/`; it moves into the package when there is live traffic to watch, reusing the platform's checks and its noise statistics.
+
+### AeroAssist: the studies and the quality loops
+
+- [x] **First CI gate (done, as a study)** — `demos/eval_harness.py`: score thresholds that *fail the build* (an eval you run by hand is a report; wired into CI it's a gate), with judge-call retries. CI now gates with `aiquality gate`; the study still runs in CI as a smoke test.
+- [x] **Observability loop (done, as a study in `demos/observability/`)** — a trace per run; guardrail-breach rate, refusal rate, latency and cost; a drift alert when the refusal rate jumps; a triage-to-fix loop.
+- [x] **Judge validation (done, round 1)** — human labels, tuning and held-back halves, two numbers, advisory mode until qualified.
 - [x] **Quality loop on AeroAssist (done)** — retrieval checked on its own, run comparison case by case, agent v2 with general rules, held-out cases, no regressions.
 - [x] **Second quality loop on AeroAssist (done)** — agent v3 with a rule per kind of error, a held-out case per kind, and a repeat check: half the hinted exceptions, worse answers on time windows.
 - [x] **Limit decisions in code, first try (done)** — time windows, allowances and fees ruled on by code the agent calls as a tool; right whenever called, but the agent called it in only 13 of 30 cases.
 - [x] **Code consults the limits on every message (done)** — an understanding step the model can't skip, and limits that rule on approximate facts: the right rule in 35 of 35 cases.
-- [x] **Decisions and repeats in the platform (done)** — a decision check (what an answer decided, read by rules and measured on 263 recorded answers before use), whether a difference between two runs is bigger than chance, and `aiquality repeat` to ask changed cases again.
 - [x] **Hand-over written by code (done)** — the hinted exceptions went, but the model still hands over when the policy already answers; on repeats the hand-over cases barely moved, so v5 stays the default.
 - [ ] **Code decides when to hand over (next)** — hand over only when no policy answers the question, measured with repeats from the start.
-- [ ] **Parallel runs** — worker limit, rate-limit retries and a per-run budget cap.
+- [ ] **Clearer policy boundaries** — P5's cut-off reworded and P8's 48 hours stated as inclusive (done); P4 still doesn't say whether exactly 2 hours before departure is still open for web check-in (GD14), so the policy owner decides.
+- [ ] **Judge validation, round 2** — a labelling guide with quiet-failure examples, a second labeller, narrower single-purpose judges, and a fresh held-back set with the bars set beforehand.
+- [ ] **Runtime guardrails gateway** — the four guardrail layers enforced live on every request/response, not just at test time.
 
 ---
 
