@@ -19,10 +19,13 @@ dependencies = [
 excel = ["openpyxl>=3.1"]
 # Call a real language model (live judge, live agents).
 live = ["anthropic"]
+# Check exported traces against the official OpenTelemetry definitions (exporting needs nothing).
+tracing = ["opentelemetry-proto"]
 # Run the AeroAssist demo agent live (retrieval needs an embedding model).
 aeroassist = ["anthropic", "numpy", "langchain-huggingface", "sentence-transformers"]
-# Everything needed to run the tests and examples (numpy: the AeroAssist retrieval tests).
-dev = ["pytest>=7", "openpyxl>=3.1", "numpy"]
+# Everything needed to run the tests and examples (numpy: the AeroAssist retrieval tests;
+# opentelemetry-proto: the exported traces checked against the official definitions).
+dev = ["pytest>=7", "openpyxl>=3.1", "numpy", "opentelemetry-proto"]
 
 [project.scripts]
 aiquality = "aiquality.cli:main"

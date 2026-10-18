@@ -14,6 +14,7 @@
   aiquality new-team claims_assist --format json
   aiquality lint     --team aeroassist          golden-set mistakes that would cause false alarms
   aiquality dashboard --output dashboard.html   every team now, and run by run (from saved run records)
+  aiquality export-traces aiquality-runs --output traces.json   a run as OpenTelemetry traces
   aiquality list-checks
   aiquality list-attacks
 
@@ -121,6 +122,14 @@ def _dashboard(args) -> int:
     from aiquality.reporting.dashboard import write_dashboard
     path = write_dashboard(args.output, args.output_dir, args.teams_dir)
     print(f"dashboard written to {path}")
+    return EXIT_OK
+
+
+def _export_traces(args) -> int:
+    from aiquality.reporting.trace_export import write_traces
+    record = pick_run(args.runs, args.run)
+    path = write_traces(record, args.output)
+    print(f"{len(record.outcomes)} cases of run {record.run_id} ({record.team}) written as traces to {path}")
     return EXIT_OK
 
 
@@ -282,6 +291,12 @@ def _build_parser() -> argparse.ArgumentParser:
     dashboard.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="where the latest run records are")
     dashboard.add_argument("--teams-dir", default="teams", help="folder holding team folders and their history")
     dashboard.set_defaults(handler=_dashboard)
+
+    traces = commands.add_parser("export-traces", help="write a run as OpenTelemetry traces (OTLP JSON) for a tracing tool")
+    traces.add_argument("runs", help="run_records.jsonl (or its folder)")
+    traces.add_argument("--run", help="run id (default: the last run in the file)")
+    traces.add_argument("--output", default=f"{DEFAULT_OUTPUT_DIR}/traces.json", help="the file to write")
+    traces.set_defaults(handler=_export_traces)
 
     list_judges = commands.add_parser("list-judges", help="show the judge kinds a team can use")
     list_judges.set_defaults(handler=_list_judges)
