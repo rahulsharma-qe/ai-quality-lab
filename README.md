@@ -49,7 +49,7 @@ design ([high-level](docs/architecture.md) · [low-level](docs/lld.md)) · [runn
 [the studies that came first](demos/)
 
 This repository is the **"quality of AI"** side of my work. Its sibling,
-[`aeroassist-qa-agent`](https://github.com/rahulsharma-qe/aeroassist-qa-agent), is the
+[`api-qa-agent`](https://github.com/rahulsharma-qe/api-qa-agent), is the
 **"AI for quality"** side: using AI to generate tests, data and scripts.
 
 ---
@@ -298,7 +298,7 @@ Done items first, in the order they were built; then what is still open.
 - [x] **Release gate per team and client (done)** — attack tests as plugins, accepted findings with expiry, exit codes 0/1/2, HTML / JUnit XML / GitHub summary reports.
 - [x] **Judges in the platform (done)** — judges registry, validation and status per version, an advisory-until-qualified judge check, recorded verdicts, a human review queue.
 - [x] **Decisions and repeats in the platform (done)** — a decision check (what an answer decided, read by rules and measured on 263 recorded answers before use), whether a difference between two runs is bigger than chance, and `aiquality repeat` to ask changed cases again.
-- [x] **A second team (done)** — a fictional grocery app's post-order support onboarded with configuration only: four files, one CI step, no platform code. A reusable CI workflow waits until another repository, such as `aeroassist-qa-agent`, runs the gate.
+- [x] **A second team (done)** — a fictional grocery app's post-order support onboarded with configuration only: four files, one CI step, no platform code. A reusable CI workflow waits until another repository, such as `api-qa-agent`, runs the gate.
 - [x] **Dashboard (done)** — one static page for every team: the latest gate, accepted findings and their expiry, and every saved run from oldest to newest, built in CI after every gate.
 - [x] **Tracing export (done)** — a run as OpenTelemetry traces (OTLP JSON, no new dependency): one trace per case, a span per tool call and per check; loaded into Phoenix as a check.
 - [ ] **One model layer for every judge** — move the RAGAS, red-team and completeness judges onto the package's model layer (`aiquality/models`).
@@ -324,6 +324,6 @@ Done items first, in the order they were built; then what is still open.
 ---
 
 *Part of a two-repo body of work on AI quality: this repo (**QA of AI**) and
-[`aeroassist-qa-agent`](https://github.com/rahulsharma-qe/aeroassist-qa-agent) (**AI for QA**).*
+[`api-qa-agent`](https://github.com/rahulsharma-qe/api-qa-agent) (**AI for QA**).*
 
 Released under the [MIT License](LICENSE).
