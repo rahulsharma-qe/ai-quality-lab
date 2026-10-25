@@ -295,3 +295,26 @@ file under `plugins:` in the config, and use the check's name under `checks:`
 `@register_attack("name")` (`examples/10_add_your_own_attack.py`), a judge with
 `@register_judge("kind")` (`examples/16_review_queue.py`), and a report format with
 `@register_reporter("name")`.
+
+## 13. Evidence for the laws and standards you answer to
+
+Name your risk level and frameworks in the config:
+
+```yaml
+compliance:
+  risk_level: limited       # minimal | limited | high, the EU AI Act's levels (high: its Annex III)
+  frameworks: [eu-ai-act, nist-ai-rmf, dpdp, owasp-llm]
+```
+
+After a gate run, `aiquality evidence --team my_team` writes `aiquality-runs/evidence/my_team/`:
+`index.html` (search, filters, a link to every control, a what-if risk level), `evidence.md` and
+`evidence.json`. Each control is labelled from the run's own evidence: applies with evidence, applies
+with a bar not met, applies with no evidence, good practice, not required here, or outside the tool.
+`--as high` reads the same run at another risk level.
+
+The frameworks that come with the platform are in `aiquality/compliance/frameworks/`, one YAML file
+each. To add your organisation's own policy, or change a built-in one, put a file with the same shape
+in `my_team/frameworks/`: each control names the evidence that shows it (`check:<name>`,
+`attack_resistance`, `release_gate`, `golden_set`, `judge_validation`, `human_review`, `run_records`),
+or says why a test run can't (`outside_the_tool`). The report is evidence for an assessment, not a
+compliance decision.

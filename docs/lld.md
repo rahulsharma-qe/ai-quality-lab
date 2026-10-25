@@ -316,3 +316,26 @@ flowchart TB
   or numbers; the limits tool's description may not contain held-out wording.
 - **Live behaviour is measured, not unit-tested:** recordings, comparisons with noise statistics and
   repeat checks, written up in [`quality-log.md`](quality-log.md).
+
+## 11. Responsible-AI evidence (`aiquality evidence`)
+
+| Part | What it does |
+|---|---|
+| `compliance/frameworks/*.yaml` | One file per law or standard: its controls, each with `id`, `title`, `asks`, `applies_when` (risk levels; default all), a `link`, and either `evidence` (names below) or `outside_the_tool` (why a run can't show it), never both. `partial` says what the evidence doesn't cover. A team's `frameworks/` folder adds files or replaces one of the same name |
+| `compliance/evidence.py` | The evidence a run record gives, by name: `check:<name>` (pass rate against its bar, after accepted findings), `attack_resistance`, `release_gate`, `golden_set`, `judge_validation` (the latest validation of the judge version in the run), `human_review` (accepted findings, hand-over questions), `run_records`, `production_monitoring` (never in a test run: always says so). Each is found or not, and met, not met, or not a bar |
+| `compliance/assessment.py` | Every control at every risk level: outside the tool; not applying (good practice with all its evidence, else not required here); applying (no evidence when any named evidence is missing, bar not met when any shows a bar missed, else evidence) |
+| `compliance/report.py` | `index.html` (one file: the run, a risk-level switch, counts that filter, the controls not shown to be met first, frameworks with their coverage, search, a link to each control, print layout; system fonts, nothing fetched), `evidence.md`, `evidence.json`, from the same data |
+| `config/compliance_settings.py` | `compliance: {risk_level, frameworks}` in team.yaml; an unknown framework or level is a config error |
+
+- **Not a compliance decision.** No score and no "compliant": labels and evidence, with the official
+  text linked. Organisation processes are listed as outside the tool, never counted as covered.
+- **Every named evidence is needed.** A control shown by two things is not shown by one.
+- **A failing result is still evidence, labelled so.** A gate that fails gives "bar not met", not
+  "evidence", and the control is listed with the gaps.
+- **What-if.** `--as high` (or the report's switch) holds the same run to another risk level: the
+  example is AeroAssist, a support agent (limited), read as if it priced life or health insurance
+  (EU AI Act, Annex III, 5(c)).
+- **Tested** in `tests/test_compliance.py`: every built-in file loads and links its source; a control
+  that could overstate (both or neither of evidence and outside_the_tool, unknown evidence or level) is
+  refused; labels at each level; the three outputs agree; a team file replaces a built-in one; the
+  command after a real gate run. CI writes AeroAssist's report with the gate reports.

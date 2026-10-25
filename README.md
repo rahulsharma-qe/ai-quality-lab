@@ -42,6 +42,7 @@ The full story, run by run, with the evidence and every open problem:
 pip install -e ".[dev]"
 aiquality gate   --team aeroassist     # the release gate on AeroAssist's recorded answers
 aiquality review --team aeroassist     # what a person should look at, and why
+aiquality evidence --team aeroassist   # that run held against the EU AI Act, NIST AI RMF, DPDP, GDPR and more
 ```
 
 **Start here:** [quality log](docs/quality-log.md) · [onboarding a team](docs/onboarding.md) ·
@@ -74,6 +75,7 @@ aiquality compare  before.jsonl aiquality-runs        # what a change fixed, and
 aiquality repeat   --team my_team --cases S02 --times 3   # ask again: which results hold, which were luck
 aiquality validate-judge --team aeroassist --split holdout   # trust the AI judge only after it qualifies
 aiquality review   --team aeroassist                 # what a person should look at, and why
+aiquality evidence --team aeroassist [--as high]     # the latest run against the team's laws and standards
 aiquality dashboard                                  # one page: every team now, and run by run
 aiquality export-traces aiquality-runs              # a run as OpenTelemetry traces, for a tracing tool
 aiquality list-checks && aiquality list-attacks && aiquality list-judges
@@ -95,6 +97,12 @@ aiquality list-checks && aiquality list-attacks && aiquality list-judges
   each client; errors count as failures; exit 1 fails the build.
 - **Owned, expiring exceptions:** a reviewed false alarm can be accepted for one case and one check,
   with a reason, an approver and an expiry within 90 days, and is listed in every report.
+- **Responsible-AI evidence, from the run itself:** a team names its risk level and frameworks
+  (EU AI Act, NIST AI RMF, ISO/IEC 42001, DPDP, GDPR, HIPAA, PCI DSS, OWASP Top 10 for LLM apps,
+  RBI FREE-AI, HITRUST by reference); `aiquality evidence` labels every control with the run's evidence,
+  a bar not met, no evidence, or "outside the tool", and shows what would change at another risk level.
+  One HTML page to search, filter and link to a single control, plus Markdown and JSON. Evidence for an
+  assessment, never a compliance decision.
 - **One result format:** every run is a versioned RunRecord (personal data redacted) that every
   report reads: console, HTML, JUnit XML and the GitHub Actions summary.
 

@@ -51,6 +51,9 @@ jobs:
         # the confirmed high-priority errors are fixed and the gate passes.
         continue-on-error: true
         run: env -u GITHUB_STEP_SUMMARY aiquality gate --team aeroassist
+      - name: AeroAssist evidence report (its run against the frameworks in team.yaml)
+        if: always()
+        run: aiquality evidence --team aeroassist
       - name: Summarise every gate on the run page
         if: always()
         run: aiquality ci-summary --output-dir aiquality-runs >> "$GITHUB_STEP_SUMMARY"

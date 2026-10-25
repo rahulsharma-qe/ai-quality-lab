@@ -20,6 +20,12 @@ live_agent:
 golden_set: golden_dataset.json
 policies: policies.md
 
+# For the evidence report (aiquality evidence): a support agent that talks with passengers is limited
+# risk under the EU AI Act; the frameworks are the ones an airline in India and Europe would answer to.
+compliance:
+  risk_level: limited
+  frameworks: [eu-ai-act, nist-ai-rmf, iso-42001, owasp-llm, dpdp, gdpr, pci-dss]
+
 checks:
   required_phrases:
     threshold: 0.85
