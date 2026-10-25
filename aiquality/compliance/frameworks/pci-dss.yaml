@@ -7,7 +7,8 @@ link: https://www.pcisecuritystandards.org/document_library/
 controls:
   - id: Req. 3.4.1
     title: Card numbers masked when shown
-    asks: A card number shown to anyone is masked, beyond the first six and last four digits.
+    asks: A card number (PAN) is masked when displayed; the BIN and last four digits are the most shown, unless
+      a person has a business need to see more.
     evidence: [check:no_personal_data]
     partial: Covers what the agent says; payment systems' screens and reports are outside this run.
   - id: Req. 10

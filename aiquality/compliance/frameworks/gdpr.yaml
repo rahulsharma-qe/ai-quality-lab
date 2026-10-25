@@ -18,6 +18,8 @@ controls:
     title: Automated decisions
     asks: People are not subject to decisions with legal or similar effects based only on automated processing.
     applies_when: [high]
+    note: GDPR has no risk levels. Art. 22 applies to decisions based solely on automated processing with legal
+      or similarly significant effects; 'high' stands for that kind of use here.
     evidence: [human_review]
     partial: Shows hand-over and reviewed findings, not who makes the final decision in production.
   - id: Art. 35

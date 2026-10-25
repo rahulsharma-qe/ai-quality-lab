@@ -3,7 +3,7 @@
 framework: hitrust
 name: HITRUST CSF
 source: Licensed framework; requirement titles not reproduced
-link: https://hitrustalliance.net/hitrust-framework
+link: https://hitrustalliance.net/hitrust-csf/
 
 controls:
   - id: Related requirements

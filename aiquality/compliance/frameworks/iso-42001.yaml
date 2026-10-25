@@ -19,6 +19,6 @@ controls:
     asks: The AI system is monitored in operation.
     evidence: [production_monitoring]
   - id: A.5.2
-    title: AI system impact assessment
-    asks: The impacts of the AI system on people and society are assessed.
+    title: AI system impact assessment process
+    asks: A process to assess the possible consequences of the AI system for individuals, groups and societies.
     outside_the_tool: An organisation's process; the evidence here can feed it.

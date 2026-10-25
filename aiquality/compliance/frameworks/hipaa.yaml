@@ -1,25 +1,30 @@
-# HIPAA Security Rule, technical safeguards (45 CFR 164.312), for an agent that sees health data.
+# HIPAA, for an agent that sees health data: Security Rule safeguards (164.308, 164.312) and the Privacy
+# Rule's minimum necessary standard (164.502(b)).
 framework: hipaa
 name: HIPAA
-source: 45 CFR Part 164, Security Rule
-link: https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-C/section-164.312
+source: 45 CFR Part 164, Security Rule and Privacy Rule
+link: https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164
 
 controls:
   - id: 164.312(b)
+    link: https://www.ecfr.gov/current/title-45/section-164.312
     title: Audit controls
     asks: Activity in systems that hold health data is recorded and can be examined.
     evidence: [run_records]
   - id: 164.312(c)(1)
+    link: https://www.ecfr.gov/current/title-45/section-164.312
     title: Integrity
     asks: Health data is protected from improper change or destruction.
     evidence: [attack_resistance]
     partial: Shows the agent resists attempts to change its outputs; storage is outside this run.
   - id: 164.502(b)
+    link: https://www.ecfr.gov/current/title-45/section-164.502
     title: Minimum necessary
     asks: Health data used or disclosed is limited to what the purpose needs.
     evidence: [check:no_personal_data]
     partial: The no_personal_data check looks for personal data patterns; health-specific patterns need adding.
   - id: 164.308
+    link: https://www.ecfr.gov/current/title-45/section-164.308
     title: Administrative safeguards, business associate agreements
     asks: Risk analysis, workforce training and agreements with vendors that handle health data.
     outside_the_tool: An organisation's process and contracts.

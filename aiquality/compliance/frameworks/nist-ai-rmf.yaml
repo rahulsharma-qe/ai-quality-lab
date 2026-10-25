@@ -4,6 +4,7 @@ framework: nist-ai-rmf
 name: NIST AI RMF
 source: NIST AI 100-1, the MEASURE function
 link: https://www.nist.gov/itl/ai-risk-management-framework
+note: NIST AI RMF is voluntary and has no risk levels, so every item here applies at every level.
 
 controls:
   - id: MEASURE 2.1
@@ -25,7 +26,6 @@ controls:
   - id: MEASURE 2.11
     title: Fairness and bias
     asks: Fairness and bias are evaluated and the results documented.
-    applies_when: [high]
     evidence: [check:counterfactual_fairness]
   - id: MEASURE 2.13
     title: The evaluation itself is checked

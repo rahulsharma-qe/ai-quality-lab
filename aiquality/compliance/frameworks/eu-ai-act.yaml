@@ -3,9 +3,11 @@
 framework: eu-ai-act
 name: EU AI Act
 source: Regulation (EU) 2024/1689
-link: https://artificialintelligenceact.eu/
-note: Articles 9 to 15 are obligations for high-risk systems (Annex III lists them; pricing life or health
-  insurance is one, point 5(c)). Article 50 covers systems that talk with people, at any risk level.
+link: https://eur-lex.europa.eu/eli/reg/2024/1689/oj
+note: Articles 9 to 15 are obligations for high-risk systems (Annex III lists them; risk assessment and
+  pricing for life and health insurance is one, point 5(c)). Article 50 covers systems that interact directly
+  with people; a high-risk system that does has both duties. Article links go to an unofficial, readable
+  copy of the text; the Official Journal (the link above) is the text that counts.
 
 controls:
   - id: Art. 50(1)
@@ -14,18 +16,23 @@ controls:
     applies_when: [limited, high]
     link: https://artificialintelligenceact.eu/article/50/
     evidence: [check:ai_disclosure]
-  - id: Art. 15(1)
+  - id: Art. 15(1), (3)
     title: Accuracy, declared and kept
-    asks: An appropriate level of accuracy, kept over the system's lifetime, with its metrics stated to users.
+    asks: An appropriate level of accuracy, kept throughout the lifecycle (15(1)), with the accuracy metrics
+      declared in the instructions of use (15(3)).
     applies_when: [high]
     link: https://artificialintelligenceact.eu/article/15/
     evidence: [release_gate]
+    partial: Shows accuracy against its bar at release; keeping it throughout the lifecycle needs monitoring in use.
   - id: Art. 15(5)
     title: Robust against attacks
-    asks: The system resists attempts to change its use or outputs, such as prompt injection or poisoned data.
+    asks: The system is resilient against attempts by unauthorised third parties to alter its use, outputs or
+      performance by exploiting its vulnerabilities, including inputs designed to make the model err.
     applies_when: [high]
     link: https://artificialintelligenceact.eu/article/15/
     evidence: [attack_resistance]
+    note: This platform treats prompt injection and the other attack families as such attempts; the article
+      doesn't name them.
   - id: Art. 12
     title: Record-keeping
     asks: Events are logged automatically, so what the system did can be traced.
@@ -41,10 +48,13 @@ controls:
     partial: The run shows reviewed findings and hand-over cases; there is no stop-the-agent control to test.
   - id: Art. 10
     title: Data and data governance
-    asks: Data sets are relevant and representative, and examined for possible biases.
+    asks: Training, validation and testing data sets are relevant and sufficiently representative, and examined
+      for possible biases (10(2)(f), 10(3)).
     applies_when: [high]
     link: https://artificialintelligenceact.eu/article/10/
     evidence: [check:counterfactual_fairness]
+    partial: The check tests the agent's answers for bias; the article asks about the data sets themselves,
+      which for a hosted model are largely its provider's.
   - id: Art. 9
     title: Risk management system
     asks: A documented risk-management process across the system's lifetime.

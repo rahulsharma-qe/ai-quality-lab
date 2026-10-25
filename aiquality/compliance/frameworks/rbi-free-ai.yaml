@@ -1,30 +1,35 @@
-# Reserve Bank of India, Framework for Responsible and Ethical Enablement of AI (FREE-AI), report of
-# 13 August 2025: 7 Sutras, 6 pillars, 26 recommendations. Controls here are named by pillar and theme;
-# the report numbers its recommendations, and is the text that counts.
+# Reserve Bank of India, Framework for Responsible and Ethical Enablement of AI (FREE-AI), Committee report
+# of 13 August 2025: 7 Sutras, 6 pillars, 26 recommendations. Controls here are named by Sutra, pillar or
+# recommendation, quoting only what the report's text says; the report is the text that counts.
 framework: rbi-free-ai
 name: RBI FREE-AI
 source: RBI FREE-AI Committee report, August 2025
-link: https://rbi.org.in/SCRIPTS/PublicationReportDetails.aspx?ID=1306
+link: https://rbi.org.in/Scripts/PublicationReportDetails.aspx?ID=1306
+note: The six pillars fall in two parts. Infrastructure, Policy and Capacity enable innovation; Governance,
+  Protection and Assurance mitigate risk. The report sets no risk levels, so every item here applies at every level.
 
 controls:
-  - id: Assurance
-    title: Testing and validation of AI models
-    asks: Models are tested and validated before and after deployment, documented for supervisory review.
-    evidence: [release_gate, golden_set, judge_validation]
-  - id: Protection
-    title: Consumer protection and cyber security
-    asks: AI systems are protected against misuse and attacks, and customers' data is protected.
-    evidence: [attack_resistance, check:no_personal_data]
-  - id: Assurance, fairness
-    title: Bias testing
-    asks: Models used for decisions such as credit or pricing are tested for bias.
-    applies_when: [high]
-    evidence: [check:counterfactual_fairness]
-  - id: Protection, disclosure
-    title: Customers know they deal with AI, and can reach a person
-    asks: Customers are told when AI is used and can ask for human review.
+  - id: Sutra 2, People First
+    title: People know they are dealing with AI, and humans have the final say
+    asks: People are informed when interacting with AI systems; final authority rests with humans, who can
+      override AI.
     evidence: [check:ai_disclosure, human_review]
-  - id: Governance
-    title: Board-level AI governance and an inventory of AI systems
-    asks: A governance committee, an AI policy and an inventory of every AI system with its risk.
+  - id: Sutra 4, Fairness and Equity
+    title: Outcomes tested to be unbiased
+    asks: AI systems are designed and tested to ensure that outcomes are unbiased.
+    evidence: [check:counterfactual_fairness]
+  - id: Sutra 7, Safety, Resilience and Sustainability
+    title: Secure and resilient
+    asks: AI systems are secure and resilient.
+    evidence: [attack_resistance, check:no_personal_data]
+    partial: Energy efficiency, also in this Sutra, is outside a test run.
+  - id: Assurance pillar
+    title: Assurance through testing and audit
+    asks: AI systems are assured through audit that combines technical validation, such as stress testing,
+      with review of how they are governed.
+    evidence: [release_gate, golden_set, judge_validation]
+    partial: Evidence an audit can use; the audit itself is the organisation's.
+  - id: Rec. 14
+    title: Board-approved AI policy
+    asks: A board-approved policy for AI, under the Governance pillar.
     outside_the_tool: An organisation's governance.
