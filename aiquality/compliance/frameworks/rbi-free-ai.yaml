@@ -1,0 +1,30 @@
+# Reserve Bank of India, Framework for Responsible and Ethical Enablement of AI (FREE-AI), report of
+# 13 August 2025: 7 Sutras, 6 pillars, 26 recommendations. Controls here are named by pillar and theme;
+# the report numbers its recommendations, and is the text that counts.
+framework: rbi-free-ai
+name: RBI FREE-AI
+source: RBI FREE-AI Committee report, August 2025
+link: https://rbi.org.in/SCRIPTS/PublicationReportDetails.aspx?ID=1306
+
+controls:
+  - id: Assurance
+    title: Testing and validation of AI models
+    asks: Models are tested and validated before and after deployment, documented for supervisory review.
+    evidence: [release_gate, golden_set, judge_validation]
+  - id: Protection
+    title: Consumer protection and cyber security
+    asks: AI systems are protected against misuse and attacks, and customers' data is protected.
+    evidence: [attack_resistance, check:no_personal_data]
+  - id: Assurance, fairness
+    title: Bias testing
+    asks: Models used for decisions such as credit or pricing are tested for bias.
+    applies_when: [high]
+    evidence: [check:counterfactual_fairness]
+  - id: Protection, disclosure
+    title: Customers know they deal with AI, and can reach a person
+    asks: Customers are told when AI is used and can ask for human review.
+    evidence: [check:ai_disclosure, human_review]
+  - id: Governance
+    title: Board-level AI governance and an inventory of AI systems
+    asks: A governance committee, an AI policy and an inventory of every AI system with its risk.
+    outside_the_tool: An organisation's governance.

@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evidence report: __TEAM__</title>
+<style>
+:root{
+  --paper:#F6F7F9; --sheet:#FFFFFF; --ink:#1B2430; --muted:#5B6472; --rule:#DDE1E7;
+  --covered:#0F766E; --covered-bg:#E3F3F1;
+  --gap:#B42318; --gap-bg:#FDECEA; --miss:#A15C07; --miss-bg:#FDF3E1;
+  --practice:#3B5BA9; --practice-bg:#E8EEFA;
+  --outside:#7A7268; --outside-bg:#F1EEEA;
+  --focus:#1E40AF;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#141A22; --sheet:#1B2330; --ink:#E6EAF0; --muted:#9AA4B2; --rule:#2C3646;
+    --covered:#5EC4B8; --covered-bg:#173532; --gap:#F2877C; --gap-bg:#3A1F1D; --miss:#F0B866; --miss-bg:#3A2C16;
+    --practice:#93AEEA; --practice-bg:#1E2A45; --outside:#BDB3A6; --outside-bg:#2B2722; --focus:#93AEEA;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-variant-numeric:tabular-nums}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+.layout{display:grid;grid-template-columns:270px 1fr;min-height:100vh}
+aside{border-right:1px solid var(--rule);padding:24px 18px;position:sticky;top:0;height:100vh;overflow:auto;background:var(--sheet)}
+main{padding:28px 36px 60px;max-width:1080px}
+h1,h2,h3{font-family:"Iowan Old Style","Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;font-weight:650;letter-spacing:-.01em;margin:0}
+h1{font-size:30px;line-height:1.15}
+h2{font-size:21px;margin:34px 0 12px}
+.lede{color:var(--muted);max-width:68ch;margin:8px 0 0}
+/* run exhibit */
+.exhibit{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px 28px;padding:14px 16px;border:1px solid var(--rule);border-left:4px solid var(--ink);background:var(--sheet);border-radius:6px;font-size:14px}
+.exhibit b{display:block;font-weight:600}
+.exhibit span{color:var(--muted);font-size:12.5px}
+.badge-recorded{display:inline-block;margin-left:6px;padding:0 7px;border-radius:999px;background:var(--outside-bg);color:var(--outside);font-size:12px;font-weight:600}
+/* what-if */
+.whatif{margin-top:22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:16px;border-radius:8px;background:var(--ink);color:var(--paper)}
+.whatif p{margin:0;max-width:52ch;font-size:14px}
+.whatif strong{font-family:"Iowan Old Style","Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;font-size:19px;font-weight:600;display:block}
+.seg{display:inline-flex;border:1px solid color-mix(in srgb,var(--paper) 45%,transparent);border-radius:999px;padding:3px}
+.seg button{border:0;background:transparent;color:inherit;font:inherit;font-size:14px;padding:6px 14px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--paper);color:var(--ink);font-weight:600}
+/* tallies */
+.tallies{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:20px}
+.tally{border:1px solid var(--rule);background:var(--sheet);border-radius:8px;padding:12px 14px;text-align:left;cursor:pointer;font:inherit;color:inherit}
+.tally[aria-pressed="true"]{outline:2px solid currentColor}
+.tally .n{font-size:28px;font-weight:700;line-height:1}
+.tally .t{display:block;font-size:13.5px;margin-top:6px}
+.t-miss{color:var(--miss)} .l-miss{background:var(--miss-bg);color:var(--miss)}
+.t-nr{color:var(--muted)} .l-nr{background:var(--paper);color:var(--muted);border:1px solid var(--rule)}
+.t-gap{color:var(--gap)} .t-cov{color:var(--covered)} .t-pra{color:var(--practice)} .t-out{color:var(--outside)}
+/* sidebar */
+.brand{font-family:"Iowan Old Style","Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;font-size:18px;font-weight:650}
+.brand small{display:block;font-family:inherit;font-size:12.5px;color:var(--muted);font-weight:400;margin-top:2px}
+.search{width:100%;margin:18px 0 14px;padding:9px 11px;border:1px solid var(--rule);border-radius:6px;background:var(--paper);color:var(--ink);font:inherit}
+.fw{display:block;width:100%;text-align:left;border:0;background:none;color:inherit;font:inherit;padding:8px 8px;border-radius:6px;cursor:pointer}
+.fw:hover{background:var(--paper)}
+.fw[aria-current="true"]{background:var(--paper);font-weight:600}
+.fw .meter{display:flex;height:5px;border-radius:3px;overflow:hidden;margin-top:6px;background:var(--rule)}
+.fw .meter i{display:block}
+.fw .count{float:right;color:var(--muted);font-size:12.5px;font-weight:400}
+.note{font-size:12.5px;color:var(--muted);margin-top:22px;line-height:1.5}
+/* ledger */
+.group h3{font-size:18px;margin:30px 0 4px}
+.group .src{font-size:13px;color:var(--muted)}
+.row{border:1px solid var(--rule);background:var(--sheet);border-radius:8px;margin-top:8px;scroll-margin-top:16px}
+.row.changed{box-shadow:inset 4px 0 0 var(--practice)}
+.row:target{outline:2px solid var(--focus)}
+.head{display:grid;grid-template-columns:120px 1fr auto;gap:14px;align-items:center;width:100%;border:0;background:none;color:inherit;font:inherit;text-align:left;padding:12px 14px;cursor:pointer}
+.cid{font-weight:700;font-size:14px}
+.title{font-weight:500}
+.ev-short{display:block;color:var(--muted);font-size:13.5px;margin-top:2px}
+.label{font-size:12.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.l-gap{background:var(--gap-bg);color:var(--gap)} .l-cov{background:var(--covered-bg);color:var(--covered)}
+.l-pra{background:var(--practice-bg);color:var(--practice)} .l-out{background:var(--outside-bg);color:var(--outside)}
+.body{display:none;padding:0 14px 14px 148px;font-size:14px}
+.row.open .body{display:block}
+.body dl{display:grid;grid-template-columns:130px 1fr;gap:6px 14px;margin:0}
+.body dt{color:var(--muted)} .body dd{margin:0}
+.facts{margin:0;padding-left:18px}
+.tools{margin-top:10px;display:flex;gap:14px;font-size:13px}
+.tools button{border:0;background:none;color:var(--focus);font:inherit;cursor:pointer;padding:0;text-decoration:underline}
+.gapbox{border:1px solid var(--gap);border-radius:8px;background:var(--gap-bg);padding:14px 16px;margin-top:22px}
+.gapbox h2{margin:0 0 6px;font-size:19px;color:var(--gap)}
+.gapbox ul{margin:0;padding-left:18px}
+.gapbox a{font-weight:600}
+.empty{color:var(--muted);padding:16px 0}
+.disclaimer{margin-top:40px;font-size:13px;color:var(--muted);max-width:75ch;border-top:1px solid var(--rule);padding-top:14px}
+@media (max-width:860px){
+  .layout{grid-template-columns:1fr} aside{order:2;position:static;height:auto;border-right:0;border-bottom:1px solid var(--rule)}
+  main{padding:20px 16px 48px} .tallies{grid-template-columns:repeat(2,1fr)}
+  .head{grid-template-columns:1fr auto} .cid{grid-column:1/-1} .body{padding:0 14px 14px}
+  .body dl{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:no-preference){ .row{transition:box-shadow .25s} }
+@media print{
+  aside,.whatif,.tools,.search{display:none} .layout{display:block} .body{display:block!important;padding-left:14px}
+  body{background:#fff} .row{break-inside:avoid}
+}
+
+.l-covered{background:var(--covered-bg);color:var(--covered)} .t-covered{color:var(--covered)}
+.l-practice{background:var(--practice-bg);color:var(--practice)} .t-practice{color:var(--practice)}
+.l-not_required{background:var(--paper);color:var(--muted);border:1px solid var(--rule)} .t-not_required{color:var(--muted)}
+.l-outside{background:var(--outside-bg);color:var(--outside)} .t-outside{color:var(--outside)}
+.fwnote{font-size:13px;color:var(--muted);max-width:75ch;margin-top:4px}
+.ev-missing{color:var(--gap)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .exhibit{border-left-color:var(--ink)} }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside aria-label="Frameworks">
+  <div class="brand">Evidence report<small id="brandSub"></small></div>
+  <input class="search" id="q" type="search" placeholder="Find a control: Art. 15, MEASURE 2.11, privacy" aria-label="Find a control">
+  <nav id="nav"></nav>
+  <p class="note">Each row is filled from the run's record, by the evidence its framework file names. A row without evidence says so.</p>
+</aside>
+<main>
+  <h1 id="title"></h1>
+  <p class="lede" id="lede"></p>
+  <div class="exhibit" id="exhibit" aria-label="The run this report is built from"></div>
+  <section class="whatif" aria-label="Risk level">
+    <div><strong id="wiTitle"></strong><p id="wiText"></p></div>
+    <div class="seg" role="group" aria-label="Risk level" id="levels"></div>
+  </section>
+  <div class="tallies" id="tallies"></div>
+  <div id="gaps"></div>
+  <div id="ledger"></div>
+  <p class="disclaimer">This report is evidence to support an assessment, not a compliance decision. Control titles are short summaries: follow each link for the official text. Controls marked "Outside the tool" depend on an organisation's processes, which a test run can inform but not show. Generated by aiquality __VERSION__ from run __RUN__.</p>
+</main>
+</div>
+<script>
+const DATA = __DATA__;
+const ORDER = ["gap","miss","covered","practice","not_required","outside"];
+const LEVEL_TEXT = {minimal:"minimal risk", limited:"limited risk", high:"high risk"};
+let level = DATA.risk_level, filter = null, query = "", fwSel = null;
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $ = id => document.getElementById(id);
+
+function header(){
+  const r = DATA.run;
+  $("title").textContent = DATA.team + ": what this run can prove";
+  $("brandSub").textContent = "aiquality, team " + DATA.team;
+  $("lede").textContent = (DATA.description ? DATA.description.replace(/[.\s]*$/, ". ") : "") + "Each control from the frameworks this team chose sits next to the evidence its latest run produced.";
+  $("exhibit").innerHTML =
+    `<div><b>Run ${esc(r.id)}${r.mode === "recorded" ? '<span class="badge-recorded">recorded answers</span>' : ""}</b><span>${esc(r.created_at)}</span></div>
+     <div><b>Commit ${esc(r.commit || "unknown")}</b><span>${esc(r.command)}</span></div>
+     <div><b>Agent</b><span>${esc(r.agent_version)}</span></div>
+     <div><b>${esc(r.golden_set)}</b><span>${esc(r.cases)}</span></div>
+     <div><b>${esc(r.gate)}</b><span>${esc(r.gate_reason)}</span></div>`;
+  $("levels").innerHTML = DATA.levels.map(l =>
+    `<button data-level="${l}" aria-pressed="${l === level}">${l === DATA.configured ? "As configured: " + l : "What if: " + l}</button>`).join("");
+  document.querySelectorAll("#levels button").forEach(b => b.onclick = () => { level = b.dataset.level; render(); });
+}
+function why(c){
+  if (c.outside) return "An organisation's process, not something a test run shows.";
+  const applies = c.applies_when.includes(level);
+  const lab = c.labels[level];
+  const tail = {gap:"; the run lacks evidence it names.", miss:"; the evidence shows a bar not met.", covered:"; the run has the evidence.",
+                practice:"; the run has the evidence anyway.", not_required:"; the run has none."}[lab] || ".";
+  return (applies ? "Applies at " : "Not required at ") + LEVEL_TEXT[level] + tail;
+}
+function visible(c){
+  if (fwSel && c.framework !== fwSel) return false;
+  if (filter && c.labels[level] !== filter) return false;
+  if (query){ const s = (c.framework_name+" "+c.id+" "+c.title+" "+c.asks+" "+c.summary).toLowerCase(); if (!s.includes(query)) return false; }
+  return true;
+}
+function rowHtml(c){
+  const lab = c.labels[level], changed = level !== DATA.configured && lab !== c.labels[DATA.configured];
+  const facts = c.outside ? `<p>${esc(c.outside)}</p>` :
+    `<ul class="facts">${c.evidence.flatMap(e => e.found ? e.facts.map(f => `<li>${esc(f)}</li>`) : [`<li class="ev-missing">${esc(e.summary)}</li>`]).join("")}</ul>`;
+  return `<article class="row${changed ? " changed" : ""}" id="${c.anchor}">
+    <button class="head" aria-expanded="false" aria-controls="${c.anchor}-b">
+      <span class="cid">${esc(c.id)}</span>
+      <span><span class="title">${esc(c.title)}</span><span class="ev-short">${esc(c.summary)}</span></span>
+      <span class="label l-${lab}">${esc(DATA.labels[lab])}</span></button>
+    <div class="body" id="${c.anchor}-b"><dl>
+      <dt>It asks</dt><dd>${esc(c.asks)}</dd>
+      <dt>Label, because</dt><dd>${esc(why(c))}${changed ? ` As configured (${esc(DATA.configured)}): "${esc(DATA.labels[c.labels[DATA.configured]])}".` : ""}</dd>
+      <dt>Evidence, run ${esc(DATA.run.id)}</dt><dd>${facts}</dd>
+      ${c.partial ? `<dt>Not shown</dt><dd>${esc(c.partial)}</dd>` : ""}
+      ${c.note ? `<dt>Note</dt><dd>${esc(c.note)}</dd>` : ""}
+    </dl><div class="tools">${c.link ? `<a href="${esc(c.link)}" target="_blank" rel="noopener">Read the official text</a>` : ""}<button data-copy="${c.anchor}">Copy link to this control</button></div></div></article>`;
+}
+function openRow(id){
+  if (!id) return; const el = document.getElementById(id);
+  if (el && el.classList.contains("row")){ el.classList.add("open"); el.querySelector(".head").setAttribute("aria-expanded","true"); el.scrollIntoView({block:"start"}); }
+}
+function render(){
+  document.querySelectorAll("#levels button").forEach(b => b.setAttribute("aria-pressed", b.dataset.level === level));
+  const configured = level === DATA.configured;
+  $("wiTitle").textContent = configured ? `Risk level: ${level} (set in team.yaml)` : `What if: ${LEVEL_TEXT[level]}`;
+  $("wiText").textContent = configured ? "Switch to see which controls would apply at another risk level, with the same evidence. A high-risk system is one the EU AI Act lists in Annex III, such as pricing life or health insurance."
+                                       : "The same run, held to another risk level. Rows marked on the left edge change label.";
+  const counts = Object.fromEntries(ORDER.map(k => [k, 0])); DATA.controls.forEach(c => counts[c.labels[level]]++);
+  $("tallies").innerHTML = ORDER.map(k => `<button class="tally t-${k}" data-f="${k}" aria-pressed="${filter === k}"><span class="n">${counts[k]}</span><span class="t">${esc(DATA.labels[k])}</span></button>`).join("");
+  document.querySelectorAll(".tally").forEach(b => b.onclick = () => { filter = filter === b.dataset.f ? null : b.dataset.f; render(); });
+  const gaps = DATA.controls.filter(c => ["gap","miss"].includes(c.labels[level]));
+  $("gaps").innerHTML = gaps.length ? `<div class="gapbox"><h2>${gaps.length} ${gaps.length === 1 ? "control applies and is" : "controls apply and are"} not shown to be met</h2><ul>${
+    gaps.map(c => `<li><a href="#${c.anchor}" data-open="${c.anchor}">${esc(c.framework_name)} ${esc(c.id)}: ${esc(c.title)}</a>: ${esc(c.summary)}</li>`).join("")}</ul></div>` : "";
+  $("nav").innerHTML = `<button class="fw" aria-current="${!fwSel}" data-fw="">All frameworks <span class="count">${DATA.controls.length}</span></button>` +
+    DATA.frameworks.map(fw => {
+      const cs = DATA.controls.filter(c => c.framework === fw.key), n = cs.length || 1, seg = k => cs.filter(c => c.labels[level] === k).length / n * 100;
+      const colours = {covered:"var(--covered)", miss:"var(--miss)", practice:"var(--practice)", gap:"var(--gap)", outside:"var(--outside)", not_required:"var(--rule)"};
+      return `<button class="fw" aria-current="${fwSel === fw.key}" data-fw="${fw.key}">${esc(fw.name)}<span class="count">${cs.length}</span>
+        <span class="meter" aria-hidden="true">${["covered","miss","practice","gap","outside","not_required"].map(k => `<i style="width:${seg(k)}%;background:${colours[k]}"></i>`).join("")}</span></button>`;
+    }).join("");
+  document.querySelectorAll(".fw").forEach(b => b.onclick = () => { fwSel = b.dataset.fw || null; render(); });
+  const groups = DATA.frameworks.map(fw => {
+    const cs = DATA.controls.filter(c => c.framework === fw.key && visible(c)); if (!cs.length) return "";
+    return `<section class="group"><h3>${esc(fw.name)}</h3><div class="src">${esc(fw.source)}, <a href="${esc(fw.link)}" target="_blank" rel="noopener">official source</a></div>${fw.note ? `<p class="fwnote">${esc(fw.note)}</p>` : ""}${cs.map(rowHtml).join("")}</section>`;
+  }).join("");
+  $("ledger").innerHTML = groups || '<p class="empty">No control matches. Clear the search or the filter to see every control.</p>';
+  document.querySelectorAll(".head").forEach(h => h.onclick = () => { const r = h.parentElement; r.classList.toggle("open"); h.setAttribute("aria-expanded", r.classList.contains("open")); });
+  document.querySelectorAll("[data-copy]").forEach(b => b.onclick = () => { const u = location.href.split("#")[0] + "#" + b.dataset.copy; if (navigator.clipboard) navigator.clipboard.writeText(u); b.textContent = "Link copied"; });
+  document.querySelectorAll("[data-open]").forEach(a => a.onclick = () => { fwSel = null; filter = null; query = ""; $("q").value = ""; render(); openRow(a.dataset.open); });
+  openRow(location.hash.slice(1));
+}
+$("q").oninput = e => { query = e.target.value.trim().toLowerCase(); render(); };
+window.addEventListener("hashchange", () => openRow(location.hash.slice(1)));
+header(); render();
+</script>
+</body>
+</html>

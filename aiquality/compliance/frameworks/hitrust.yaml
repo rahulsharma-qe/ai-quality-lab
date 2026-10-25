@@ -1,0 +1,13 @@
+# HITRUST CSF is licensed: its requirement text is not reproduced here. This file names the evidence a
+# run gives; an organisation maps it to its own HITRUST requirements.
+framework: hitrust
+name: HITRUST CSF
+source: Licensed framework; requirement titles not reproduced
+link: https://hitrustalliance.net/hitrust-framework
+
+controls:
+  - id: Related requirements
+    title: Evidence for privacy, logging and security testing requirements
+    asks: Use your HITRUST mapping to link these results to your assessed requirements.
+    evidence: [check:no_personal_data, run_records, attack_resistance]
+    partial: The link to specific requirements is the organisation's own mapping.

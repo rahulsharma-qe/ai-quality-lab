@@ -21,13 +21,14 @@ from aiquality.checks import available_checks
 from aiquality.config.accepted_findings import AcceptedFinding, parse_accepted_findings
 from aiquality.config.attack_settings import AttackSettings, parse_attack_settings
 from aiquality.config.company_minimums import CompanyMinimums
+from aiquality.config.compliance_settings import ComplianceSettings, parse_compliance_settings
 from aiquality.config.judge_settings import JudgeSettings, parse_judge_settings
 from aiquality.errors import ConfigError
 
 CONFIG_FILE_NAMES = ("team.yaml", "team.yml", "team.json")
 TOP_LEVEL_SETTINGS = {"team", "client", "description", "agent", "live_agent", "golden_set",
                       "policies", "plugins", "checks", "priority_bars", "attacks", "accepted_findings",
-                      "judge", "reports", "max_error_rate", "expected_result"}
+                      "judge", "reports", "max_error_rate", "expected_result", "compliance"}
 AGENT_SETTINGS = {
     "python_function": ({"file", "function"}, set()),
     "http_endpoint": ({"url"}, {"method", "question_field", "answer_field", "headers",
@@ -66,6 +67,7 @@ class TeamConfig:
     plugins: list[Path] = field(default_factory=list)
     max_error_rate: float = DEFAULT_MAX_ERROR_RATE
     expected_result: Optional[str] = None   # a gate self-test says which result the gate must give
+    compliance: Optional[ComplianceSettings] = None   # risk level and frameworks for the evidence report
     source: str = ""
 
     @classmethod
@@ -129,6 +131,9 @@ class TeamConfig:
         if expected_result is not None and expected_result not in ("PASS", "FAIL"):
             problems.append("'expected_result' (for a gate self-test) must be PASS or FAIL")
 
+        compliance, compliance_problems = parse_compliance_settings(data.get("compliance"), Path(folder))
+        problems += compliance_problems
+
         if problems:
             raise ConfigError(source, problems)
 
@@ -144,7 +149,8 @@ class TeamConfig:
                    checks=checks, client=data.get("client"), description=data.get("description", ""),
                    live_agent=data.get("live_agent"), policies=policies, priority_bars=priority_bars, attacks=attacks,
                    accepted_findings=accepted, judge=judge, reports=list(reports), plugins=plugins,
-                   max_error_rate=float(max_error_rate), expected_result=expected_result, source=source)
+                   max_error_rate=float(max_error_rate), expected_result=expected_result, compliance=compliance,
+                   source=source)
 
 
 def _parse_priority_bars(raw) -> tuple[dict[str, float], list[str]]:

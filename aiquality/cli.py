@@ -11,6 +11,7 @@
   aiquality repeat   --team aeroassist --changed-between before.jsonl aiquality-runs   ask again what changed
   aiquality validate-judge --team aeroassist --split holdout   measure the judge against people's labels
   aiquality review   --team aeroassist          what a person should look at from the latest run, and why
+  aiquality evidence --team aeroassist [--as high]   the latest run held against the team's laws and standards
   aiquality new-team claims_assist --format json
   aiquality lint     --team aeroassist          golden-set mistakes that would cause false alarms
   aiquality dashboard --output dashboard.html   every team now, and run by run (from saved run records)
@@ -156,6 +157,35 @@ def _review(args) -> int:
     return EXIT_OK
 
 
+def _evidence(args) -> int:
+    from aiquality.compliance import assess, available_frameworks, load_framework, write_report
+    from aiquality.review import last_run_for_team
+    config = TeamConfig.load(_team_path(args.team, args.teams_dir))
+    if config.compliance is None:
+        raise SetupError(f"{config.source} has no 'compliance:' block: add its risk_level and frameworks, e.g.\n"
+                         "  compliance:\n    risk_level: limited\n    frameworks: [eu-ai-act, nist-ai-rmf]")
+    record = last_run_for_team(args.output_dir, config.team)
+    files = available_frameworks(config.folder)
+    frameworks = [load_framework(files[name]) for name in config.compliance.frameworks]
+    level = args.risk_level or config.compliance.risk_level
+    assessment = assess(record, frameworks, level, config.judge.results if config.judge else None,
+                        configured_level=config.compliance.risk_level)
+    paths = write_report(assessment, Path(args.output_dir) / "evidence" / config.team)
+    counts = assessment.count()
+    what_if = "" if level == config.compliance.risk_level else f" (what if: team.yaml says {config.compliance.risk_level})"
+    print(f"evidence for {config.team}, run {record.run_id} ({record.run_mode}), risk level {level}{what_if}")
+    from aiquality.compliance import LABELS
+    for key, text in LABELS.items():
+        print(f"  {counts[key]:>3}  {text.lower()}")
+    shown = assessment.not_shown()
+    if shown:
+        print("\nnot shown to be met:")
+        for result in shown:
+            print(f"  {result.framework.name} {result.control.id}, {result.control.title}: {result.summary()}")
+    print("\nwritten: " + ", ".join(str(path) for path in paths))
+    return EXIT_OK
+
+
 def _lint(args) -> int:
     from aiquality.test_data import load_golden_set
     from aiquality.test_data.lint import lint_golden_set
@@ -281,6 +311,15 @@ def _build_parser() -> argparse.ArgumentParser:
     add_team_arguments(review)
     review.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="where the run records are")
     review.set_defaults(handler=_review)
+
+    evidence = commands.add_parser("evidence", help="the latest run held against the team's laws and standards: "
+                                                    "an HTML, Markdown and JSON report")
+    add_team_arguments(evidence)
+    evidence.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="where the run records are; the report "
+                                                                          "goes in evidence/<team>/ under it")
+    evidence.add_argument("--as", dest="risk_level", choices=["minimal", "limited", "high"],
+                          help="read the report at another risk level (a what-if); default: the team's own")
+    evidence.set_defaults(handler=_evidence)
 
     lint = commands.add_parser("lint", help="check the team's golden set for mistakes that cause false alarms")
     add_team_arguments(lint)

@@ -1,0 +1,21 @@
+# PCI DSS v4.0.1: the requirements an agent that talks about payments can show evidence for.
+framework: pci-dss
+name: PCI DSS
+source: PCI DSS v4.0.1
+link: https://www.pcisecuritystandards.org/document_library/
+
+controls:
+  - id: Req. 3.4.1
+    title: Card numbers masked when shown
+    asks: A card number shown to anyone is masked, beyond the first six and last four digits.
+    evidence: [check:no_personal_data]
+    partial: Covers what the agent says; payment systems' screens and reports are outside this run.
+  - id: Req. 10
+    title: Log and monitor access
+    asks: Access to system components and card data is logged and monitored.
+    evidence: [run_records]
+    partial: Logs the agent's runs, not access to card data.
+  - id: Req. 12
+    title: Information security policy
+    asks: A security policy and programme cover the organisation.
+    outside_the_tool: An organisation's policy.

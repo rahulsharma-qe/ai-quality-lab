@@ -37,7 +37,7 @@ aiquality = "aiquality.cli:main"
 include = ["aiquality*"]
 
 [tool.setuptools.package-data]
-aiquality = ["config/*.yaml", "judges/*.md"]
+aiquality = ["config/*.yaml", "judges/*.md", "compliance/frameworks/*.yaml", "compliance/report_template.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

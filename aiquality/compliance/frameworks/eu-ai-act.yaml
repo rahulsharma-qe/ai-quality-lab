@@ -1,0 +1,53 @@
+# Controls of the EU AI Act a test run can give evidence for, and a few it can't (outside_the_tool).
+# Titles are short summaries; the linked article is the text that counts.
+framework: eu-ai-act
+name: EU AI Act
+source: Regulation (EU) 2024/1689
+link: https://artificialintelligenceact.eu/
+note: Articles 9 to 15 are obligations for high-risk systems (Annex III lists them; pricing life or health
+  insurance is one, point 5(c)). Article 50 covers systems that talk with people, at any risk level.
+
+controls:
+  - id: Art. 50(1)
+    title: Tell people they are talking to an AI
+    asks: A system that talks with people tells them it is an AI, unless that is obvious.
+    applies_when: [limited, high]
+    link: https://artificialintelligenceact.eu/article/50/
+    evidence: [check:ai_disclosure]
+  - id: Art. 15(1)
+    title: Accuracy, declared and kept
+    asks: An appropriate level of accuracy, kept over the system's lifetime, with its metrics stated to users.
+    applies_when: [high]
+    link: https://artificialintelligenceact.eu/article/15/
+    evidence: [release_gate]
+  - id: Art. 15(5)
+    title: Robust against attacks
+    asks: The system resists attempts to change its use or outputs, such as prompt injection or poisoned data.
+    applies_when: [high]
+    link: https://artificialintelligenceact.eu/article/15/
+    evidence: [attack_resistance]
+  - id: Art. 12
+    title: Record-keeping
+    asks: Events are logged automatically, so what the system did can be traced.
+    applies_when: [high]
+    link: https://artificialintelligenceact.eu/article/12/
+    evidence: [run_records]
+  - id: Art. 14
+    title: Human oversight
+    asks: People can understand, override and stop the system, and are guarded against over-relying on it.
+    applies_when: [high]
+    link: https://artificialintelligenceact.eu/article/14/
+    evidence: [human_review]
+    partial: The run shows reviewed findings and hand-over cases; there is no stop-the-agent control to test.
+  - id: Art. 10
+    title: Data and data governance
+    asks: Data sets are relevant and representative, and examined for possible biases.
+    applies_when: [high]
+    link: https://artificialintelligenceact.eu/article/10/
+    evidence: [check:counterfactual_fairness]
+  - id: Art. 9
+    title: Risk management system
+    asks: A documented risk-management process across the system's lifetime.
+    applies_when: [high]
+    link: https://artificialintelligenceact.eu/article/9/
+    outside_the_tool: An organisation's process; this report can be one input to it.

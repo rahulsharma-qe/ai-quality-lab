@@ -1,0 +1,21 @@
+# India's Digital Personal Data Protection Act, 2023, and Rules, 2025 (notified 14 November 2025).
+framework: dpdp
+name: DPDP (India)
+source: DPDP Act 2023 and DPDP Rules 2025
+link: https://www.meity.gov.in/data-protection-framework
+note: Rules 6 to 8 apply eighteen months after the Rules were notified.
+
+controls:
+  - id: Sec. 8(5), Rule 6
+    title: Reasonable security safeguards
+    asks: Safeguards such as access control, logging and monitoring prevent personal data breaches.
+    evidence: [check:no_personal_data, run_records]
+    partial: Covers what the agent says and what is logged, not how the organisation stores data.
+  - id: Sec. 8(6), Rule 7
+    title: Breach intimation
+    asks: Affected people and the Data Protection Board are told of a personal data breach.
+    outside_the_tool: A process the organisation runs; no test run shows it.
+  - id: Sec. 6
+    title: Consent
+    asks: Personal data is processed with the person's consent, for a stated purpose.
+    outside_the_tool: The organisation's notices and consent records.

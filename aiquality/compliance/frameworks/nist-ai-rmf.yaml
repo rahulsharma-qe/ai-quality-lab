@@ -1,0 +1,41 @@
+# NIST AI Risk Management Framework 1.0 (NIST AI 100-1): the MEASURE subcategories a test run can
+# give evidence for. GOVERN, MAP and MANAGE are an organisation's processes.
+framework: nist-ai-rmf
+name: NIST AI RMF
+source: NIST AI 100-1, the MEASURE function
+link: https://www.nist.gov/itl/ai-risk-management-framework
+
+controls:
+  - id: MEASURE 2.1
+    title: Test sets and metrics documented
+    asks: Test sets, metrics and the tools used are documented.
+    evidence: [golden_set]
+  - id: MEASURE 2.5
+    title: Valid and reliable
+    asks: The system to be deployed is shown to be valid and reliable.
+    evidence: [release_gate]
+  - id: MEASURE 2.7
+    title: Secure and resilient
+    asks: Security and resilience are evaluated and documented.
+    evidence: [attack_resistance]
+  - id: MEASURE 2.10
+    title: Privacy risk
+    asks: Privacy risk is examined and documented.
+    evidence: [check:no_personal_data]
+  - id: MEASURE 2.11
+    title: Fairness and bias
+    asks: Fairness and bias are evaluated and the results documented.
+    applies_when: [high]
+    evidence: [check:counterfactual_fairness]
+  - id: MEASURE 2.13
+    title: The evaluation itself is checked
+    asks: The effectiveness of the evaluation metrics and processes is evaluated and documented.
+    evidence: [judge_validation]
+  - id: MEASURE 2.4
+    title: Monitored in production
+    asks: The system's behaviour is monitored once it is in use.
+    evidence: [production_monitoring]
+  - id: GOVERN
+    title: Policies, roles and accountability
+    asks: Policies, processes and accountability for AI risk are in place.
+    outside_the_tool: An organisation's process.

@@ -1,0 +1,24 @@
+# ISO/IEC 42001:2023, Annex A: the controls a test run can give evidence for. The titles are
+# summaries; the standard is a paid document, and its text is the one that counts.
+framework: iso-42001
+name: ISO/IEC 42001
+source: ISO/IEC 42001:2023, Annex A
+link: https://www.iso.org/standard/81230.html
+
+controls:
+  - id: A.6.2.4
+    title: Verification and validation
+    asks: The AI system is verified and validated against its requirements before use.
+    evidence: [release_gate, golden_set]
+  - id: A.6.2.8
+    title: Recording of event logs
+    asks: Event logs are recorded for the AI system.
+    evidence: [run_records]
+  - id: A.6.2.6
+    title: Operation and monitoring
+    asks: The AI system is monitored in operation.
+    evidence: [production_monitoring]
+  - id: A.5.2
+    title: AI system impact assessment
+    asks: The impacts of the AI system on people and society are assessed.
+    outside_the_tool: An organisation's process; the evidence here can feed it.

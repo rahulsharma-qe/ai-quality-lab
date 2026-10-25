@@ -1,0 +1,25 @@
+# OWASP Top 10 for Large Language Model Applications, 2025. A security list, not a law: the attack
+# families in this platform are named after it.
+framework: owasp-llm
+name: OWASP Top 10 for LLM apps
+source: 2025 list
+link: https://genai.owasp.org/llm-top-10/
+
+controls:
+  - id: LLM01
+    title: Prompt injection
+    asks: Instructions hidden in input don't take over the system.
+    evidence: [attack_resistance]
+  - id: LLM02
+    title: Sensitive information disclosure
+    asks: The system doesn't reveal personal or confidential data.
+    evidence: [check:no_personal_data]
+  - id: LLM06
+    title: Excessive agency
+    asks: The system can't act beyond what its task needs.
+    evidence: [human_review]
+    partial: Shows hand-over to a person; tool permissions are tested in the agentic study, not this run.
+  - id: LLM09
+    title: Misinformation
+    asks: Answers are checked against the facts they should state.
+    evidence: [release_gate, judge_validation]
