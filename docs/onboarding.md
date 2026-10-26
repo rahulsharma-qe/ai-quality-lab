@@ -201,7 +201,9 @@ accepted_findings:
     expires: 2026-11-15          # at most 90 days ahead
 ```
 
-It counts as a pass until it expires, and is listed in every report. Expired acceptances count
+It counts as a pass until it expires, and is listed in every report. An acceptance names a case, not
+an answer, so read it again whenever the agent changes (a new model, prompt or policy): the new answer
+may be a real error that the old acceptance would hide. Expired acceptances count
 again, acceptances that match nothing raise a warning, more than 10% of cases accepted raises a
 warning, and errors can never be accepted. Because the config lives in Git, every acceptance
 arrives through a reviewed pull request.

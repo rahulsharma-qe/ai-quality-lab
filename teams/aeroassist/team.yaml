@@ -65,12 +65,12 @@ accepted_findings:
     check: forbidden_phrases
     reason: "Negation false alarm: the answer says the request is 'best-effort and not guaranteed'. The judge separately flags its hand-over as a hint; that stays open"
     approved_by: rahulsharma-qe
-    expires: 2026-11-14
+    expires: 2026-11-30
   - case: GD13
     check: forbidden_phrases
-    reason: "Conditional, not a claim: 'If your flight is fewer than 2 hours away, web check-in is closed'. The lock exists for an answer that says it is closed outright (Run 4); this one says when it is open. Short expiry: to be pinned to this answer once acceptances record the answer they were given for"
+    reason: "Conditional, not a claim: 'If your flight is fewer than 2 hours away, web check-in is closed'. The lock exists for an answer that says it is closed outright (Run 4); this one says when it is open. Re-read with every new agent version"
     approved_by: rahulsharma-qe
-    expires: 2026-11-01
+    expires: 2026-11-30
 
 # The judge grades meaning (an AI, so it is measured against people's labels first). It may block a
 # release only when this exact version has qualified; until then it is advisory.

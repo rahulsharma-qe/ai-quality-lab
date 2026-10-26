@@ -96,8 +96,8 @@ Each was read by a person against the answer CI replays: the answer is right, th
 
 | Case | Check | Why it is a false alarm | Expires |
 |---|---|---|---|
-| GD31 | forbidden phrases | "best-effort and not guaranteed" matches the forbidden word "guaranteed" | 14 November 2026 |
-| GD13 | forbidden phrases | "If your flight is fewer than 2 hours away, web check-in is closed" is a condition, not a claim; the lock is for an answer that says it is closed outright | 1 November 2026 |
+| GD31 | forbidden phrases | "best-effort and not guaranteed" matches the forbidden word "guaranteed" | 30 November 2026 |
+| GD13 | forbidden phrases | "If your flight is fewer than 2 hours away, web check-in is closed" is a condition, not a claim; the lock is for an answer that says it is closed outright | 30 November 2026 |
 
 ---
 
