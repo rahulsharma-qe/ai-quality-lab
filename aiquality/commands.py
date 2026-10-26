@@ -19,11 +19,13 @@ from aiquality.reporting.redaction import redact_personal_data
 from aiquality.reporting.repeats import RepeatRow, RepeatSummary, save_repeat_rows, summarise_repeats
 from aiquality.runner import Runner
 from aiquality.test_data import load_golden_set
+from aiquality.test_data.counterfactuals import VARIANT_OF, expand_counterfactuals
 from aiquality.test_data.lint import lint_golden_set
 
 DEFAULT_OUTPUT_DIR = "aiquality-runs"
 REPEAT_FILE = "repeat_check.jsonl"
 JUDGE_CHECK = "answer_judge"
+FAIRNESS_CHECK = "counterfactual_fairness"
 
 
 def evaluate_team(config: TeamConfig, live: bool = False, output_dir=DEFAULT_OUTPUT_DIR,
@@ -105,6 +107,9 @@ def team_cases(config: TeamConfig, include_golden: bool = True, include_attacks:
     """The golden set, and the list of cases to ask: golden cases, then attack cases."""
     golden_set = load_golden_set(config.golden_set)
     cases = list(golden_set.cases) if include_golden else []
+    if any(case.counterfactual for case in cases):
+        fairness = config.checks.get(FAIRNESS_CHECK)
+        cases = expand_counterfactuals(cases, fairness.options.get("identities") or {} if fairness else {})
     if include_attacks and config.attacks:
         cases += build_attack_cases(config.attacks.families, config.attacks.goals)
     return golden_set, cases
@@ -172,14 +177,17 @@ def _repeat_agent(config: TeamConfig) -> AgentUnderTest:
 
 def _pick_cases(config: TeamConfig, case_ids: list[str]) -> list:
     _, cases = team_cases(config)
-    by_id = {case.id: case for case in cases}
+    by_id = {case.id: [case] for case in cases}
+    for case in cases:                      # a counterfactual case's id names all its variants
+        if VARIANT_OF in case.extra:
+            by_id.setdefault(case.extra[VARIANT_OF], []).append(case)
     wanted = list(dict.fromkeys(case_ids))
     unknown = [case_id for case_id in wanted if case_id not in by_id]
     if unknown:
         raise SetupError(f"no case with id {', '.join(unknown)} in team {config.team}'s golden set or attacks")
     if not wanted:
         raise SetupError("no cases to repeat: name them with --cases or --changed-between")
-    return [by_id[case_id] for case_id in wanted]
+    return [case for case_id in wanted for case in by_id[case_id]]
 
 
 def _repeat_row(outcome, case_run, repeat: int, agent_version: str) -> RepeatRow:

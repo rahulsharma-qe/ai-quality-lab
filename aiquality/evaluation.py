@@ -43,6 +43,7 @@ def evaluate_runs(case_runs: list[CaseRun], check_settings: dict[str, CheckSetti
                   default_client: Optional[str] = None) -> Evaluation:
     checks = {name: create_check(name, **settings.options) for name, settings in check_settings.items()}
     outcomes = []
+    groups: dict[tuple, list] = {}          # (check, group) -> [(outcome, place in its results, run)]
     for run in case_runs:
         outcome = CaseOutcome(case_id=run.case.id, category=run.case.category,
                               client=run.case.client or default_client, question=run.case.input,
@@ -52,8 +53,16 @@ def evaluate_runs(case_runs: list[CaseRun], check_settings: dict[str, CheckSetti
                               tool_calls=_tool_calls(run.response),
                               retrieved_documents=run.response.retrieved_documents if run.response else None)
         for name, check in checks.items():
-            outcome.results.append(_score_one(check, run))
+            group = check.group_of(run.case)
+            if group is None:
+                outcome.results.append(_score_one(check, run))
+            else:
+                groups.setdefault((name, group), []).append((outcome, len(outcome.results), run))
+                outcome.results.append(None)            # judged with its group, below
         outcomes.append(outcome)
+    for (name, _), members in groups.items():
+        for (outcome, place, run), result in zip(members, _score_group(checks[name], [m[2] for m in members])):
+            outcome.results[place] = result
 
     summaries = {}
     for name, settings in check_settings.items():
@@ -73,6 +82,14 @@ def _score_one(check, run: CaseRun) -> CheckResult:
         return check.evaluate(run.case, run.response)
     except Exception as error:  # a buggy check must show up, not pass silently
         return check.errored(run.case, f"check raised {type(error).__name__}: {error}")
+
+
+def _score_group(check, runs: list[CaseRun]) -> list[CheckResult]:
+    try:
+        results = check.evaluate_group(runs)
+        return [results[run.case.id] for run in runs]
+    except Exception as error:  # a buggy check must show up, not pass silently
+        return [check.errored(run.case, f"check raised {type(error).__name__}: {error}") for run in runs]
 
 
 def _tool_calls(response) -> Optional[list]:

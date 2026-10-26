@@ -46,6 +46,15 @@ class Check(ABC):
     def evaluate(self, case: GoldenCase, response: AgentResponse) -> CheckResult:
         """Judge one answer. Use the helpers below to build the result."""
 
+    def group_of(self, case: GoldenCase) -> Optional[str]:
+        """A check that compares answers across cases names the group a case belongs to; its cases are
+        then judged together by evaluate_group, after every answer is in. Most checks judge alone: None."""
+        return None
+
+    def evaluate_group(self, runs: list) -> dict:
+        """Judge a group's runs together: {case id: CheckResult}. Only called when group_of names a group."""
+        raise NotImplementedError
+
     def passed(self, case: GoldenCase, reason: str = "", evidence: Optional[str] = None) -> CheckResult:
         return CheckResult(case.id, self.name, CheckStatus.PASS, reason, evidence)
 

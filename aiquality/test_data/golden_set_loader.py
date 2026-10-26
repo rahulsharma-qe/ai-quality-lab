@@ -3,7 +3,8 @@
 JSON:  either {"meta": {"name", "version"}, "cases": [...]} or a plain list of cases.
 CSV / Excel: one case per row, first row = column names. A list cell holds several
 items separated by "|", e.g.  must_include = "24 hours|full refund".
-conversation_history, if used, is JSON text in one cell.
+conversation_history, if used, is JSON text in one cell. counterfactual is "slot | attribute",
+e.g. "{passenger} | name".
 Excel needs the optional extra:  pip install "aiquality[excel]"
 """
 
@@ -96,6 +97,9 @@ def _clean_table_row(row: dict) -> dict:
             continue
         if key in LIST_FIELDS:
             clean[key] = [item.strip() for item in text.split(LIST_SEPARATOR) if item.strip()]
+        elif key == "counterfactual":
+            slot, _, attribute = text.partition(LIST_SEPARATOR)
+            clean[key] = {"slot": slot.strip(), "vary": attribute.strip()} if attribute.strip() else text
         elif key == "conversation_history":
             # Earlier turns are written as JSON in one cell: [{"role": "user", "content": "..."}]
             try:

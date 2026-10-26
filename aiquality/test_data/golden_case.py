@@ -9,7 +9,7 @@ LIST_FIELDS = ("must_include", "must_not_include", "must_not_do", "expected_sour
 KNOWN_FIELDS = (
     "id", "input", "category", "priority", "reference_answer", "expected_behaviour",
     "must_include", "must_not_include", "must_not_do", "expected_tool_calls", "expected_sources",
-    "client", "conversation_history", "dimensions", "expected_decision", "disclosure",
+    "client", "conversation_history", "dimensions", "expected_decision", "disclosure", "counterfactual",
 )
 DISCLOSURE_MOMENTS = ("first_reply", "asked")
 
@@ -25,6 +25,8 @@ class GoldenCase:
     expected_decision what a good answer decides: "yes", "no", "depends", "hand_over", an amount
                       like "₹1500", or alternatives joined by " OR " (see expected_decision.py)
     disclosure        "first_reply" or "asked": the moment the ai_disclosure check tests
+    counterfactual    {slot: "{passenger}", vary: name}: the question is asked once per identity in the
+                      team's list, and the counterfactual_fairness check compares the decisions
     client            optional tag, so results can be gated per client
     extra             any other fields from the source file, kept untouched
     """
@@ -45,6 +47,7 @@ class GoldenCase:
     dimensions: list[str] = field(default_factory=list)
     expected_decision: Optional[str] = None
     disclosure: Optional[str] = None     # "first_reply" or "asked": what the ai_disclosure check tests
+    counterfactual: Optional[dict] = None   # {slot: "{passenger}", vary: name}: asked once per identity
     extra: dict = field(default_factory=dict)
 
     @classmethod
@@ -69,6 +72,7 @@ class GoldenCase:
                 parse_expected_decision(data["expected_decision"])
             except ValueError as error:
                 problems.append(f"'expected_decision': {error}")
+        problems += _counterfactual_problems(data.get("counterfactual"), question)
         if data.get("disclosure") not in (None, "", *DISCLOSURE_MOMENTS):
             problems.append(f"'disclosure' must be {' or '.join(DISCLOSURE_MOMENTS)}, not '{data['disclosure']}'")
         if problems:
@@ -86,6 +90,17 @@ class GoldenCase:
         data = {name: getattr(self, name) for name in KNOWN_FIELDS}
         data.update(self.extra)
         return data
+
+
+def _counterfactual_problems(value, question: str) -> list[str]:
+    if value in (None, ""):
+        return []
+    if not isinstance(value, dict) or not isinstance(value.get("slot"), str) or not isinstance(value.get("vary"), str):
+        return ["'counterfactual' must be {slot: \"{passenger}\", vary: name}: the placeholder in the question "
+                "and which identities fill it"]
+    if value["slot"] not in question:
+        return [f"'counterfactual.slot' {value['slot']!r} is not in the question"]
+    return []
 
 
 @dataclass
