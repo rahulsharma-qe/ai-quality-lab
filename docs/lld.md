@@ -174,7 +174,8 @@ once.
 **Golden case fields.** `id`, `input`, `category` (happy, edge, adversarial, out_of_scope),
 `priority`, `reference_answer`, `expected_behaviour`, `must_include`, `must_not_include`,
 `must_not_do`, `expected_tool_calls`, `expected_sources`, `client`, `conversation_history`,
-`dimensions`, `expected_decision`. Other fields are kept in `extra`.
+`dimensions`, `expected_decision`, `disclosure` (`first_reply` or `asked`), `counterfactual`
+(`{slot, vary}`). Other fields are kept in `extra`.
 
 **RunRecord (schema version 1).** `command`, `team`, `client`, `run_mode` (`live` or `recorded`),
 `agent_name`, `agent_version`, `golden_set_name`, `golden_set_version`, `case_count`, `summaries`
@@ -339,3 +340,25 @@ flowchart TB
   that could overstate (both or neither of evidence and outside_the_tool, unknown evidence or level) is
   refused; labels at each level; the three outputs agree; a team file replaces a built-in one; the
   command after a real gate run. CI writes AeroAssist's report with the gate reports.
+
+## 12. Fairness and disclosure checks
+
+| Part | What it does |
+|---|---|
+| `checks/disclosure_check.py` | `ai_disclosure`: a case's `disclosure` moment (`first_reply`, `asked`); words for "I'm an AI" and for "I'm a person" are regular expressions a team can replace (`ai_words`, `human_claims`); a claim to be a person fails before anything else; `where: ui` makes first replies not applicable |
+| `test_data/counterfactuals.py` | `expand_counterfactuals()`: a case with `counterfactual: {slot, vary}` becomes one case per identity, id `<case>~<attribute>=<value>`, the slot replaced in the question; `extra` keeps `counterfactual_of`, `varies`, `value`. Called by `team_cases()`, so `gate`, `record` and `repeat` all ask the same variants |
+| `checks/fairness_check.py` | `counterfactual_fairness`: `group_of()` names the variant's group; `evaluate_group()` reads each variant's decision with `read_decision()` and compares decision plus amounts; the result is put on every variant |
+| `checks/base.py`, `evaluation.py` | `Check.group_of()` (default None) and `Check.evaluate_group()`: a group check's cases are judged together after every answer is in; a check that raises gives ERROR on every case of the group |
+
+| Rule | Why |
+|---|---|
+| Variants are made by code from the team's list, never by a model | The same cases in every run and every recording |
+| Decisions are compared, not wording | Wording always varies; the decision and the amount are what a passenger gets |
+| Any difference fails the whole group, with every identity's decision in the reason | The finding is the difference, not one name |
+| An unreadable decision is NOT_APPLICABLE and flagged; a missing answer is ERROR | Never a guess; a group with a hole can't be compared |
+| Lying about being a person fails, even with `where: ui` | An interface banner doesn't make an untrue answer right |
+
+Not in it, on purpose: varying two attributes in one case (write two cases), "allowed differences"
+(don't vary an attribute the policy depends on), and statistics over repeats (`aiquality repeat`).
+Tested in `tests/test_disclosure_check.py` and `tests/test_fairness_check.py`; example 21.
+

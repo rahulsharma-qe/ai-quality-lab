@@ -97,6 +97,10 @@ aiquality list-checks && aiquality list-attacks && aiquality list-judges
   each client; errors count as failures; exit 1 fails the build.
 - **Owned, expiring exceptions:** a reviewed false alarm can be accepted for one case and one check,
   with a reason, an approver and an expiry within 90 days, and is listed in every report.
+- **Fairness and disclosure checks:** `counterfactual_fairness` asks the same question for every
+  identity in a list and fails if the decision changes; `ai_disclosure` checks the agent says it's an
+  AI and never claims to be a person. Rules, not a model; bars per test type (`category_bars`) as well
+  as per priority.
 - **Responsible-AI evidence, from the run itself:** a team names its risk level and frameworks
   (EU AI Act, NIST AI RMF, ISO/IEC 42001, DPDP, GDPR, HIPAA, PCI DSS, OWASP Top 10 for LLM apps,
   RBI FREE-AI, HITRUST by reference); `aiquality evidence` labels every control with the run's evidence,
@@ -309,6 +313,7 @@ Done items first, in the order they were built; then what is still open.
 - [x] **A second team (done)** — a fictional grocery app's post-order support onboarded with configuration only: four files, one CI step, no platform code. A reusable CI workflow waits until another repository, such as `api-qa-agent`, runs the gate.
 - [x] **Dashboard (done)** — one static page for every team: the latest gate, accepted findings and their expiry, and every saved run from oldest to newest, built in CI after every gate.
 - [x] **Tracing export (done)** — a run as OpenTelemetry traces (OTLP JSON, no new dependency): one trace per case, a span per tool call and per check; loaded into Phoenix as a check.
+- [x] **Fairness and disclosure checks (done)** — `counterfactual_fairness` (the same question per identity, decisions compared), `ai_disclosure` (says it's an AI, never claims to be a person), and bars per test type.
 - [ ] **One model layer for every judge** — move the RAGAS, red-team and completeness judges onto the package's model layer (`aiquality/models`).
 - [ ] **Parallel runs** — worker limit, rate-limit retries and a per-run budget cap.
 - [ ] **Agent tracing (later)** — the agent traces its own steps (retrieval, model calls, tools), linked to the test case, so each trace shows where time and errors went; needs live runs.
@@ -324,6 +329,7 @@ Done items first, in the order they were built; then what is still open.
 - [x] **Limit decisions in code, first try (done)** — time windows, allowances and fees ruled on by code the agent calls as a tool; right whenever called, but the agent called it in only 13 of 30 cases.
 - [x] **Code consults the limits on every message (done)** — an understanding step the model can't skip, and limits that rule on approximate facts: the right rule in 35 of 35 cases.
 - [x] **Hand-over written by code (done)** — the hinted exceptions went, but the model still hands over when the policy already answers; on repeats the hand-over cases barely moved, so v5 stays the default.
+- [ ] **Fairness and disclosure on AeroAssist (next recording)** — six cases written before the agent answered them (GD59-GD64, `teams/aeroassist/pending_cases.json`); they join the golden set with the next recording, and close two gaps the evidence report shows.
 - [ ] **Code decides when to hand over (next)** — hand over only when no policy answers the question, measured with repeats from the start.
 - [ ] **Clearer policy boundaries** — P5's cut-off reworded and P8's 48 hours stated as inclusive (done); P4 still doesn't say whether exactly 2 hours before departure is still open for web check-in (GD14), so the policy owner decides.
 - [ ] **Judge validation, round 2** — a labelling guide with quiet-failure examples, a second labeller, narrower single-purpose judges, and a fresh held-back set with the bars set beforehand.
