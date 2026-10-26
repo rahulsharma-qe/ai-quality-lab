@@ -9,8 +9,9 @@ LIST_FIELDS = ("must_include", "must_not_include", "must_not_do", "expected_sour
 KNOWN_FIELDS = (
     "id", "input", "category", "priority", "reference_answer", "expected_behaviour",
     "must_include", "must_not_include", "must_not_do", "expected_tool_calls", "expected_sources",
-    "client", "conversation_history", "dimensions", "expected_decision",
+    "client", "conversation_history", "dimensions", "expected_decision", "disclosure",
 )
+DISCLOSURE_MOMENTS = ("first_reply", "asked")
 
 
 @dataclass
@@ -23,6 +24,7 @@ class GoldenCase:
     expected_sources  ids of the documents a good answer needs, e.g. ["P1"] (for retrieval agents)
     expected_decision what a good answer decides: "yes", "no", "depends", "hand_over", an amount
                       like "₹1500", or alternatives joined by " OR " (see expected_decision.py)
+    disclosure        "first_reply" or "asked": the moment the ai_disclosure check tests
     client            optional tag, so results can be gated per client
     extra             any other fields from the source file, kept untouched
     """
@@ -42,6 +44,7 @@ class GoldenCase:
     conversation_history: list[dict] = field(default_factory=list)
     dimensions: list[str] = field(default_factory=list)
     expected_decision: Optional[str] = None
+    disclosure: Optional[str] = None     # "first_reply" or "asked": what the ai_disclosure check tests
     extra: dict = field(default_factory=dict)
 
     @classmethod
@@ -66,10 +69,14 @@ class GoldenCase:
                 parse_expected_decision(data["expected_decision"])
             except ValueError as error:
                 problems.append(f"'expected_decision': {error}")
+        if data.get("disclosure") not in (None, "", *DISCLOSURE_MOMENTS):
+            problems.append(f"'disclosure' must be {' or '.join(DISCLOSURE_MOMENTS)}, not '{data['disclosure']}'")
         if problems:
             raise ValueError("; ".join(problems))
 
         known = {k: data[k] for k in KNOWN_FIELDS if k in data and data[k] is not None}
+        if not known.get("disclosure"):
+            known.pop("disclosure", None)          # an empty spreadsheet cell: nothing to test
         extra = {k: v for k, v in data.items() if k not in KNOWN_FIELDS}
         known["id"], known["input"] = case_id, question
         known["conversation_history"] = history

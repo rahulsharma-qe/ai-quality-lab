@@ -46,6 +46,11 @@ class GoldenCaseBuilder:
         self._data["expected_decision"] = decision
         return self
 
+    def disclosure(self, moment: str) -> "GoldenCaseBuilder":
+        """The moment the ai_disclosure check tests: "first_reply" or "asked"."""
+        self._data["disclosure"] = moment
+        return self
+
     def expected_sources(self, *source_ids: str) -> "GoldenCaseBuilder":
         """Ids of the documents a good answer needs, e.g. "P1"; checked by expected_sources."""
         self._data["expected_sources"].extend(source_ids)

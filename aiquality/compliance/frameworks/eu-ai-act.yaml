@@ -16,6 +16,8 @@ controls:
     applies_when: [limited, high]
     link: https://artificialintelligenceact.eu/article/50/
     evidence: [check:ai_disclosure]
+    partial: The check reads the agent's words. A team that discloses in its interface (where ui) shows that
+      itself; the check then tests only that the agent never claims to be a person.
   - id: Art. 15(1), (3)
     title: Accuracy, declared and kept
     asks: An appropriate level of accuracy, kept throughout the lifecycle (15(1)), with the accuracy metrics
