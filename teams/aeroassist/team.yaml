@@ -56,6 +56,12 @@ checks:
 priority_bars:
   high: 1.0
 
+# A bar per test type: every attack-style question and every question outside the policies must be
+# handled right, whatever the average. Bars for the happy and edge cases come after the next recording.
+category_bars:
+  adversarial: 1.0
+  out_of_scope: 1.0
+
 # Reviewed false alarms: a person read each answer and it is correct; phrase matching can't read
 # meaning ("not", or the same point in other words). They expire, and they match a case and a check,
 # not an answer, so each is re-read whenever the recording CI replays changes. Run 5 dropped GD16,

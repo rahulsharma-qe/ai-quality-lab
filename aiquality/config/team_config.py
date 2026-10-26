@@ -27,7 +27,7 @@ from aiquality.errors import ConfigError
 
 CONFIG_FILE_NAMES = ("team.yaml", "team.yml", "team.json")
 TOP_LEVEL_SETTINGS = {"team", "client", "description", "agent", "live_agent", "golden_set",
-                      "policies", "plugins", "checks", "priority_bars", "attacks", "accepted_findings",
+                      "policies", "plugins", "checks", "priority_bars", "category_bars", "attacks", "accepted_findings",
                       "judge", "reports", "max_error_rate", "expected_result", "compliance"}
 AGENT_SETTINGS = {
     "python_function": ({"file", "function"}, set()),
@@ -60,6 +60,7 @@ class TeamConfig:
     live_agent: Optional[dict] = None
     policies: Optional[Path] = None
     priority_bars: dict[str, float] = field(default_factory=dict)
+    category_bars: dict[str, float] = field(default_factory=dict)      # {adversarial: 1.0}: per test type
     attacks: Optional[AttackSettings] = None
     accepted_findings: list[AcceptedFinding] = field(default_factory=list)
     judge: Optional[JudgeSettings] = None
@@ -106,8 +107,11 @@ class TeamConfig:
         minimums = company_minimums or CompanyMinimums.load()
         if not check_problems:
             problems += minimums.problems_with(checks)
-        priority_bars, priority_problems = _parse_priority_bars(data.get("priority_bars"))
+        priority_bars, priority_problems = _parse_bars("priority_bars", data.get("priority_bars"), "{high: 1.0}")
         problems += priority_problems
+        category_bars, category_problems = _parse_bars("category_bars", data.get("category_bars"),
+                                                       "{adversarial: 1.0}")
+        problems += category_problems
         attacks, attack_problems = parse_attack_settings(data.get("attacks"), list(checks),
                                                          minimums.minimum_attack_resistance)
         problems += attack_problems
@@ -147,20 +151,23 @@ class TeamConfig:
 
         return cls(team=str(data["team"]), folder=folder, agent=data["agent"], golden_set=golden_set,
                    checks=checks, client=data.get("client"), description=data.get("description", ""),
-                   live_agent=data.get("live_agent"), policies=policies, priority_bars=priority_bars, attacks=attacks,
+                   live_agent=data.get("live_agent"), policies=policies, priority_bars=priority_bars,
+                   category_bars=category_bars, attacks=attacks,
                    accepted_findings=accepted, judge=judge, reports=list(reports), plugins=plugins,
                    max_error_rate=float(max_error_rate), expected_result=expected_result, compliance=compliance,
                    source=source)
 
 
-def _parse_priority_bars(raw) -> tuple[dict[str, float], list[str]]:
-    """priority_bars: {high: 1.0} -> every high-priority golden case must pass every blocking check."""
+def _parse_bars(setting: str, raw, example: str) -> tuple[dict[str, float], list[str]]:
+    """priority_bars: {high: 1.0} or category_bars: {adversarial: 1.0} -> that share of the golden cases with
+    that priority (or category) must pass every blocking check."""
     if raw is None:
         return {}, []
+    kind = setting.split("_")[0]
     if not isinstance(raw, dict) or not raw:
-        return {}, ["'priority_bars' must map a priority to a share of cases, e.g. {high: 1.0}"]
-    problems = [f"'priority_bars.{name}' must be a number from 0 to 1" for name, bar in raw.items()
-                if not isinstance(bar, (int, float)) or not 0 <= bar <= 1]
+        return {}, [f"'{setting}' must map a {kind} to a share of cases, e.g. {example}"]
+    problems = [f"'{setting}.{name}' must be a number from 0 to 1" for name, bar in raw.items()
+                if not isinstance(bar, (int, float)) or isinstance(bar, bool) or not 0 <= bar <= 1]
     return ({} if problems else {str(name): float(bar) for name, bar in raw.items()}), problems
 
 

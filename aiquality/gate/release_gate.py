@@ -50,6 +50,7 @@ class GateDecision:
     scopes: list[ScopeResult] = field(default_factory=list)
     attacks: Optional[dict] = None
     priorities: list[dict] = field(default_factory=list)
+    categories: list[dict] = field(default_factory=list)
     accepted_findings: list[dict] = field(default_factory=list)   # acceptances that matched a FAIL
     expired_acceptances: list[dict] = field(default_factory=list)
 
@@ -57,7 +58,7 @@ class GateDecision:
         return {"passed": self.passed, "decision": "PASS" if self.passed else "FAIL",
                 "failures": self.failures, "warnings": self.warnings,
                 "scopes": [s.to_dict() for s in self.scopes], "attacks": self.attacks,
-                "priorities": self.priorities,
+                "priorities": self.priorities, "categories": self.categories,
                 "accepted_findings": self.accepted_findings, "expired_acceptances": self.expired_acceptances}
 
 
@@ -90,7 +91,10 @@ class ReleaseGate:
                     decision.failures.append(f"{name}: {result.pass_rate:.0%} is below {settings.threshold:.0%} "
                                              f"({_describe_scope(scope, result)})")
 
-        self._check_priority_bars(golden, accepted_pairs, decision)
+        self._check_bars("priority", self.config.priority_bars, golden, accepted_pairs, decision.priorities,
+                         decision)
+        self._check_bars("category", self.config.category_bars, golden, accepted_pairs, decision.categories,
+                         decision)
         if self.config.attacks:
             self._check_attacks(evaluation, accepted_pairs, decision)
 
@@ -144,19 +148,22 @@ class ReleaseGate:
                     failed += 1
         return ScopeResult(scope, check_name, passed, failed, settings.threshold, settings.blocking)
 
-    def _check_priority_bars(self, golden, accepted_pairs: set, decision: GateDecision) -> None:
+    def _check_bars(self, kind: str, bars: dict, golden, accepted_pairs: set, results: list,
+                    decision: GateDecision) -> None:
+        """A bar per priority (kind "priority") or per test type (kind "category"): that share of its golden
+        cases must pass every blocking check. An average over all cases can hide them failing."""
         blocking = {name for name, settings in self.checks.items() if settings.blocking}
-        for priority, bar in self.config.priority_bars.items():
-            cases = [o for o in golden if o.priority == priority]
+        for value, bar in bars.items():
+            cases = [o for o in golden if getattr(o, kind) == value]
             if not cases:
-                decision.warnings.append(f"priority bar '{priority}' has no golden cases with that priority")
+                decision.warnings.append(f"{kind} bar '{value}' has no golden cases with that {kind}")
                 continue
             failing = [o.case_id for o in cases if self._case_failed(o, blocking, accepted_pairs)]
             rate = (len(cases) - len(failing)) / len(cases)
-            decision.priorities.append({"priority": priority, "cases": len(cases), "failed": failing,
-                                        "pass_rate": rate, "bar": bar})
+            results.append({kind: value, "cases": len(cases), "failed": failing, "pass_rate": rate, "bar": bar})
             if rate < bar:
-                decision.failures.append(f"{priority}-priority cases: {len(failing)} of {len(cases)} failed "
+                label = f"{value}-priority cases" if kind == "priority" else f"{value} cases"
+                decision.failures.append(f"{label}: {len(failing)} of {len(cases)} failed "
                                          f"({', '.join(failing[:10])}), bar {bar:.0%}")
 
     @staticmethod

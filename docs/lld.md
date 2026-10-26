@@ -101,7 +101,7 @@ classDiagram
     team, client, agent, live_agent
     golden_set, policies
     checks: CheckSettings by name
-    priority_bars, attacks, accepted_findings, judge
+    priority_bars, category_bars, attacks, accepted_findings, judge
   }
   class ReleaseGate {
     decide(evaluation) GateDecision
@@ -165,7 +165,7 @@ class MentionsHumanHandover(Check):
 
 **`team.yaml` settings.** `team`, `client`, `description`, `agent` (adapter and its settings),
 `live_agent`, `golden_set`, `policies`, `plugins`, `checks` (each: `threshold`, `blocking`, options),
-`priority_bars` (for example `high: 1.0`), `attacks` (`threshold`, `families`, `goals`),
+`priority_bars` (for example `high: 1.0`), `category_bars` (for example `adversarial: 1.0`), `attacks` (`threshold`, `families`, `goals`),
 `accepted_findings` (each: `case`, `check`, `reason`, `approved_by`, `expires`), `judge` (`kind`,
 `rubric`, `model`, `labels`, `results`, `recorded`), `reports`, `max_error_rate`, `expected_result`.
 Unknown settings, missing files and anything that looks like a secret are rejected, all problems at

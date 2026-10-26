@@ -88,6 +88,21 @@ def test_acceptances_must_be_owned_explained_and_short_lived(tmp_path, entry, me
         team(tmp_path, accepted_findings=[entry])
 
 
+def test_a_bar_per_test_type(tmp_path):
+    decision = gate(team(tmp_path, category_bars={"edge": 1.0, "happy": 1.0, "adversarial": 1.0}), tmp_path)
+    assert "edge cases: 1 of 2 failed (C3), bar 100%" in decision.failures
+    assert not any(f.startswith("happy cases") for f in decision.failures)
+    assert [c["category"] for c in decision.categories] == ["edge", "happy"]
+    assert "category bar 'adversarial' has no golden cases with that category" in decision.warnings
+
+
+@pytest.mark.parametrize("bars, message", [({"edge": 2}, "'category_bars.edge' must be a number from 0 to 1"),
+                                           ([1.0], "'category_bars' must map a category to a share of cases")])
+def test_category_bars_are_shares_of_cases(tmp_path, bars, message):
+    with pytest.raises(ConfigError, match=message):
+        team(tmp_path, category_bars=bars)
+
+
 def test_errors_count_as_failures(tmp_path):
     config = team(tmp_path, checks={"required_phrases": {"threshold": 0.8}, "forbidden_phrases": {"threshold": 1.0}},
                   max_error_rate=0.5)

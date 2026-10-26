@@ -102,6 +102,8 @@ def _gate(record: RunRecord) -> Evidence:
              + ("" if s.get("blocking", True) else ", advisory") for s in gate.get("scopes", []) if s.get("scope") == "team"]
     facts += [f"High-priority bar: {p['priority']} cases {_percent(p['pass_rate'])} (bar {_percent(p['bar'])})"
               + (f", failed: {', '.join(p['failed'])}" if p.get("failed") else "") for p in gate.get("priorities", [])]
+    facts += [f"Bar for {c['category'].replace('_', ' ')} cases: {_percent(c['pass_rate'])} (bar {_percent(c['bar'])})"
+              + (f", failed: {', '.join(c['failed'])}" if c.get("failed") else "") for c in gate.get("categories", [])]
     facts += reasons[1:]
     return Evidence("release_gate", True, summary, facts, bool(gate.get("passed")))
 

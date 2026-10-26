@@ -101,6 +101,15 @@ priority_bars:
   high: 1.0        # every high-priority golden case must pass
 ```
 
+The same works per test type, from each case's `category`: attack-style questions and questions
+outside your policies usually need every case right, whatever the average.
+
+```yaml
+category_bars:
+  adversarial: 1.0
+  out_of_scope: 1.0
+```
+
 If your agent looks documents up before answering, return them as `retrieved_documents` and add
 `expected_sources` to your cases. The `expected_sources` check then tells a retrieval miss (the right
 document was never found) from a reasoning error (it was found, and the answer is still wrong).
