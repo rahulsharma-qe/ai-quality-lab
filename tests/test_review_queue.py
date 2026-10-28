@@ -66,7 +66,7 @@ def test_disagreements_and_hidden_errors_land_in_the_queue(tmp_path):
     assert items[("C3", "answer_judge")].kind == "judge_only"                # a hidden error the words missed
     assert ("C4", "required_phrases") not in items                          # check and judge agree: no person needed
     snippet = items[("C1", "required_phrases")].accept_snippet
-    assert "case: C1" in snippet and "check: required_phrases" in snippet and "expires: 2026-11-14" in snippet
+    assert "case: C1" in snippet and "check: required_phrases" in snippet and "expires: 14-11-2026" in snippet
     assert items[("C3", "answer_judge")].accept_snippet is None             # a possible error is never pre-accepted
 
 

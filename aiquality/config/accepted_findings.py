@@ -5,7 +5,7 @@
         check: forbidden_phrases
         reason: "Negation false alarm: the answer says you don't need to pay extra"
         approved_by: rahulsharma-qe
-        expires: 2026-11-15
+        expires: 15-11-2026          # DD-MM-YYYY (2026-11-15 is read too)
 
 Every acceptance names one case and one check, says why and who approved it, and expires
 within 90 days. Expired ones count again. Each one is listed in every report.
@@ -14,6 +14,7 @@ within 90 days. Expired ones count again. Each one is listed in every report.
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Optional
+from aiquality.dates import parse_day
 
 MAX_DAYS_AHEAD = 90
 REQUIRED_FIELDS = ("case", "check", "reason", "approved_by", "expires")
@@ -75,9 +76,4 @@ def parse_accepted_findings(raw, check_names: list[str], today: Optional[date] =
 
 
 def _to_date(value) -> Optional[date]:
-    if isinstance(value, date):
-        return value
-    try:
-        return date.fromisoformat(str(value))
-    except ValueError:
-        return None
+    return parse_day(value)

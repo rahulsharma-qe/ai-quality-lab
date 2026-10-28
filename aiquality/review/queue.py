@@ -23,6 +23,7 @@ from typing import Optional
 from aiquality.checks.phrase_checks import POSSIBLE_FALSE_ALARM
 from aiquality.errors import SetupError
 from aiquality.reporting.run_record import RUN_RECORDS_FILE, RunRecord, load_run_records
+from aiquality.dates import parse_day, shown_day
 
 FAILING = ("FAIL", "ERROR")
 EXPIRING_WITHIN_DAYS = 7
@@ -89,7 +90,7 @@ def render_review_queue(items: list[ReviewItem], team: str) -> str:
         lines += [f"{item.case_id} · {item.check} · {item.kind} ({item.priority})", f"  why:      {item.why}",
                   f"  question: {_short(item.question)}", f"  answer:   {_short(item.answer)}",
                   f"  finding:  {item.finding}"]
-        if item.judge:
+        if item.judge and item.judge.split(": ", 1)[-1].strip() != item.finding.strip():   # the judge's own finding: once
             lines.append(f"  judge:    {item.judge}")
         if item.accept_snippet:
             lines += ["  if it's a false alarm, add to accepted_findings:"]
@@ -126,13 +127,13 @@ def _expiring(record, gate, today) -> list[ReviewItem]:
     outcomes = {o["case_id"]: o for o in record.outcomes}
     items = []
     for acceptance in gate.get("accepted_findings", []):
-        expires = date.fromisoformat(str(acceptance["expires"]))
+        expires = parse_day(acceptance["expires"])
         if expires - today <= timedelta(days=EXPIRING_WITHIN_DAYS):
             outcome = outcomes.get(acceptance["case"], {})
             items.append(ReviewItem(case_id=acceptance["case"], check=acceptance["check"], kind="acceptance_expiring",
                                     why=WHY["acceptance_expiring"], priority=outcome.get("priority", "medium"),
                                     question=outcome.get("question") or "", answer=outcome.get("answer_text") or "",
-                                    finding=f"accepted until {expires}: {acceptance['reason']}"))
+                                    finding=f"accepted until {shown_day(expires)}: {acceptance['reason']}"))
     return items
 
 
@@ -142,7 +143,7 @@ def _doubts_itself(result: dict) -> bool:
 
 def _snippet(case_id: str, check: str, today: date) -> str:
     return (f"- case: {case_id}\n  check: {check}\n  reason: \"<why this is a false alarm>\"\n"
-            f"  approved_by: <your name>\n  expires: {today + timedelta(days=ACCEPTANCE_DAYS)}")
+            f"  approved_by: <your name>\n  expires: {shown_day(today + timedelta(days=ACCEPTANCE_DAYS))}")
 
 
 def _short(text: str, limit: int = 160) -> str:

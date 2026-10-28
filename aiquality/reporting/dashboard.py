@@ -22,6 +22,7 @@ from aiquality.errors import SetupError
 from aiquality.reporting.html_reporter import STYLE
 from aiquality.reporting.report_data import percent
 from aiquality.reporting.run_record import RUN_RECORDS_FILE, RunRecord, load_run_records
+from aiquality.dates import shown_day
 
 EXPIRES_SOON_DAYS = 14
 HISTORY_FOLDER = "history"
@@ -75,7 +76,7 @@ def render_dashboard(teams: list[TeamRuns], today: Optional[date] = None) -> str
              "<meta name='viewport' content='width=device-width, initial-scale=1'>",
              f"<title>Quality dashboard</title><style>{STYLE}{_EXTRA_STYLE}</style></head><body><main>",
              "<h1>Quality dashboard</h1>",
-             f"<p class='meta'>Built {today.isoformat()} from the saved run records. A static page: build it "
+             f"<p class='meta'>Built {shown_day(today)} from the saved run records. A static page: build it "
              "again after new runs.</p>", _overview(teams, today)]
     parts += [_team_section(team, today) for team in teams]
     parts.append("</main></body></html>")
@@ -146,7 +147,7 @@ def _findings(team: TeamRuns, today: date) -> str:
         return ""
     items = "".join(
         f"<li>{escape(f.case)} / {escape(f.check)}: expires "
-        f"<span class='{'soon' if f.expires <= today + timedelta(EXPIRES_SOON_DAYS) else ''}'>{f.expires.isoformat()}</span>"
+        f"<span class='{'soon' if f.expires <= today + timedelta(EXPIRES_SOON_DAYS) else ''}'>{shown_day(f.expires)}</span>"
         f" — {escape(f.reason)}</li>" for f in sorted(active, key=lambda f: f.expires))
     return f"<p class='meta'>Accepted findings (reviewed false alarms, each with an expiry):</p><ul>{items}</ul>"
 

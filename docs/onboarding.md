@@ -239,7 +239,7 @@ accepted_findings:
     check: forbidden_phrases
     reason: "Negation false alarm: the answer says the refund is NOT approved"
     approved_by: qa-lead
-    expires: 2026-11-15          # at most 90 days ahead
+    expires: 15-11-2026          # DD-MM-YYYY, at most 90 days ahead
 ```
 
 It counts as a pass until it expires, and is listed in every report. An acceptance names a case, not

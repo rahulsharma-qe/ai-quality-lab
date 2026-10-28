@@ -7,6 +7,7 @@ from aiquality.reporting.report_data import (accepted_pairs, check_rows, finding
                                              rate_text, result_text, verdict, version_text)
 from aiquality.reporting.reporters import Reporter, register_reporter
 from aiquality.reporting.run_record import RunRecord
+from aiquality.dates import shown_day
 
 STYLE = """
 :root { --bg:#f7f8fa; --panel:#fff; --fg:#1d2430; --muted:#5b6577; --line:#d8dde6;
@@ -75,7 +76,7 @@ def render_html_report(record: RunRecord) -> str:
     if gate.get("accepted_findings"):
         accepted_rows = "".join(
             f"<tr><td>{escape(a['case'])}</td><td>{escape(a['check'])}</td><td>{escape(a['reason'])}</td>"
-            f"<td>{escape(a['approved_by'])}</td><td>{escape(a['expires'])}</td></tr>" for a in gate["accepted_findings"])
+            f"<td>{escape(a['approved_by'])}</td><td>{escape(shown_day(a['expires']))}</td></tr>" for a in gate["accepted_findings"])
         parts.append("<section><h2>Accepted findings</h2><p class='meta'>Reviewed and accepted by a person; they "
                      "count as passes until they expire.</p><table><tr><th>Case</th><th>Check</th><th>Reason</th>"
                      f"<th>Approved by</th><th>Expires</th></tr>{accepted_rows}</table></section>")

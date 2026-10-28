@@ -41,6 +41,7 @@ from aiquality.judges import available_judges
 from aiquality.judges.validation import render_validation
 from aiquality.reporting import (changed_cases, compare_runs, pick_run, render_comparison, render_comparison_markdown,
                                  render_repeats)
+from aiquality.dates import day_argument
 
 EXIT_OK = 0
 EXIT_QUALITY_FAILURE = 1
@@ -215,8 +216,10 @@ def _new_team(args) -> int:
 
 
 def _list_checks(args) -> int:
-    for name, description in describe_checks().items():
-        print(f"{name:<20}{description}")
+    checks = describe_checks()
+    width = max(len(name) for name in checks) + 2
+    for name, description in checks.items():
+        print(f"{name:<{width}}{description}")
     return EXIT_OK
 
 
@@ -251,7 +254,7 @@ def _build_parser() -> argparse.ArgumentParser:
     add_team_arguments(gate)
     gate.add_argument("--live", action="store_true", help="use the live agent (may need an API key)")
     gate.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="where run records and reports go")
-    gate.add_argument("--today", type=date.fromisoformat, metavar="YYYY-MM-DD",
+    gate.add_argument("--today", type=day_argument, metavar="DD-MM-YYYY",
                       help="decide as if today were this date; for checking expiries")
     gate.set_defaults(handler=_gate)
 

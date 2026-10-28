@@ -12,8 +12,11 @@ Everything here is deterministic and key-free — it just reads the JSONL.
 
 import json
 import sys
+from pathlib import Path
 
-TRACE_FILE = "traces.jsonl"
+# Traces go to aiquality-runs/ (ignored by git), wherever the script is run from.
+RUNS_FOLDER = Path(__file__).resolve().parents[2] / "aiquality-runs"
+TRACE_FILE = RUNS_FOLDER / "traces.jsonl"
 REFUSAL_JUMP_ALERT = 0.15      # alert if refusal rate rises by more than this across the window
 
 
@@ -21,6 +24,8 @@ REFUSAL_JUMP_ALERT = 0.15      # alert if refusal rate rises by more than this a
 # SECTION A — Load the evidence log
 # ======================================================================
 def load_traces(path=TRACE_FILE):
+    if not Path(path).is_file():
+        sys.exit(f"no traces at {path}: run python demos/observability/tracing.py first")
     with open(path) as f:
         return [json.loads(line) for line in f if line.strip()]
 

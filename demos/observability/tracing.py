@@ -18,8 +18,11 @@ import json
 import random
 import time
 from datetime import datetime, timedelta
+from pathlib import Path
 
-TRACE_FILE = "traces.jsonl"
+# Traces go to aiquality-runs/ (ignored by git), wherever the script is run from.
+RUNS_FOLDER = Path(__file__).resolve().parents[2] / "aiquality-runs"
+TRACE_FILE = RUNS_FOLDER / "traces.jsonl"
 
 
 # ======================================================================
@@ -67,6 +70,7 @@ def simulate_production_traffic(path=TRACE_FILE, n=60, seed=7):
     and a slow DRIFT (a new out-of-scope topic 'flight_delay_comp' appearing late and
     pushing the refusal rate up)."""
     rng = random.Random(seed)
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
     open(path, "w").close()                       # start fresh
     start = datetime(2026, 10, 3, 9, 0, 0)
 

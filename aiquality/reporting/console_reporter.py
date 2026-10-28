@@ -5,6 +5,7 @@ from pathlib import Path
 from aiquality.reporting.report_data import check_rows, judge_text, result_text, version_text
 from aiquality.reporting.reporters import Reporter, register_reporter
 from aiquality.reporting.run_record import RunRecord
+from aiquality.dates import shown_day
 
 MAX_FINDINGS_SHOWN = 25
 
@@ -47,7 +48,7 @@ def render_console_report(record: RunRecord) -> str:
     for case_id, r in findings[:MAX_FINDINGS_SHOWN]:
         note = ""
         if (case_id, r["check"]) in accepted:
-            note = f"  [ACCEPTED until {accepted[(case_id, r['check'])]['expires']}]"
+            note = f"  [ACCEPTED until {shown_day(accepted[(case_id, r['check'])]['expires'])}]"
         lines.append(f"  {r['status']:<6}{case_id:<{id_width}}{r['check']:<20}{r['reason']}{note}")
         if r.get("evidence"):
             lines.append(f"{'':<{8 + id_width + 20}}in: \"{r['evidence']}\"")
@@ -70,7 +71,7 @@ def _gate_lines(gate: dict) -> list[str]:
     if gate["accepted_findings"]:
         lines.append(f"  accepted findings ({len(gate['accepted_findings'])}), counted as passes until they expire:")
         lines += [f"    {a['case']} / {a['check']}: {a['reason']} (approved by {a['approved_by']}, "
-                  f"expires {a['expires']})" for a in gate["accepted_findings"]]
+                  f"expires {shown_day(a['expires'])})" for a in gate["accepted_findings"]]
     lines += [f"  warning: {warning}" for warning in gate["warnings"]]
     lines.append("=" * 78)
     return lines

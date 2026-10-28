@@ -200,7 +200,8 @@ def _find_config_file(path: Path) -> Path:
                 return path / name
         raise ConfigError(str(path), [f"no {' / '.join(CONFIG_FILE_NAMES)} in this folder"])
     if not path.is_file():
-        raise ConfigError(str(path), ["config file not found"])
+        raise ConfigError(str(path), ["no team here: give a team name from the teams folder (run from the "
+                                      "repository's root, or pass --teams-dir), a team folder, or its config file"])
     return path
 
 

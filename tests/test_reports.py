@@ -67,7 +67,7 @@ def test_junit_counts_match_the_run(tmp_path, monkeypatch):
     cases = suite.findall("testcase")
     assert int(suite.get("tests")) == len(cases) == 6 * 2 + 1                 # (3 golden + 3 attacks) x 2 checks + gate
     accepted = [c for c in cases if c.get("name") == "C2" and c.get("classname").endswith("forbidden_phrases")]
-    assert accepted[0].find("skipped").get("message").startswith("accepted until 2026-11-15")
+    assert accepted[0].find("skipped").get("message").startswith("accepted until 15-11-2026")
     gate_case = [c for c in cases if c.get("name") == "release_gate"][0]
     assert gate_case.find("failure") is not None
 

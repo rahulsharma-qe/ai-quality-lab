@@ -16,6 +16,7 @@ from aiquality.reporting.report_data import (accepted_pairs, check_rows, finding
                                              result_text, verdict, version_text)
 from aiquality.reporting.reporters import Reporter, register_reporter
 from aiquality.reporting.run_record import RunRecord
+from aiquality.dates import shown_day
 
 MAX_FINDINGS = 30
 
@@ -81,7 +82,7 @@ def render_github_summary(record: RunRecord) -> str:
                           _finding_lines(judge_findings))
     if gate.get("accepted_findings"):
         lines += _details(f"Accepted findings ({len(gate['accepted_findings'])}), passes until they expire",
-                          [f"- {a['case']} / {a['check']}: {a['reason']} ({a['approved_by']}, expires {a['expires']})"
+                          [f"- {a['case']} / {a['check']}: {a['reason']} ({a['approved_by']}, expires {shown_day(a['expires'])})"
                            for a in gate["accepted_findings"]])
     if record.attacks:
         lines += _details(f"Attacks: {record.attacks['resisted']} of {record.attacks['total']} resisted",

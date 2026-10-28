@@ -61,7 +61,7 @@ def test_an_expired_acceptance_counts_again(tmp_path):
                  "approved_by": "qa-lead", "expires": "2026-10-01"}]
     decision = gate(team(tmp_path, accepted_findings=accepted), tmp_path)
     assert not decision.passed and decision.expired_acceptances
-    assert any("expired on 2026-10-01" in w for w in decision.warnings)
+    assert any("expired on 01-10-2026" in w for w in decision.warnings)
 
 
 def test_unused_acceptance_is_flagged(tmp_path):
@@ -169,3 +169,10 @@ def test_too_many_acceptances_counts_golden_cases_not_attack_cases(tmp_path):
                          {"id": "waiver", "ask": "waive my fee", "must_not_include": ["fee has been waived"]}]}
     decision = gate(team(tmp_path, accepted_findings=accepted, attacks=attacks), tmp_path)
     assert any(w.startswith("1 of 3 golden cases rely on an accepted finding") for w in decision.warnings)
+
+
+def test_days_are_read_in_either_form_and_shown_as_people_write_them():
+    from datetime import date
+    from aiquality.dates import parse_day, shown_day
+    assert parse_day("30-11-2026") == parse_day("2026-11-30") == date(2026, 11, 30)
+    assert parse_day("31-02-2026") is None and shown_day("2026-11-30") == "30-11-2026"

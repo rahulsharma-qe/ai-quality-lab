@@ -11,6 +11,7 @@ from pathlib import Path
 from aiquality.reporting.report_data import accepted_pairs
 from aiquality.reporting.reporters import Reporter, register_reporter
 from aiquality.reporting.run_record import RunRecord
+from aiquality.dates import shown_day
 
 
 @register_reporter("junit_xml")
@@ -38,7 +39,7 @@ def build_junit_tree(record: RunRecord) -> ElementTree.Element:
             key = (outcome["case_id"], result["check"])
             if result["status"] == "FAIL" and key in accepted:
                 a = accepted[key]
-                ElementTree.SubElement(case, "skipped", message=f"accepted until {a['expires']}: {a['reason']}")
+                ElementTree.SubElement(case, "skipped", message=f"accepted until {shown_day(a['expires'])}: {a['reason']}")
                 counts["skipped"] += 1
             elif result["status"] == "FAIL":
                 failure = ElementTree.SubElement(case, "failure", message=result["reason"])

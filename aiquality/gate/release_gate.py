@@ -20,6 +20,7 @@ from aiquality.attacks import summarise_attacks
 from aiquality.checks import CheckStatus
 from aiquality.config import TeamConfig
 from aiquality.evaluation import Evaluation
+from aiquality.dates import shown_day
 
 TOO_MANY_ACCEPTED = 0.10     # warn when more than 10% of cases rely on an acceptance
 
@@ -119,7 +120,7 @@ class ReleaseGate:
                 decision.expired_acceptances.append(finding.to_dict())
                 if key in failed_pairs:
                     decision.warnings.append(f"acceptance for {finding.case} / {finding.check} expired on "
-                                             f"{finding.expires.isoformat()}; the finding counts again")
+                                             f"{shown_day(finding.expires)}; the finding counts again")
                 continue
             if key in failed_pairs:
                 accepted.add(key)
