@@ -95,16 +95,15 @@ def _read_dotted_path(payload, dotted_path: str):
     return value
 
 
-SECRET_QUERY = ("key", "token", "secret", "password", "signature", "sig", "auth", "code")
-SECRET_QUERY_JOINED = ("apikey", "accesstoken", "authtoken", "clientsecret")
+# Query parameter names that carry a secret, compared whole (case, '-' and '_' ignored): keyword,
+# tokenizer or key_id are ordinary names.
+SECRET_QUERY = {"key", "apikey", "token", "accesstoken", "authtoken", "idtoken", "refreshtoken", "secret",
+                "clientsecret", "password", "passwd", "pwd", "signature", "sig", "xamzsignature", "auth",
+                "authorization", "code"}
 
 
 def _secret_name(name: str) -> bool:
-    """api_key, access-token, X.Signature: a whole word of the name; keyword or monkey are not."""
-    import re
-    words = [word for word in re.split(r"[_\-.\s]+|(?<=[a-z])(?=[A-Z])", name) if word]
-    return (any(word.lower() in SECRET_QUERY for word in words)
-            or name.lower().replace("_", "").replace("-", "") in SECRET_QUERY_JOINED)
+    return name.lower().replace("_", "").replace("-", "").replace(".", "") in SECRET_QUERY
 
 
 def shown_url(url: str) -> str:

@@ -15,7 +15,7 @@ Rules that keep the numbers honest, enforced here:
   - a run in which any judge call failed doesn't count: the judge is measured on every held-back
     answer or not at all, and an outage never replaces an earlier result
   - a new judge version (new model, rubric or policies) starts unvalidated and is measured again;
-    each run also records a hash of the labels file, and changed labels make the judge unvalidated
+    each run also records a hash of the held-back labels, and changed ones make the judge unvalidated
   - every held-back measurement of a version is counted and shown: measuring again until it passes
     turns the held-back half into a tuning half, and the count makes that visible
   - categories are shown with their own numbers, and one below a bar is flagged; it doesn't block,
@@ -98,11 +98,16 @@ class ValidationRun:
 
 
 def labels_sha(path) -> str:
-    """A short hash of the labels file: a run measured against other labels says nothing about these."""
+    """A short hash of the held-back labels: each held-back case's id, answer and human label. Other
+    changes to the file (indentation, a note, new tuning labels) leave it alone; a changed held-back label
+    or answer means a measurement against the old ones says nothing about these."""
     try:
-        return hashlib.sha256(Path(path).read_bytes()).hexdigest()[:12]
-    except OSError:
+        cases = json.loads(Path(path).read_text(encoding="utf-8"))["cases"]
+    except (OSError, json.JSONDecodeError, KeyError, TypeError):
         return ""
+    held_back = sorted((str(c.get("id")), str(c.get("answer", "")), str(c.get("human_label", "")))
+                       for c in cases if isinstance(c, dict) and c.get("split") == "holdout")
+    return hashlib.sha256(json.dumps(held_back).encode()).hexdigest()[:12]
 
 
 def load_labels(path, split: str = "all") -> tuple[list[LabelledAnswer], int]:

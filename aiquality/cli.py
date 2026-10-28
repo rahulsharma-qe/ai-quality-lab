@@ -143,6 +143,8 @@ def _validate_judge(args) -> int:
     config = TeamConfig.load(_team_path(args.team, args.teams_dir))
     run = validate_team_judge(config, args.split, kind=args.kind)
     print(render_validation(run))
+    if run.not_counted:
+        return EXIT_SETUP_ERROR             # the judge couldn't be measured: an outage, not a result
     return EXIT_QUALITY_FAILURE if run.qualified is False else EXIT_OK
 
 

@@ -18,7 +18,7 @@ AeroAssist itself (its policies, golden set, judge labels and agent code) lives 
 | The fix for dropped requests | `completeness_guardrail.py` | A checklist in code that asks again for any request the agent missed. Fully complete answers went from 80% to 100%. |
 | Release gate, first version | `eval_harness.py` | Pass rates against bars, and an exit code that fails the build. Healthy answers pass; a seeded regression fails. |
 | Can the AI judge be trusted? | `answer_judge.py`, `build_label_set.py`, `judge_validation.py` | Thirty answers labelled by a person, split into a half for tuning and a held-back half measured once. Two numbers decide whether the judge may block a release: how many real failures it catches, and how many good answers it leaves alone. |
-| Watching it in production | `observability/tracing.py`, `observability/monitor.py`, `observability/pii_guardrail.py` | A trace of every run, a dashboard (breaches, refusals, response time, cost), a drift alert, and a guardrail that took the personal-data leak rate from 1.7% to 0% (invented data only). |
+| Watching it in production | `observability/tracing.py`, `observability/monitor.py`, `observability/pii_guardrail.py` | A trace of every run, a dashboard (breaches, refusals, response time, cost), a drift alert, and a guardrail that took the personal-data leak rate from 1.7% to 0% on simulated traffic with one seeded leak (invented data only). |
 | Shared helpers | `llm.py`, `loader_cell.py`, `paths.py` | The model settings (now a thin wrapper over the package), the golden-set schema check, and where AeroAssist's files are. |
 
 ## Run them

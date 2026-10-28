@@ -13,14 +13,15 @@ error. Read **Breaking** before upgrading.
 
 - **A blocking check with no applicable case fails the gate**, not only a mandatory one: there is no
   evidence it passes. Make the check non-blocking, or give it a case.
-- **A golden-set column one letter away from a known one** (`must_includ`) is refused with the right
-  name; before, it was kept as a note and the check it meant ran on nothing.
+- **A golden-set column that is almost the name of one that drives a check** (`must_includ`) stops the
+  golden set from loading, naming the right one; before, it was kept as a note and the check ran on
+  nothing. Other extra columns (`notes`, `sub_category`, `expected_behavior`) are still kept as notes.
 - **Tables count an ERROR as a failure**, as the gate always did, so a pass rate in a report can be lower.
 - **A case missing from the recorded answers is a setup error (exit 2)**: record again.
 - **A judge qualifies only** on the held-back half, with at least 5 PASS and 5 FAIL labels, in a run
   where every judge call worked. `--split all` no longer qualifies.
 - **The judge's version includes the policies it grades against**, so a live model judge is a new
-  version and starts unvalidated; changed labels make a measured judge unvalidated too.
+  version and starts unvalidated; changed held-back labels make a measured judge unvalidated too.
 
 ### Added
 
@@ -30,7 +31,9 @@ error. Read **Breaking** before upgrading.
 - Checks: `ai_disclosure` (tells people it's an AI, never claims to be one) and
   `counterfactual_fairness` (the same question for a different person gets the same decision).
 - `category_bars`: a bar per test type, beside the bar per priority.
-- Judge validation numbers each held-back measurement of a version and flags a weak category.
+- Judge validation numbers each held-back measurement of a version and flags a weak category. A run
+  that doesn't count (a judge call failed) exits 2. Recorded verdicts from a judge other than the one the
+  config describes don't carry its status.
 
 ### Fixed
 
@@ -40,7 +43,8 @@ error. Read **Breaking** before upgrading.
 - A secret in the agent's URL is refused, and messages print the URL masked.
 - Setup problems (a team folder that exists, no model client, no API key, a wrong folder) are one-line
   messages with exit 2, not tracebacks.
-- Days are read as 30-11-2026 or 2026-11-30 and shown as 30-11-2026.
+- Days are read as 30-11-2026 or 2026-11-30 and shown as 30-11-2026 in reports, the dashboard and the
+  evidence report (run records keep 2026-11-30, so they sort).
 
 ## 0.1.0 — 2026-10-19
 

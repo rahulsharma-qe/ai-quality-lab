@@ -72,9 +72,9 @@ JSON, CSV or Excel. One case per row:
 | `client` | Optional tag, so results can be compared per client |
 | `conversation_history` | Optional earlier turns, as JSON text |
 
-Other columns (notes, a source) are kept with the case and check nothing. A column one letter away
-from a known one (`must_includ`) is refused with the right name, since as written it would switch a
-check off. `priority` and `category` are compared in any case: `High` meets a `high` bar.
+Other columns (notes, a source) are kept with the case and check nothing. A column that is almost the
+name of one that drives a check (`must_includ`) stops the golden set from loading and names the right
+one, since as written that check would run on nothing. `priority` and `category` are compared in any case: `High` meets a `high` bar.
 
 Tips: phrases match as whole words in any case, so `100` won't match inside `1000`; a simple
 plural still counts (`2 hour` matches `2 hours`). Accept equivalent wording with an uppercase

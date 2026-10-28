@@ -12,7 +12,8 @@ def test_a_misspelled_column_is_a_setup_error_that_names_the_right_one(tmp_path,
     rows = GOLDEN_ROWS.replace("must_include,", "must_includ,")
     folder = write_team(tmp_path / "t", dict(BASE_CONFIG), rows, AGENT_CODE)
     assert main(["gate", "--team", str(folder), "--output-dir", str(tmp_path / "out")]) == EXIT_SETUP_ERROR
-    assert "'must_includ' is not a field: did you mean 'must_include'?" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "'must_includ' is not a field: did you mean 'must_include'?" in err and "such as note_must_includ)" in err
 
 
 def test_a_blocking_check_with_no_case_fails_the_gate(tmp_path, capsys):
@@ -80,3 +81,17 @@ def test_query_names_that_only_contain_a_secret_word_are_left_alone():
     assert shown_url("https://x.example/a?keyword=refund&monkey=1&postcode=560043") == \
         "https://x.example/a?keyword=refund&monkey=1&postcode=560043"
     assert shown_url("https://x.example/a?apiKey=s3cr3t&lang=en") == "https://x.example/a?apiKey=***&lang=en"
+
+
+def test_ordinary_extra_columns_are_kept_as_notes():
+    from aiquality.test_data.golden_case import GoldenCase
+    case = GoldenCase.from_dict({"id": "C1", "input": "q", "sub_category": "a", "subcategory": "b",
+                                 "expected_tools": "c", "expected_behavior": "d", "dimension": "e", "clients": "f"})
+    assert set(case.extra) == {"sub_category", "subcategory", "expected_tools", "expected_behavior", "dimension",
+                               "clients"}
+
+
+def test_ordinary_query_names_in_the_agent_url_are_allowed():
+    from aiquality.adapters.http_endpoint_agent import shown_url
+    url = "https://x.example/a?keyword=refund&tokenizer=bpe&key_id=public&postcode=560043"
+    assert shown_url(url) == url

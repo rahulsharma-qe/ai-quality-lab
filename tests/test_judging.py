@@ -147,6 +147,10 @@ def test_changed_labels_or_policies_make_the_judge_unvalidated(tmp_path):
     validate_team_judge(config, "holdout", judge=judge)
     assert team_judge_status(config, judge) == "qualified"
     labels = json.loads((config.folder / "labels.json").read_text())
+    labels["cases"].append({"id": "L5", "input": "Pets?", "answer": "A person will help.", "human_label": "PASS",
+                            "split": "tune"})                       # a new tuning label: still the same measure
+    (config.folder / "labels.json").write_text(json.dumps(labels, indent=4))
+    assert team_judge_status(config, judge) == "qualified"
     labels["cases"][0]["human_label"] = "FAIL"
     (config.folder / "labels.json").write_text(json.dumps(labels))
     assert team_judge_status(config, judge) == "unvalidated"
@@ -160,3 +164,27 @@ def test_each_held_back_measurement_is_counted_and_shown(tmp_path):
     assert validate_team_judge(config, "holdout", judge=judge).measurement == 1
     second = validate_team_judge(config, "holdout", judge=judge)
     assert second.measurement == 2 and "held-back measurement 2 of this judge version" in render_validation(second)
+
+
+def test_recorded_verdicts_from_another_judge_version_are_unvalidated(tmp_path):
+    from aiquality.judges.recorded import RecordedJudge
+    from aiquality.judging import configured_judge_version, judge_summary
+    config = judged_team(tmp_path, rubric="rubric.md", rubric_version="r1")
+    judge = build_judge(config, chat=VerdictByAnswer())
+    assert configured_judge_version(config) == judge.version
+    validate_team_judge(config, "holdout", judge=judge)
+    recording = config.folder / "verdicts.jsonl"
+    recording.write_text(json.dumps({"case_id": "C1", "answer_sha": "x", "verdict": "PASS",
+                                     "judge_version": judge.version}) + "\n")
+    assert judge_summary(config, RecordedJudge(recording), "recorded", True)["status"] == "qualified"
+    (config.folder / "policies.md").write_text("No refunds at all.")
+    summary = judge_summary(config, RecordedJudge(recording), "recorded", True)
+    assert summary["status"] == "unvalidated" and not summary["blocking"] and "record the judge again" in summary["note"]
+
+
+def test_a_run_that_does_not_count_exits_2(tmp_path, monkeypatch):
+    config = judged_team(tmp_path)
+    monkeypatch.setattr("aiquality.judges.validation.time.sleep", lambda seconds: None)
+    monkeypatch.setattr("aiquality.judges.phrase_judge.PhraseJudge.verdict",
+                        lambda self, case, answer: (_ for _ in ()).throw(ConnectionError("down")))
+    assert main(["validate-judge", "--team", str(config.folder), "--split", "holdout", "--kind", "phrase"]) == 2

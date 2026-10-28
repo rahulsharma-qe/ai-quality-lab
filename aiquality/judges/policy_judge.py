@@ -38,8 +38,7 @@ class PolicyAnswerJudge(Judge):
 
     @property
     def version(self) -> str:
-        # The policies are what the judge grades against: changing them makes it a different judge.
-        return f"{self.name}:{self.model}:{self.rubric_version}:{_short_hash(self.rubric)}:{_short_hash(self.policy_text)}"
+        return policy_judge_version(self.model, self.rubric_version, self.rubric, self.policy_text)
 
     def verdict(self, case, answer_text):
         user = (f"POLICY:\n{self.policy_text}\n\n"
@@ -50,6 +49,13 @@ class PolicyAnswerJudge(Judge):
         if verdict not in ("PASS", "FAIL"):
             raise ValueError(f"judge returned an unreadable verdict: {reply!r}")
         return JudgeVerdict(passed=(verdict == "PASS"), reason=str(reply.get("reason", "")).strip())
+
+
+def policy_judge_version(model: str, rubric_version: str, rubric: Optional[str], policy_text: str) -> str:
+    """The version a policy judge with these settings has, worked out without a model client. The policies
+    are what the judge grades against: changing them makes it a different judge."""
+    rubric = (rubric if rubric is not None else DEFAULT_RUBRIC_FILE.read_text(encoding="utf-8")).strip()
+    return f"{PolicyAnswerJudge.name}:{model}:{rubric_version}:{_short_hash(rubric)}:{_short_hash(policy_text)}"
 
 
 def _short_hash(text: str) -> str:

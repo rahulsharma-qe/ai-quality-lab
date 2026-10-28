@@ -103,12 +103,12 @@ def write_report(assessment: Assessment, folder: Path) -> list[Path]:
 
 
 def _when(created_at: str) -> str:
-    """2026-10-17T15:51:56+00:00 -> 17 Oct 2026, 15:51 UTC."""
+    """2026-10-17T15:51:56+00:00 -> 17-10-2026, 15:51 UTC."""
     try:
         moment = datetime.fromisoformat(created_at).astimezone(timezone.utc)
     except (TypeError, ValueError):
         return str(created_at)
-    return moment.strftime("%d %b %Y, %H:%M UTC").lstrip("0")
+    return moment.strftime("%d-%m-%Y, %H:%M UTC")
 
 
 def _html(text: str) -> str:

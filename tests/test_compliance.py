@@ -100,7 +100,7 @@ def test_the_report_comes_as_html_markdown_and_json_from_one_set_of_data(tmp_pat
     assert "## Not shown to be met" in md and "Test Disclose**, Say it is an AI" in md
     assert "</script><b>" not in html and "<\\/script>" in html               # data can't close the script
     assert "fonts.googleapis" not in html and "<script src" not in html       # one file, nothing to fetch
-    assert report["run"]["created_at"] == "17 Oct 2026, 15:51 UTC"
+    assert report["run"]["created_at"] == "17-10-2026, 15:51 UTC"
 
 
 def test_a_team_file_replaces_the_built_in_one_with_the_same_name(tmp_path):

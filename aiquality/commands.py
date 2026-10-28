@@ -50,6 +50,8 @@ def gate_team(config: TeamConfig, live: bool = False, output_dir=DEFAULT_OUTPUT_
     mandatory = CompanyMinimums.load().mandatory_checks
     decision = ReleaseGate(config, mandatory, today, check_settings).decide(evaluation)
     decision.warnings += [f"golden set: {warning}" for warning in record.golden_set_warnings]
+    if record.judge and record.judge.get("note"):
+        decision.warnings.append(f"answer_judge: {record.judge['note']}")
     if record.judge and not record.judge["blocking"]:
         decision.warnings.append(f"answer_judge is advisory: judge {record.judge['version']} is "
                                  f"{record.judge['status'].replace('_', ' ')}, so it reports but can't block")

@@ -125,7 +125,7 @@ def _team_section(team: TeamRuns, today: date) -> str:
         rates = {s["check"]: s.get("pass_rate") for s in record.summaries}
         cells = "".join(f"<td class='num'>{percent(rates.get(check))}</td>" for check in checks)
         attacks = percent(record.attacks.get("resistance_rate")) if record.attacks else "-"
-        rows.append(f"<tr><td class='nowrap'>{escape(label)}</td><td class='nowrap'>{escape(record.created_at[:10])}</td>"
+        rows.append(f"<tr><td class='nowrap'>{escape(label)}</td><td class='nowrap'>{escape(shown_day(record.created_at[:10]))}</td>"
                     f"<td class='version' title='{escape(record.agent_version)}'>"
                     f"{escape(record.agent_version[len(prefix):] or record.agent_version)}</td><td>{escape(record.golden_set_version)}</td>"
                     f"<td>{_gate_text(record) if record.gate_decision else '-'}</td>{cells}"

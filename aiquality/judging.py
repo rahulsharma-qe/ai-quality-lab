@@ -13,8 +13,10 @@ from aiquality.config import TeamConfig
 from aiquality.config.judge_settings import POLICY_JUDGE
 from aiquality.errors import ConfigError
 from aiquality.judges import create_judge
+from aiquality.judges.policy_judge import policy_judge_version
 from aiquality.judges.recorded import RecordedJudge
-from aiquality.judges.validation import (STATUS_QUALIFIED, ValidationRun, held_back_measurements, judge_status,
+from aiquality.models import JUDGE_MODEL
+from aiquality.judges.validation import (STATUS_QUALIFIED, STATUS_UNVALIDATED, ValidationRun, held_back_measurements, judge_status,
                                          labels_sha, load_labels, save_run, validate_judge)
 
 
@@ -67,10 +69,35 @@ def judge_for_run(config: TeamConfig, live: bool):
 
 
 def judge_summary(config: TeamConfig, judge, mode: str, configured_blocking: bool) -> dict:
-    """What a run record says about its judge, including whether it was allowed to block."""
-    status = team_judge_status(config, judge)
-    return {"check": "answer_judge", "version": judge.version, "mode": mode, "status": status,
-            "blocking": configured_blocking and status == STATUS_QUALIFIED}
+    """What a run record says about its judge, including whether it was allowed to block. Recorded verdicts
+    from a judge other than the one the config now describes (its policies or rubric changed since) don't
+    carry that judge's status."""
+    status, note = team_judge_status(config, judge), ""
+    configured = configured_judge_version(config) if mode == "recorded" else None
+    if configured and judge.version != configured:
+        if configured.startswith(judge.version + ":"):
+            note = ("the recorded verdicts were graded before judge versions included the policies: record the "
+                    "judge again to check them against today's policies")
+        else:
+            status = STATUS_UNVALIDATED
+            note = (f"the recorded verdicts were graded by judge {judge.version}, but the config now describes "
+                    f"{configured} (policies or rubric changed): record the judge again")
+    summary = {"check": "answer_judge", "version": judge.version, "mode": mode, "status": status,
+               "blocking": configured_blocking and status == STATUS_QUALIFIED}
+    if note:
+        summary["note"] = note
+    return summary
+
+
+def configured_judge_version(config: TeamConfig) -> Optional[str]:
+    """The version of the policy judge the config describes, without building it (no model client needed)."""
+    settings = _judge_settings(config)
+    if settings.kind != POLICY_JUDGE:
+        return None
+    rubric = settings.rubric.read_text(encoding="utf-8") if settings.rubric else None
+    rubric_version = (settings.rubric_version or settings.rubric.stem) if settings.rubric else "default-v1"
+    return policy_judge_version(settings.model or JUDGE_MODEL, rubric_version, rubric,
+                                config.policies.read_text(encoding="utf-8"))
 
 
 def _judge_settings(config: TeamConfig):

@@ -13,6 +13,10 @@ KNOWN_FIELDS = (
     "client", "conversation_history", "dimensions", "expected_decision", "disclosure", "counterfactual",
 )
 DISCLOSURE_MOMENTS = ("first_reply", "asked")
+# A column close to one of these names is almost surely a typo of it, and as written the check it
+# drives would run on nothing. Other columns (notes, sub_category, expected_behavior) are kept as notes.
+CHECK_FIELDS = ("must_include", "must_not_include", "must_not_do", "expected_sources", "expected_decision",
+                "expected_tool_calls", "disclosure", "counterfactual", "conversation_history")
 
 
 @dataclass
@@ -74,10 +78,11 @@ class GoldenCase:
             except ValueError as error:
                 problems.append(f"'expected_decision': {error}")
         problems += _counterfactual_problems(data.get("counterfactual"), question)
-        problems += [f"'{name}' is not a field: did you mean '{close[0]}'? (as written, it is kept as a note and "
-                     "checks nothing)"
+        problems += [f"'{name}' is not a field: did you mean '{close[0]}'? As written the check it drives would run "
+                     "on nothing, so the golden set isn't loaded. Rename it (or, if it is a note, give it a name "
+                     f"such as note_{name})"
                      for name in data if name not in KNOWN_FIELDS
-                     for close in [difflib.get_close_matches(str(name).strip().lower(), KNOWN_FIELDS, n=1, cutoff=0.8)]
+                     for close in [difflib.get_close_matches(str(name).strip().lower(), CHECK_FIELDS, n=1, cutoff=0.88)]
                      if close]
         if data.get("disclosure") not in (None, "", *DISCLOSURE_MOMENTS):
             problems.append(f"'disclosure' must be {' or '.join(DISCLOSURE_MOMENTS)}, not '{data['disclosure']}'")

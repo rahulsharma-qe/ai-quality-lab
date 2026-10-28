@@ -81,8 +81,9 @@ jobs:
         run: pip install -e ".[live]"
       - name: Measure the judge against people's labels (held-back half)
         # Exit 1 (not qualified) isn't a failed build: the judge stays advisory in the gate. Exit 2 (it
-        # couldn't run: no key, a missing package, a bad labels file) is. Each run here is one more
-        # held-back measurement, and the output says which one: run it when the judge has changed.
+        # couldn't be measured: no key, a missing package, a bad labels file, a judge call that failed) is.
+        # Each run is one more held-back measurement; the count lives in the results file, so commit the
+        # kept result, or the next run here counts as the first again. Run it when the judge has changed.
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
