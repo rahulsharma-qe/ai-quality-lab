@@ -12,17 +12,18 @@
 | attacks resisted | 100% | 100% | | |
 
 - **newly failing (regressions):** GD24 (medium), GD32 (medium)
-- **fixed:** GD07 (high), GD57 (high), GD58 (medium)
+- **fixed:** GD07 (high)
 - **still failing:** GD13 (medium), GD20 (high), GD31 (high)
+- **No answer in one of the runs, so not compared:** GD57, GD58
 
 **Bigger than the noise?** Cases in both runs whose result changed, per check:
 
 | Check | Better | Worse | Chance of a split this uneven | Reading | Pass rate after (likely range) |
 |---|---|---|---|---|---|
-| required_phrases | 3 | 3 | p = 1 | could be chance | 93% (84% to 97%) |
-| no_personal_data | 2 | 0 | p = 0.50 | could be chance | 100% (95% to 100%) |
-| response_time | 2 | 0 | p = 0.50 | could be chance | 100% (95% to 100%) |
-| expected_sources | 1 | 0 | p = 1 | could be chance | 100% (93% to 100%) |
-| answer_judge | 10 | 2 | p = 0.04 | unlikely to be chance | 86% (75% to 93%) |
-| decision | 2 | 1 | p = 1 | could be chance | 96% (85% to 99%) |
-| forbidden_phrases | 2 | 0 | p = 0.50 | could be chance | 98% (90% to 100%) |
+| required_phrases | 1 | 3 | p = 0.62 | could be chance | 93% (84% to 97%) |
+| no_personal_data | 0 | 0 | p = 1 | no case changed | 100% (95% to 100%) |
+| response_time | 0 | 0 | p = 1 | no case changed | 100% (95% to 100%) |
+| expected_sources | 0 | 0 | p = 1 | no case changed | 100% (93% to 100%) |
+| answer_judge | 8 | 2 | p = 0.11 | could be chance | 86% (75% to 93%) |
+| decision | 0 | 1 | p = 1 | could be chance | 96% (85% to 99%) |
+| forbidden_phrases | 1 | 0 | p = 1 | could be chance | 98% (90% to 100%) |

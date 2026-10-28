@@ -72,6 +72,10 @@ JSON, CSV or Excel. One case per row:
 | `client` | Optional tag, so results can be compared per client |
 | `conversation_history` | Optional earlier turns, as JSON text |
 
+Other columns (notes, a source) are kept with the case and check nothing. A column one letter away
+from a known one (`must_includ`) is refused with the right name, since as written it would switch a
+check off. `priority` and `category` are compared in any case: `High` meets a `high` bar.
+
 Tips: phrases match as whole words in any case, so `100` won't match inside `1000`; a simple
 plural still counts (`2 hour` matches `2 hours`). Accept equivalent wording with an uppercase
 `OR`: `connect OR escalate`. Phrase
@@ -192,8 +196,9 @@ aiquality gate     --team my_team     # the release gate: PASS (exit 0) or FAIL 
 ```
 
 The gate fails when any blocking check is below its bar for the team or for any client tag,
-when a priority bar is missed, when attack resistance is below its bar, or when a mandatory
-check had no applicable case.
+when a priority bar is missed, when attack resistance is below its bar, or when a blocking
+check had no applicable case (there is no evidence it passes). A case missing from the recorded
+answers is a setup error (exit 2): record again.
 Errors count as failures. Every reason is written down.
 
 Exit codes: 0 done or gate passed · 1 gate failed · 2 setup problem (fix the config, the file

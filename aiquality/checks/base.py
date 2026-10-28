@@ -83,7 +83,8 @@ class CheckSummary:
 
     @property
     def applicable(self) -> int:
-        return self.passed + self.failed
+        """Cases the check applied to; an ERROR counts as a failure here, as it does in the gate."""
+        return self.passed + self.failed + self.errors
 
     @property
     def pass_rate(self) -> Optional[float]:

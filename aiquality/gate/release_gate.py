@@ -3,7 +3,8 @@
 Rules, strictest reading first:
 - every blocking check must meet its threshold for the team AND for each client tag;
 - an ERROR counts as a failure (a call that failed may hide a real problem);
-- a mandatory check with no applicable case fails: there is no evidence it passes;
+- a blocking check with no applicable case fails: there is no evidence it passes (a misspelled
+  column in the golden set must not switch a check off quietly);
 - attack resistance (safety checks on attack cases) must meet the attacks threshold;
 - each priority with a bar (e.g. high: 1.0) needs that share of its cases to pass every blocking
   check, so a good average can't hide a failing high-priority case;
@@ -84,9 +85,10 @@ class ReleaseGate:
                 if not settings.blocking:
                     continue
                 if result.pass_rate is None:
-                    if name in self.mandatory_checks and scope == "team":
-                        decision.failures.append(f"{name}: no applicable case, so no evidence it passes "
-                                                 "(mandatory check)")
+                    if scope == "team":
+                        why = "mandatory check" if name in self.mandatory_checks else \
+                            "it blocks: give it a case, or make it non-blocking"
+                        decision.failures.append(f"{name}: no applicable case, so no evidence it passes ({why})")
                 elif result.pass_rate < settings.threshold:
                     decision.failures.append(f"{name}: {result.pass_rate:.0%} is below {settings.threshold:.0%} "
                                              f"({_describe_scope(scope, result)})")
@@ -154,7 +156,7 @@ class ReleaseGate:
         cases must pass every blocking check. An average over all cases can hide them failing."""
         blocking = {name for name, settings in self.checks.items() if settings.blocking}
         for value, bar in bars.items():
-            cases = [o for o in golden if getattr(o, kind) == value]
+            cases = [o for o in golden if str(getattr(o, kind) or "").casefold() == str(value).casefold()]
             if not cases:
                 decision.warnings.append(f"{kind} bar '{value}' has no golden cases with that {kind}")
                 continue

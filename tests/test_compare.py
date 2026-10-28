@@ -97,3 +97,21 @@ def test_each_check_says_how_many_cases_got_better_and_worse(tmp_path):
     assert required.verdict == "could be chance" and required.p_value == 1.0
     assert "bigger than the noise?" in render_comparison(comparison)
     assert "**Bigger than the noise?**" in render_comparison_markdown(comparison)
+
+
+def test_no_answer_turning_into_a_pass_is_not_a_fix(tmp_path):
+    def broken_on_returns(question):
+        if "return" in question:
+            raise TimeoutError("no answer")
+        return old_agent(question)
+
+    config = TeamConfig.load(write_team(tmp_path / "team", dict(BASE_CONFIG, max_error_rate=0.5), ROWS))
+    before = evaluate_team(config, agent=PythonFunctionAgent(broken_on_returns, version="v1"),
+                           output_dir=tmp_path / "before", print_reports=False)
+    after = evaluate_team(config, agent=PythonFunctionAgent(new_agent, version="v2"),
+                          output_dir=tmp_path / "after", print_reports=False)
+    comparison = compare_runs(before, after)
+    assert "C2" not in [change.case_id for change in comparison.fixed] and comparison.no_answer == ["C2"]
+    required = next(n for n in comparison.noise if n.check == "required_phrases")
+    assert required.better == 0                                   # an ERROR is no verdict to improve on
+    assert "no answer in one of the runs, so not compared: C2" in render_comparison(comparison)

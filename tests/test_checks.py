@@ -115,9 +115,9 @@ def test_errors_and_buggy_checks_never_count_as_a_pass():
                 "always_crashes_test": CheckSettings("always_crashes_test", 0.9)}
     evaluation = evaluate_runs(runs, settings)
     required = evaluation.summaries["required_phrases"]
-    assert (required.passed, required.errors, required.pass_rate) == (1, 1, 1.0)
+    assert (required.passed, required.errors, required.pass_rate) == (1, 1, 0.5)   # as the gate counts it
     crashed = evaluation.summaries["always_crashes_test"]
-    assert crashed.errors == 2 and crashed.pass_rate is None and crashed.meets_threshold is None
+    assert crashed.errors == 2 and crashed.pass_rate == 0.0 and crashed.meets_threshold is False
 
 
 def test_summary_pass_rate_ignores_not_applicable():

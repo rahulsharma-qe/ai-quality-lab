@@ -199,7 +199,9 @@ run's time, not measured durations.
    can't be accepted. Every acceptance is listed in the decision.
 2. For every blocking check, and for the team and each client tag separately: pass rate must meet
    the threshold. An ERROR counts as a failure.
-3. The company floor: a mandatory check with no applicable case fails for lack of evidence. (The
+3. No evidence is not a pass: a blocking check with no applicable case fails (a misspelled column
+   must not switch a check off quietly). The tables count an ERROR as a failure too, as the gate does.
+   The company floor: mandatory checks must be in the config. (The
    rest of the floor is enforced when the config loads: a mandatory check can't be left out, and a
    threshold can't be below the company minimum; a team may only be stricter.)
 4. Priority bars: for `high: 1.0`, every high-priority case must pass every blocking check, so a good

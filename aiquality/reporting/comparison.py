@@ -9,8 +9,9 @@ prompt, a new model, a retrieval setting) is judged case by case against a saved
     print(render_comparison(comparison))
     comparison.newly_failing                              # the regressions, if any
 
-A case fails when any blocking check FAILED or ERRORED on it, the same reading the release
-gate uses. Diagnostic checks (blocking: false) still show in the per-check table.
+A case fails when any blocking check FAILED on it. A case with an ERROR in either run (no answer, a
+call that failed) is listed apart: no answer turning into a pass is not a fix, and a pass turning into
+no answer is not a regression. Diagnostic checks (blocking: false) still show in the per-check table.
 
 Each check also says whether its change is bigger than the noise: how many cases got better and
 how many worse, and how likely that split is by chance (see noise.py).
@@ -26,7 +27,7 @@ from aiquality.reporting.noise import sign_test_p, verdict, wilson_range
 from aiquality.reporting.report_data import percent, version_text
 from aiquality.reporting.run_record import RUN_RECORDS_FILE, RunRecord, load_run_records
 
-FAILING = ("FAIL", "ERROR")
+FAILING = ("FAIL",)
 
 
 @dataclass
@@ -85,6 +86,7 @@ class RunComparison:
     only_before: list[str] = field(default_factory=list)           # cases one run doesn't have
     only_after: list[str] = field(default_factory=list)
     new_cases_failing: list[CaseChange] = field(default_factory=list)  # among only_after
+    no_answer: list[str] = field(default_factory=list)             # an ERROR in either run: not compared
     noise: list[CheckNoise] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
@@ -127,7 +129,11 @@ def compare_runs(before: RunRecord, after: RunRecord) -> RunComparison:
     failed_before = _failing_checks(before, blocking)
     failed_after = _failing_checks(after, blocking)
     outcomes_after = {o["case_id"]: o for o in after.outcomes}
+    errored = _errored_cases(before, blocking) | _errored_cases(after, blocking)
     for case_id, outcome in outcomes_after.items():
+        if case_id in errored and case_id in failed_before:
+            comparison.no_answer.append(case_id)
+            continue
         if case_id not in failed_before:
             comparison.only_after.append(case_id)
             if failed_after[case_id]:
@@ -166,6 +172,8 @@ def render_comparison(comparison: RunComparison) -> str:
         lines += [f"  {_case_line(change, id_width)}" for change in changes]
     if comparison.only_before:
         lines += ["", f"only in the before run: {', '.join(comparison.only_before)}"]
+    if comparison.no_answer:
+        lines += ["", f"no answer in one of the runs, so not compared: {', '.join(comparison.no_answer)}"]
     if comparison.noise:
         lines += ["", "bigger than the noise? (cases in both runs whose result changed)"]
         noise_width = max(len(n.check) for n in comparison.noise) + 2
@@ -192,6 +200,8 @@ def render_comparison_markdown(comparison: RunComparison) -> str:
     for title, changes in _case_sections(comparison):
         cases = ", ".join(f"{c.case_id} ({c.priority})" for c in changes) or "none"
         lines.append(f"- **{title}:** {cases}")
+    if comparison.no_answer:
+        lines.append(f"- **No answer in one of the runs, so not compared:** {', '.join(comparison.no_answer)}")
     if comparison.noise:
         lines += ["", "**Bigger than the noise?** Cases in both runs whose result changed, per check:", "",
                   "| Check | Better | Worse | Chance of a split this uneven | Reading | Pass rate after (likely range) |",
@@ -224,11 +234,11 @@ def changed_cases(before: RunRecord, after: RunRecord) -> list[str]:
 
 
 def _verdicts(record: RunRecord) -> dict:
-    """(check, case_id) -> passed, for every result that is a verdict (not NOT_APPLICABLE)."""
+    """(check, case_id) -> passed, for every result that is a verdict (not NOT_APPLICABLE, not ERROR)."""
     found = {}
     for outcome in record.outcomes:
         for result in outcome["results"]:
-            if result["status"] in ("PASS", "FAIL", "ERROR"):
+            if result["status"] in ("PASS", "FAIL"):          # an ERROR is no verdict: not better or worse
                 found[(result["check"], outcome["case_id"])] = result["status"] == "PASS"
     return found
 
@@ -258,6 +268,11 @@ def _range_text(noise: CheckNoise) -> str:
     if low is None:
         return "-"
     return f"{percent(noise.after_passed / noise.after_total)} ({percent(low)} to {percent(high)})"
+
+
+def _errored_cases(record: RunRecord, blocking: set) -> set:
+    return {o["case_id"] for o in record.outcomes
+            if any(r["status"] == "ERROR" and r["check"] in blocking for r in o["results"])}
 
 
 def _failing_checks(record: RunRecord, blocking: set) -> dict[str, list[str]]:

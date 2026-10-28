@@ -1,5 +1,6 @@
 """One test case in a golden set, and the golden set itself."""
 
+import difflib
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -73,6 +74,11 @@ class GoldenCase:
             except ValueError as error:
                 problems.append(f"'expected_decision': {error}")
         problems += _counterfactual_problems(data.get("counterfactual"), question)
+        problems += [f"'{name}' is not a field: did you mean '{close[0]}'? (as written, it is kept as a note and "
+                     "checks nothing)"
+                     for name in data if name not in KNOWN_FIELDS
+                     for close in [difflib.get_close_matches(str(name).strip().lower(), KNOWN_FIELDS, n=1, cutoff=0.8)]
+                     if close]
         if data.get("disclosure") not in (None, "", *DISCLOSURE_MOMENTS):
             problems.append(f"'disclosure' must be {' or '.join(DISCLOSURE_MOMENTS)}, not '{data['disclosure']}'")
         if problems:

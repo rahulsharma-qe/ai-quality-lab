@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Iterable, Optional
 
 from aiquality.contracts import AgentResponse, AgentUnderTest
-from aiquality.errors import SetupError
+from aiquality.errors import RecordingNotFoundError, SetupError
 from aiquality.test_data import GoldenCase
 
 
@@ -32,6 +32,11 @@ class Runner:
 
     def run(self, cases: Iterable[GoldenCase]) -> list[CaseRun]:
         runs = [self._run_one(case) for case in cases]
+        missing = [r.case.id for r in runs if r.error and r.error.startswith(RecordingNotFoundError.__name__)]
+        if missing:
+            raise SetupError(f"{len(missing)} case(s) have no recorded answer ({', '.join(missing[:10])}): the golden "
+                             "set changed since the recording. Record again (aiquality record --team <team>), or "
+                             "run --live")
         failed = [r for r in runs if not r.succeeded]
         if runs and len(failed) / len(runs) > self.max_error_rate:
             examples = "; ".join(f"{r.case.id}: {r.error}" for r in failed[:3])
