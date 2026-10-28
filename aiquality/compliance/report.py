@@ -32,7 +32,7 @@ def report_data(assessment: Assessment) -> dict:
             "id": record.run_id, "created_at": _when(record.created_at), "commit": record.git_commit, "mode": record.run_mode,
             "command": record.command, "agent_version": record.agent_version,
             "golden_set": f"{record.golden_set_name} {record.golden_set_version}",
-            "cases": f"{record.case_count} cases: " + ", ".join(f"{n} {c.replace('_', ' ')}" for c, n in sorted(categories.items())),
+            "cases": f"{record.case_count} cases run: " + ", ".join(f"{n} {c.replace('_', ' ')}" for c, n in sorted(categories.items())),
             "gate": f"Release gate: {gate['decision']}" if gate else f"No release gate ({record.command})",
             "gate_reason": (gate.get("failures") or ["every blocking bar met"])[0] if gate else "",
         },
@@ -54,7 +54,7 @@ def render_markdown(assessment: Assessment) -> str:
     data, level = report_data(assessment), assessment.risk_level
     run = data["run"]
     counts = assessment.count()
-    lines = [f"# Evidence report: {data['team']}", "",
+    lines = [f"# Evidence report: {data['team']}", "", f"_{DISCLAIMER}_", "",
              f"Run {run['id']} ({run['mode']} answers), {run['created_at']}, commit {run['commit'] or 'unknown'}. "
              f"{run['golden_set']}, {run['cases']}. {run['gate']}"
              + (f": {run['gate_reason']}" if run["gate_reason"] else "") + ".", "",

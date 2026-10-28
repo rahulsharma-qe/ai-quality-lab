@@ -174,7 +174,9 @@ def _evidence(args) -> int:
     paths = write_report(assessment, Path(args.output_dir) / "evidence" / config.team)
     counts = assessment.count()
     what_if = "" if level == config.compliance.risk_level else f" (what if: team.yaml says {config.compliance.risk_level})"
+    from aiquality.compliance.report import DISCLAIMER
     print(f"evidence for {config.team}, run {record.run_id} ({record.run_mode}), risk level {level}{what_if}")
+    print(f"({DISCLAIMER})")
     from aiquality.compliance import LABELS
     for key, text in LABELS.items():
         print(f"  {counts[key]:>3}  {text.lower()}")

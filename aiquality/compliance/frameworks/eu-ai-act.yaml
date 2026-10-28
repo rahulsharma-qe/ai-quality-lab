@@ -7,7 +7,9 @@ link: https://eur-lex.europa.eu/eli/reg/2024/1689/oj
 note: Articles 9 to 15 are obligations for high-risk systems (Annex III lists them; risk assessment and
   pricing for life and health insurance is one, point 5(c)). Article 50 covers systems that interact directly
   with people; a high-risk system that does has both duties. Article links go to an unofficial, readable
-  copy of the text; the Official Journal (the link above) is the text that counts.
+  copy of the text; the Official Journal (the link above) is the text that counts. "Minimal" and "limited"
+  are the usual names for systems outside high risk with no duty or with only Article 50's; the Act itself
+  names high risk, not the other two.
 
 controls:
   - id: Art. 50(1)
@@ -41,6 +43,8 @@ controls:
     applies_when: [high]
     link: https://artificialintelligenceact.eu/article/12/
     evidence: [run_records]
+    partial: The run records log each test run; Art. 12 asks for events logged while the system is in use,
+      which the agent's own production logging has to provide.
   - id: Art. 14
     title: Human oversight
     asks: People can understand, override and stop the system, and are guarded against over-relying on it.

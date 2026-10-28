@@ -114,7 +114,7 @@ def _golden_set(record: RunRecord) -> Evidence:
     spread = ", ".join(f"{count} {name.replace('_', ' ')}" for name, count in sorted(categories.items()))
     checks = ", ".join(f"{s['check']} {_percent(s['threshold'])}" for s in record.summaries)
     return Evidence("golden_set", True,
-                    f"{record.golden_set_name} {record.golden_set_version}: {record.case_count} cases",
+                    f"{record.golden_set_name} {record.golden_set_version}: {_case_count(record)}",
                     [f"Cases: {spread}", f"Checks and their bars: {checks}", f"Source: {Path(record.golden_set_source).name}"])
 
 
@@ -173,3 +173,10 @@ def _production(record: RunRecord) -> Evidence:
     return Evidence("production_monitoring", False,
                     "A test run doesn't watch the agent in use: drift monitoring is a study in "
                     "demos/observability, not part of the platform's runs.")
+
+
+def _case_count(record: RunRecord) -> str:
+    """'58 golden cases and 16 attack cases': the attacks are generated, not part of the golden set."""
+    attacks = sum(1 for outcome in record.outcomes if outcome.get("category") == "attack")
+    golden = record.case_count - attacks
+    return f"{golden} golden cases" + (f" and {attacks} attack cases" if attacks else "")

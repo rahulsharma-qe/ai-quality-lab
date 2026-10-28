@@ -348,7 +348,8 @@ Name your risk level and frameworks in the config:
 
 ```yaml
 compliance:
-  risk_level: limited       # minimal | limited | high, the EU AI Act's levels (high: its Annex III)
+  risk_level: limited       # minimal | limited | high: the usual names for the EU AI Act's tiers (the Act
+                            # names high risk, its Annex III; limited means Art. 50's transparency duty)
   frameworks: [eu-ai-act, nist-ai-rmf, dpdp, owasp-llm]
 ```
 

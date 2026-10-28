@@ -24,7 +24,7 @@ LABELS = {
     "gap": "Applies, no evidence",
     "miss": "Applies, evidence: bar not met",
     "covered": "Applies, evidence",
-    "practice": "Good practice",
+    "practice": "Optional here (good practice)",
     "not_required": "Not required here",
     "outside": "Outside the tool",
 }
