@@ -233,6 +233,12 @@ def _agent_problems(settings, label: str) -> list[str]:
                             f"variable and give only its name, e.g. auth_token_env")
         else:
             problems.append(f"'{label}.{key}' is not a setting of the {adapter} adapter")
+    url = settings.get("url")
+    if isinstance(url, str):
+        from aiquality.adapters.http_endpoint_agent import shown_url
+        if shown_url(url) != url:
+            problems.append(f"'{label}.url' holds a secret ({shown_url(url)}): put it in an environment variable "
+                            "and give only its name, e.g. auth_token_env")
     for header in (settings.get("headers") or {}):
         if _looks_like_secret(header):
             problems.append(f"'{label}.headers.{header}' would put a secret in the config; use auth_token_env")

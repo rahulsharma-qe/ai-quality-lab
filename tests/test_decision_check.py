@@ -85,3 +85,12 @@ def test_a_case_without_an_expected_decision_does_not_count():
     case = GoldenCase.from_dict({"id": "X1", "input": "question"})
     assert create_check("decision").evaluate(case, AgentResponse(answer_text="Yes.")).status == CheckStatus.NOT_APPLICABLE
 
+
+
+@pytest.mark.parametrize("text, expected", [
+    ("Absolutely not.", "no"), ("Certainly not, that isn't allowed.", "no"), ("Of course not.", "no"),
+    ("Absolutely, you can.", "yes"), ("Of course, you can change it.", "yes"), ("Sure, not a problem.", "yes"),
+])
+def test_a_strong_word_before_not_is_a_no(text, expected):
+    from aiquality.checks.decision_check import read_decision
+    assert read_decision(text).decision == expected

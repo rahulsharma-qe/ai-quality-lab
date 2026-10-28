@@ -42,3 +42,41 @@ def test_an_answer_missing_from_the_recording_is_a_setup_error(tmp_path, capsys)
     assert main(["gate", "--team", str(folder), "--output-dir", str(tmp_path / "out")]) == EXIT_SETUP_ERROR
     assert "1 case(s) have no recorded answer (C2): the golden set changed since the recording" in \
         capsys.readouterr().err
+
+
+def test_a_secret_in_the_agent_url_is_refused_without_printing_it(tmp_path, capsys):
+    config = dict(BASE_CONFIG, agent={"adapter": "http_endpoint",
+                                      "url": "https://qa:hunter2pass@agent.example/chat?key=sk-ant-123"})
+    folder = write_team(tmp_path / "t", config, GOLDEN_ROWS)
+    assert main(["gate", "--team", str(folder), "--output-dir", str(tmp_path / "out")]) == EXIT_SETUP_ERROR
+    err = capsys.readouterr().err
+    assert "'agent.url' holds a secret (https://***@agent.example/chat?key=***)" in err
+    assert "hunter2pass" not in err and "sk-ant-123" not in err
+
+
+def test_setup_problems_are_messages_with_exit_2_not_tracebacks(tmp_path, capsys, monkeypatch):
+    assert main(["new-team", "again", "--teams-dir", str(tmp_path)]) == 0
+    assert main(["new-team", "again", "--teams-dir", str(tmp_path)]) == EXIT_SETUP_ERROR
+    assert "already exists: pick another name" in capsys.readouterr().err
+    import builtins
+    real_import = builtins.__import__
+
+    def no_anthropic(name, *args, **kwargs):
+        if name == "anthropic":
+            raise ModuleNotFoundError("No module named 'anthropic'")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", no_anthropic)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    from aiquality.models.chat_model import AnthropicChat
+    from aiquality.errors import SetupError
+    import pytest
+    with pytest.raises(SetupError, match="the model client isn't installed"):
+        AnthropicChat("a-model")
+
+
+def test_query_names_that_only_contain_a_secret_word_are_left_alone():
+    from aiquality.adapters.http_endpoint_agent import shown_url
+    assert shown_url("https://x.example/a?keyword=refund&monkey=1&postcode=560043") == \
+        "https://x.example/a?keyword=refund&monkey=1&postcode=560043"
+    assert shown_url("https://x.example/a?apiKey=s3cr3t&lang=en") == "https://x.example/a?apiKey=***&lang=en"

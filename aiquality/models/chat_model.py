@@ -20,6 +20,8 @@ import json
 import os
 import re
 
+from aiquality.errors import SetupError
+
 AGENT_MODEL = os.environ.get("AGENT_MODEL", "claude-haiku-4-5")
 JUDGE_MODEL = os.environ.get("JUDGE_MODEL", "claude-sonnet-5-5")
 
@@ -35,7 +37,7 @@ def get_api_key(name="ANTHROPIC_API_KEY"):
         pass
     key = os.environ.get(name)
     if not key:
-        raise RuntimeError(f"{name} is not set — add it as a Colab secret or an environment variable.")
+        raise SetupError(f"{name} is not set: add it as a Colab secret or an environment variable")
     return key
 
 
@@ -58,7 +60,11 @@ class AnthropicChat(ChatModel):
 
     def __init__(self, model, **kwargs):
         super().__init__(model, **kwargs)
-        from anthropic import Anthropic
+        try:
+            from anthropic import Anthropic
+        except ModuleNotFoundError:
+            raise SetupError("the model client isn't installed: pip install -e \".[live]\" (live runs only; "
+                             "recorded runs need no key and no client)") from None
         self._client = Anthropic(api_key=get_api_key("ANTHROPIC_API_KEY"))
         self._send_temperature = True
 

@@ -33,6 +33,7 @@ class HttpEndpointAgent(AgentUnderTest):
         if method not in ("GET", "POST"):
             raise ConfigError("http_endpoint agent", [f"method must be GET or POST, got {method}"])
         self.url = url
+        self.shown_url = shown_url(url)          # what messages print: no password, no key in the query
         self.method = method
         self.question_field = question_field
         self.answer_field = answer_field
@@ -51,18 +52,18 @@ class HttpEndpointAgent(AgentUnderTest):
             with urllib.request.urlopen(request, timeout=self.timeout_seconds) as reply:
                 body = reply.read().decode("utf-8")
         except urllib.error.HTTPError as error:
-            raise AgentConnectionError(f"{self.url} answered HTTP {error.code}") from error
+            raise AgentConnectionError(f"{self.shown_url} answered HTTP {error.code}") from error
         except (urllib.error.URLError, TimeoutError, OSError) as error:
-            raise AgentConnectionError(f"could not reach {self.url}: {error}") from error
+            raise AgentConnectionError(f"could not reach {self.shown_url}: {error}") from error
         latency_ms = round((time.perf_counter() - started) * 1000, 1)
 
         try:
             payload = json.loads(body)
         except json.JSONDecodeError as error:
-            raise AgentConnectionError(f"{self.url} did not return JSON") from error
+            raise AgentConnectionError(f"{self.shown_url} did not return JSON") from error
         answer_text = _read_dotted_path(payload, self.answer_field)
         if not isinstance(answer_text, str):
-            raise AgentConnectionError(f"no text at '{self.answer_field}' in the reply from {self.url}")
+            raise AgentConnectionError(f"no text at '{self.answer_field}' in the reply from {self.shown_url}")
         return AgentResponse(answer_text=answer_text, latency_ms=latency_ms)
 
     def _build_request(self, question: str, conversation: Optional[list[dict]]) -> urllib.request.Request:
@@ -71,7 +72,7 @@ class HttpEndpointAgent(AgentUnderTest):
             token = os.environ.get(self.auth_token_env)
             if not token:
                 raise AgentConnectionError(
-                    f"environment variable {self.auth_token_env} is not set (needed for {self.url})")
+                    f"environment variable {self.auth_token_env} is not set (needed for {self.shown_url})")
             headers[self.auth_header] = f"{self.auth_prefix}{token}"
 
         if self.method == "GET":
@@ -92,3 +93,32 @@ def _read_dotted_path(payload, dotted_path: str):
         else:
             return None
     return value
+
+
+SECRET_QUERY = ("key", "token", "secret", "password", "signature", "sig", "auth", "code")
+SECRET_QUERY_JOINED = ("apikey", "accesstoken", "authtoken", "clientsecret")
+
+
+def _secret_name(name: str) -> bool:
+    """api_key, access-token, X.Signature: a whole word of the name; keyword or monkey are not."""
+    import re
+    words = [word for word in re.split(r"[_\-.\s]+|(?<=[a-z])(?=[A-Z])", name) if word]
+    return (any(word.lower() in SECRET_QUERY for word in words)
+            or name.lower().replace("_", "").replace("-", "") in SECRET_QUERY_JOINED)
+
+
+def shown_url(url: str) -> str:
+    """The URL as messages may print it: a password in it and secret-looking query values replaced."""
+    try:
+        parts = urllib.parse.urlsplit(url)
+    except ValueError:
+        return "<the agent's url>"
+    pairs = urllib.parse.parse_qsl(parts.query, keep_blank_values=True)
+    if "@" not in parts.netloc and not any(_secret_name(name) for name, _ in pairs):
+        return url                                   # nothing to hide: printed exactly as written
+    netloc = parts.netloc
+    if "@" in netloc:
+        netloc = "***@" + netloc.rsplit("@", 1)[1]
+    query = urllib.parse.urlencode([(name, "***" if _secret_name(name) else value)
+                                    for name, value in pairs], safe="*")
+    return urllib.parse.urlunsplit((parts.scheme, netloc, parts.path, query, parts.fragment))

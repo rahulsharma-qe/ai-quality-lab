@@ -27,11 +27,12 @@ _CONDITION = re.compile(r"\b(if|unless)\b(?! so\b)", re.I)
 _OTHER_CASE = re.compile(r"^(if|otherwise|after that|else|unless)\b", re.I)
 _OTHER_CASE_INSIDE = re.compile(r"[;,]\s*(otherwise|after that|if not)\b", re.I)   # "...; after that, ..."
 _YES_OPENING = re.compile(
-    r"^(yes\b|yeah\b|yep\b|sure\b|absolutely\b|of course\b|good news\b|no problem\b|no issues?\b|"
+    r"^(yes\b|yeah\b|yep\b|(sure|absolutely|certainly|definitely|of course)\b(?!,? not\b(?! an? (problem|issue)))|good news\b|"
+    r"no problem\b|no issues?\b|"
     r"that'?s (fine|okay|ok|allowed)\b|that is (fine|okay|ok|allowed)\b|"
     r"you can\b|you may\b|you('re| are) (allowed|eligible|entitled|within|fine)\b|you (do )?qualify\b)", re.I)
 _NO_OPENING = re.compile(
-    r"^(no\b(?! (problem|issues?)\b)|not\b|unfortunately\b|sadly\b|i can'?t\b|i cannot\b|i can not\b|i('m| am) (not able|unable)\b|"
+    r"^(no\b(?! (problem|issues?)\b)|not\b|(sure|absolutely|certainly|definitely|of course),? not\b(?! an? (problem|issue))|unfortunately\b|sadly\b|i can'?t\b|i cannot\b|i can not\b|i('m| am) (not able|unable)\b|"
     r"you can'?t\b|you cannot\b|you can not\b|you won'?t\b|you('re| are) not\b|"
     r"that'?s not\b|that is not\b|it'?s not\b|it is not\b)", re.I)
 _NEGATIVE = re.compile(r"\b(can'?t|cannot|can not|not allowed|not possible|isn'?t|is not|aren'?t|not eligible|"

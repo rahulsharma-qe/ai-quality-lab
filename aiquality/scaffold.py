@@ -8,6 +8,8 @@ from pathlib import Path
 
 import yaml
 
+from aiquality.errors import SetupError
+
 STARTER_CONFIG = {
     "team": "<name>",
     "description": "Replace the starter agent and golden set with your own.",
@@ -58,7 +60,7 @@ def create_team_scaffold(name: str, teams_dir=Path("teams"), config_format: str 
         raise ValueError("config_format must be 'yaml' or 'json'")
     folder = Path(teams_dir) / name
     if folder.exists():
-        raise FileExistsError(f"{folder} already exists; pick another name")
+        raise SetupError(f"{folder} already exists: pick another name, or work in the one already there")
     folder.mkdir(parents=True)
     config = {**STARTER_CONFIG, "team": name}
     if config_format == "yaml":
