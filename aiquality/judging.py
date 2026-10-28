@@ -14,8 +14,8 @@ from aiquality.config.judge_settings import POLICY_JUDGE
 from aiquality.errors import ConfigError
 from aiquality.judges import create_judge
 from aiquality.judges.recorded import RecordedJudge
-from aiquality.judges.validation import (STATUS_QUALIFIED, ValidationRun, judge_status, load_labels, save_run,
-                                         validate_judge)
+from aiquality.judges.validation import (STATUS_QUALIFIED, ValidationRun, held_back_measurements, judge_status,
+                                         labels_sha, load_labels, save_run, validate_judge)
 
 
 def build_judge(config: TeamConfig, kind: Optional[str] = None, chat=None):
@@ -45,13 +45,16 @@ def validate_team_judge(config: TeamConfig, split: str = "tune", kind: Optional[
     items, skipped = load_labels(settings.labels, split)
     if not items:
         raise ConfigError(config.source, [f"no labelled cases in the '{split}' split of {settings.labels}"])
-    run = validate_judge(judge or build_judge(config, kind), items, split, skipped_unlabelled=skipped)
+    judge = judge or build_judge(config, kind)
+    run = validate_judge(judge, items, split, skipped_unlabelled=skipped, labels=labels_sha(settings.labels),
+                         earlier_measurements=held_back_measurements(judge.version, settings.results))
     save_run(run, settings.results)
     return run
 
 
 def team_judge_status(config: TeamConfig, judge) -> str:
-    return judge_status(judge.version, _judge_settings(config).results)
+    settings = _judge_settings(config)
+    return judge_status(judge.version, settings.results, labels_sha(settings.labels) if settings.labels else "")
 
 
 def judge_for_run(config: TeamConfig, live: bool):

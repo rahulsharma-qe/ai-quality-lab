@@ -38,7 +38,8 @@ class PolicyAnswerJudge(Judge):
 
     @property
     def version(self) -> str:
-        return f"{self.name}:{self.model}:{self.rubric_version}:{_short_hash(self.rubric)}"
+        # The policies are what the judge grades against: changing them makes it a different judge.
+        return f"{self.name}:{self.model}:{self.rubric_version}:{_short_hash(self.rubric)}:{_short_hash(self.policy_text)}"
 
     def verdict(self, case, answer_text):
         user = (f"POLICY:\n{self.policy_text}\n\n"

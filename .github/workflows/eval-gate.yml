@@ -80,11 +80,23 @@ jobs:
       - name: Install the platform with the model client
         run: pip install -e ".[live]"
       - name: Measure the judge against people's labels (held-back half)
-        continue-on-error: true    # a judge that doesn't qualify isn't a failed build: it stays
-                                   # advisory in the gate (reports, can't block)
+        # Exit 1 (not qualified) isn't a failed build: the judge stays advisory in the gate. Exit 2 (it
+        # couldn't run: no key, a missing package, a bad labels file) is. Each run here is one more
+        # held-back measurement, and the output says which one: run it when the judge has changed.
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: aiquality validate-judge --team aeroassist --split holdout
+        run: |
+          set +e
+          aiquality validate-judge --team aeroassist --split holdout
+          code=$?
+          set -e
+          if [ "$code" -gt 1 ]; then echo "the judge couldn't be measured (exit $code)"; exit "$code"; fi
+      - name: Keep the result (commit it to change the judge's status in the gate)
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: judge-validation
+          path: teams/aeroassist/judge_validation_results.jsonl
 
 # Schedule the live arm nightly (optional):
 #   add  `schedule: [{cron: "0 2 * * *"}]`  to the `on:` block above.

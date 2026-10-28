@@ -213,8 +213,13 @@ cases relying on an acceptance adds a warning.
 
 **Judge qualification.** The judge grades answers a person has labelled. Two numbers: the share of
 the person's FAILs the judge also fails (bar 85%), and the share of the person's PASSes it leaves
-alone (bar 80%). Tuning uses one half of the labels; the held-back half is measured once. The result
-is saved per judge version, which changes whenever the model or rubric changes.
+alone (bar 80%). Tuning uses one half of the labels; only the held-back half can qualify a judge
+(`--split all` is a look across both halves, never a qualification). A qualification also needs at
+least 5 PASS and 5 FAIL labels. A run in which any judge call failed doesn't count and replaces no
+earlier result. Each run records a hash of the labels file: changed labels make the judge unvalidated.
+Every held-back measurement of a version is numbered in the output, so measuring again until it passes
+shows. A category below a bar is flagged, not blocking: each holds too few answers. The result is saved
+per judge version, which changes whenever the model, the rubric or the policies change.
 
 **The decision reader** (`decision` check). It reads the answer's first four sentences, after
 removing markdown, and the first sentence that states a decision decides: "yes / you can / you're
@@ -268,7 +273,7 @@ judge, scores every answer with every check, and counts per case and per check h
 | Agent version | the adapter, e.g. `aeroassist-rag:claude-haiku-4-5:v5-top3:limits-2:policies-1.3` (model, prompt version, retrieval depth, limits code, policies) | two runs are comparable only if you know what answered |
 | Recording | `recorded:` in front of the agent version | a replay is never mistaken for a live run |
 | Golden set | `meta.version` and a changelog | pass rates from different versions aren't directly comparable; the dashboard says so |
-| Judge | model, rubric version and a hash of the rubric | qualification belongs to one version; a new version starts unvalidated |
+| Judge | model, rubric version, a hash of the rubric and a hash of the policies | qualification belongs to one version, measured against one labels file; a new version or changed labels start unvalidated |
 | Run record | `schema_version` | readers can tell old records from new ones |
 | Package | `__version__` in `aiquality/__init__.py` (read by `pyproject.toml`); changes in `CHANGELOG.md` | `aiquality --version` says which platform a team is running; a run record doesn't record it yet |
 

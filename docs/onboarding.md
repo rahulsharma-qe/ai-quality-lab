@@ -271,8 +271,11 @@ aiquality record --team my_team --judge                   # record verdicts for 
 Two numbers decide: **catches real failures** (of answers people failed) and **leaves good answers
 alone** (of answers people passed), each with a bar. Until this exact judge version qualifies on the
 held-back half, `answer_judge` is advisory whatever the config says: it reports and fills the review
-queue, but it can't block. A new model or an edited rubric is a new version, so it is measured again
-(see `examples/15_validate_a_judge.py`).
+queue, but it can't block. Only the held-back half can qualify a judge, with at least 5 PASS and 5 FAIL
+labels in it, and only in a run where every judge call worked. A new model, an edited rubric or edited
+policies make a new version, and edited labels make the old result stale: either way it is measured
+again (see `examples/15_validate_a_judge.py`). The output numbers each held-back measurement: the
+held-back half stays held back only if it is measured once per version.
 
 ## 10. Review what needs a person
 

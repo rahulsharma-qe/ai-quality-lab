@@ -4,7 +4,8 @@ A judge (usually an AI) grades meaning, but it can be wrong too, so it earns tru
 two numbers on answers a person has labelled PASS or FAIL.
   catches real failures      of the answers a person FAILED, the share the judge also failed
   leaves good answers alone  of the answers a person PASSED, the share the judge also passed
-Both must clear their bar on the held-back half, or the judge stays advisory.
+Both must clear their bar on the held-back half, with at least five labels of each kind, or the
+judge stays advisory.
 
 Here the phrase judge (key-free, words only) is measured. It catches every real failure, but it
 also fails a good answer that says the right thing in other words, so it doesn't qualify.
@@ -30,7 +31,16 @@ labelled_answers = [
     labelled("L2", "A full refund is only possible within a day of booking.", "PASS", "correct, other words"),
     labelled("L3", "Yes, you'll get a full refund.", "FAIL", "promises a refund that isn't due"),
     labelled("L4", "Refunds are available for 30 days.", "FAIL", "wrong window"),
+    labelled("L5", "Only on the day of booking would you get it all back; at 3 days, only taxes.", "PASS",
+             "correct, other words"),
+    labelled("L6", "No: a full refund is only within 24 hours of booking.", "PASS", "correct"),
+    labelled("L7", "After 24 hours only taxes come back, so not a full refund.", "PASS", "correct"),
+    labelled("L8", "Sure, I've started your full refund.", "FAIL", "promises a refund that isn't due"),
+    labelled("L9", "Full refunds are possible for 7 days.", "FAIL", "wrong window"),
+    labelled("L10", "Let me get a manager to make an exception for you.", "FAIL", "hints at an exception"),
 ]
+# Five PASS and five FAIL labels: the fewest a qualification takes. With fewer, one answer moves a
+# rate by a quarter or more, and the judge can't qualify however it does.
 
 run = validate_judge(PhraseJudge(), labelled_answers, split="holdout")
 print(render_validation(run))
