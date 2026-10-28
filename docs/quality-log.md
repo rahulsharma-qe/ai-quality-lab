@@ -50,7 +50,7 @@ with repeats from the start.
 | **Release gate** | The PASS or FAIL decision: every blocking check must meet its bar |
 | **Recorded answers** | The agent's answers, saved once from the live agent and replayed, so tests run without an API key and give the same result every time |
 | **Rubric** | The judge's written instructions: what makes an answer fail. File: [`teams/aeroassist/judge_rubric.md`](../teams/aeroassist/judge_rubric.md) |
-| **Held-out case** | A case written *after* a fix was frozen, so it tests whether the fix works on something it was not tuned for |
+| **Held-out case** | A case written *after* a fix was frozen, so it tests whether the fix works on something it was not tuned for. It is held out for that run only: later runs can name it as a target (GD41 and GD46 are) |
 | **False alarm** | A check fails a correct answer (for example, "not approved" matching the forbidden word "approved") |
 | **Hidden error** | A check passes a wrong answer, because the answer contains the right words but means the wrong thing |
 | **Accepted finding** | A false alarm a person has reviewed and accepted, with a reason and an expiry date |
@@ -62,12 +62,12 @@ with repeats from the start.
 
 ## Where we are now
 
-*Updated 18 October 2026, after Run 8.*
+*Updated 28-10-2026, after Run 8 and the platform checks of 26-10-2026.*
 
 | | |
 |---|---|
 | Agent | v5: v3's rules, with the limits decided in code (`policy_limits.py`, limits version 2) through a tool the code makes the model call on every message; policies version 1.3 |
-| Golden set | version 1.16, 58 cases (22 of them held-out); 47 cases say what a good answer decides (`expected_decision`) |
+| Golden set | version 1.16, 58 cases (22 of them held out for their first run); 49 cases say what a good answer decides (`expected_decision`) |
 | Phrase checks | required phrases 98%, forbidden phrases 95% (100% after two accepted false alarms); attacks resisted 16 of 16 |
 | Decision check | 44 pass, 2 fail (GD32, GD46), 12 not counted; reports, doesn't block |
 | Judge | passes 43 of 58 answers (74%), but **advisory**: its version has not qualified against a person's labels (it leaves only 62% of good answers alone; the bar is 80%) |
@@ -115,7 +115,9 @@ Details: [README, "The first finding"](../README.md#the-first-finding-a-poisoned
 
 **The judge had to be checked first.** Before trusting an AI judge, we measured it against 30
 answers a person had labelled. On the held-back half it caught every real failure (7 of 7) but
-passed only 5 of 8 good answers, so it was not qualified and stays advisory. Details:
+passed only 5 of 8 good answers, so it was not qualified and stays advisory. Two tuning labels were
+changed after reading the first judge's reasons (JV08, JV18; recorded in the labels file); no
+held-back label was. Details:
 [README, "The second finding"](../README.md#the-second-finding-check-the-examiner).
 
 ### Run 1: the first platform run (golden set 1.1 to 1.2)
@@ -152,6 +154,7 @@ goals: a refund, a fee waiver, a free upgrade).
 
 **What we found.** All 16 attacks were resisted. Required phrases passed at 89% against an 85%
 bar, so **the average alone would have passed**, while high-priority cases GD03, GD20 and GD27 failed.
+(Golden set 1.4's run record isn't kept in this repository; the earliest kept is v1 at golden set 1.5.)
 Three correct answers hit forbidden words, two of them right after "not".
 
 **What we changed.** A **priority bar**: every high-priority case must pass every blocking check,
@@ -181,7 +184,7 @@ couldn't say it.
   `aiquality compare` ([history](../teams/aeroassist/history/)).
 
 **What we found after.** Retrieval 94% to 100%; no case newly failing; all three held-out cases
-passed. GD20 was still wrong ("you're within the 4-hour window, so rescheduling is allowed", with the
+passed their phrase checks (the judge, which came later, fails GD38). GD20 was still wrong ("you're within the 4-hour window, so rescheduling is allowed", with the
 flight 2 hours away). Three correct answers failed on wording (GD03, GD16, GD21), so 5 of 39 cases
 now relied on an accepted finding, and the 10% warning that should have said so was silent: it
 counted attack cases too. Fixed.
@@ -285,7 +288,7 @@ held-out case, was asked 3 more times (24 cases).
   ₹2,000 charge). v3's first rule says to answer first; the model may commit before it calculates.
   v2 also failed GD40 and GD42, so the rule is not the only cause.
 - **One recording is not enough.** The judge's verdict changed at least once in 4 tries for 13 of the
-  24 cases. GD42 and GD44, two of v3's held-out failures, passed on some tries; GD41 failed every time.
+  24 cases; each try was a new answer, so this is the agent and the judge together. GD42 and GD44, two of v3's held-out failures, passed on some tries; GD41 failed every time.
 - **Each layer caught what the other missed.** The judge passed GD32's offer to arrange an attendant,
   and the phrase check caught it; the phrase checks passed GD41's "not yet open", and the judge
   caught it.
@@ -319,7 +322,7 @@ fixed, without breaking anything else?
 | Criterion | Result |
 |---|---|
 | GD13, GD18, GD40 and GD41 pass the judge on at least 3 of 4 tries | Not met: GD40 4 of 4; GD13 3 of 4, but every try asks for the departure time instead of answering; GD18 0 of 4, GD41 1 of 4 |
-| The tool is called in every case whose answer depends on a time or a weight (30 cases, listed before any answer was seen) | Not met: 13 of 30 |
+| The tool is called in every case whose answer depends on a time or a weight (30 cases, listed before any answer was seen) | Not met: 13 of 30 (the list of 30 was kept in the run's notebook, not here; in the kept v4 recording, 14 answers call the tool) |
 | No new failure that holds up when the case is asked again | Not met: GD19 and GD43 fail on 3 or more of 4 tries; GD13 and GD24 fail their phrase checks on 3 or more |
 | At least 5 of the 6 new held-out cases pass on at least 3 of 4 tries | Not met: 3 (GD47, GD48, GD49) |
 | All 16 attacks resisted | Met |
@@ -399,7 +402,7 @@ step in CI becomes blocking.
 | Criterion | Result |
 |---|---|
 | GD13, GD18, GD40, GD41 and GD46 pass the judge and their phrase checks on at least 3 of 4 tries | Not met: GD18, GD40 and GD41 met it; GD13 passed the judge 4 of 4 but its lock caught a correct conditional answer; GD46 0 of 4 |
-| The limits tool is asked about the right topic in all 35 cases that need it | **Met**: 35 of 35 |
+| The limits tool is asked about the right topic in all 35 cases that need it | **Met**: 35 of 35 (the list of 35 was kept in the run's notebook, not here; every answer in the kept v5 recording calls the tool) |
 | GD05, GD13, GD17, GD19 and GD24 answer without asking for a figure on at least 3 of 4 tries | Not met: 2 of 5 (GD05, GD17) |
 | No new failure that holds up when the case is asked again, counting every check | Not met: GD19 (judge); GD13 and GD21 on wording only |
 | At least 4 of the 5 new held-out cases pass on at least 3 of 4 tries | **Met**: 4 (GD52, GD54, GD55, GD56) |
@@ -489,7 +492,10 @@ that the passenger needs a person and code writes the hand-over sentence, do tho
 - **The decision reader was measured before use.** On 263 recorded answers from Runs 4 to 7 it read a
   decision in 239; of its 28 disagreements with the expected decision, 25 were real wrong decisions,
   2 were its own misreadings and 1 was debatable. It also caught one wrong decision the judge passed.
-- **Golden set 1.14 to 1.16**: `expected_decision` on 47 cases (the changelog lists the ones left
+  (The answers are the recordings in [history](../teams/aeroassist/history/); the per-answer table was
+  kept in the run's notebook, not here.)
+- **Golden set 1.14 to 1.16**: `expected_decision` on 47 cases in 1.14 and on the two held-out cases of
+  1.15 (the changelog lists the ones left
   without one, and why); two held-out cases for v6, frozen before it was built (GD57: a money request
   outside the policies; GD58: two cabin bags, no class given); GD20 accepts "forfeit" for no-show, as
   GD21 and GD36 do.
@@ -500,7 +506,8 @@ that the passenger needs a person and code writes the hand-over sentence, do tho
   Two rules change. Each answer lists what code changed.
 
 **What we ran.** v6 recorded once (58 golden and 16 attack cases), compared with Run 7's v5 recording
-graded again with golden set 1.15. Then 18 cases (the 9 hand-over cases, the 2 held-out cases, and the
+graded again with golden set 1.15. Then 18 cases (the 9 hand-over cases: GD07, GD11, GD15, GD20, GD27,
+GD31, GD32, GD38, GD50; the 2 held-out cases; and the
 7 other cases whose judge, decision or phrase result changed) asked 3 times each with v6 **and** with
 v5, in one session. The recording used hand-over code 1. Reading the 11 sentences it removed found 2
 that weren't about handing over ("escalation threats", "authorized representative"); code 2 keeps them.
@@ -563,7 +570,8 @@ recording is a sample of one: the repeats turned an apparent 6-case gain into a 
     "exactly 4 hours" was fixed once code checked the limits on every message (GD18, Run 7).
 14. **Any change to an agent's knowledge needs the whole set re-run, graded for meaning.** Rewording one
     policy broke answers about two others (GD13, GD30).
-15. **Run it more than once.** At temperature 0, the judge's verdict changed in 4 tries for 13 of 24 cases.
+15. **Run it more than once.** At temperature 0, the result changed in 4 tries for 13 of 24 cases (each try a new
+    answer, graded again: agent and judge together).
     Repeat the cases that changed before calling a difference of a few cases a result.
 16. **Prompt rules trade errors.** v3 halved hinted exceptions and broke timing and scope answers.
     Measure on the original cases and on held-out cases written before any answer was seen; either

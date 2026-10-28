@@ -2,7 +2,7 @@
 AeroAssist — RAG Evaluation with RAGAS
 =================================================
 Evaluates a small policy-RAG (the "system under test") against the human-verified
-golden dataset, using RAGAS' four metrics with Claude as the judge and a local
+golden dataset, using RAGAS' four metrics with a model as the judge and a local
 embedding model (no OpenAI dependency).
 
 Flow:  policies.md -> chunk & embed -> retrieve -> grounded answer
@@ -33,11 +33,11 @@ from aeroassist_rag import (DEFAULT_SYSTEM_PROMPT, EMBED_MODEL, MODEL, RETRIEVAL
 
 
 # ======================================================================
-# SECTION A — Setup: judge (Claude), embeddings (local), RAGAS wiring
+# SECTION A — Setup: judge (a model), embeddings (local), RAGAS wiring
 # ======================================================================
 def _apply_ragas_import_shim():
     """RAGAS imports a langchain module that newer versions removed; inject a
-    harmless stub so the import succeeds. We never use Vertex — judge is Claude."""
+    harmless stub so the import succeeds. We never use Vertex — the judge is the model passed to it below."""
     stub = types.ModuleType("langchain_community.chat_models.vertexai")
     stub.ChatVertexAI = type("ChatVertexAI", (), {})
     sys.modules["langchain_community.chat_models.vertexai"] = stub

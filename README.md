@@ -14,24 +14,29 @@ are explained in [Words used here](docs/quality-log.md#words-used-here).
 
 ### What testing AeroAssist found
 
-- **An average hid a critical failure.** 89% against an 85% bar would have passed while three
-  high-priority cases failed; a bar per priority now fails the gate for the right reason.
-- **One quality loop, proven on unseen cases.** Diagnosed by layer (two retrieval misses, one policy
-  gap); after general fixes retrieval went 94% to 100%, nothing newly failed, and every held-out case
-  written after the fix passed.
-- **A sentence, not the model, was wrong.** "Allowed up to 4 hours before departure" was read two ways,
-  by the agent and by a person; rewording the policy fixed what prompt rules hadn't.
-- **Each layer catches what another misses.** The AI judge found real errors the phrase checks passed,
-  and a phrase check caught one the judge passed. With real errors open, the AeroAssist gate stays
-  non-blocking in CI.
-- **Prompt rules trade errors, and one run is not enough.** General rules halved hinted exceptions but
-  broke time-window answers; asked again, the judge changed its verdict for 13 of 24 cases.
-- **Code decides limits, and the code decides when to ask.** As a tool, every ruling was right but the
-  agent asked in only 13 of 30 cases; run by code on every message, the right rule in 35 of 35 cases,
-  time windows right on every try, and the judge's pass rate from 54% to 75%.
-- **One recording can mislead; repeats don't.** A code-written hand-over removed the hints, and one
-  recording showed 6 more passes; on repeats the hand-over cases moved one try in 27. Code can own how
-  something is said, not whether. Next: code decides when to hand over.
+- **An average hid a critical failure.** The agent scored 89% against an 85% bar, which would have
+  passed, while three high-priority cases failed. A separate bar for high-priority cases now fails the
+  gate for the right reason.
+- **Fixing by cause works, checked on new cases.** Each failure was traced to where it came from: two to
+  the document search, one to a gap in a policy. After fixes not tailored to any one case, the search
+  went from 94% to 100%, nothing that passed before broke, and the new cases written after the fix
+  passed their phrase checks.
+- **Sometimes the sentence, not the model, is wrong.** "Allowed up to 4 hours before departure" was read
+  two ways, by the agent and by a person. Rewording the policy fixed what extra prompt rules hadn't.
+- **Each kind of check catches what the others miss.** The AI judge found real errors the phrase checks
+  passed, and a phrase check caught one the judge passed. While real errors are open, AeroAssist's gate
+  reports in CI without blocking.
+- **Prompt rules move errors around, and one run isn't enough.** General rules halved the answers that
+  hint at an exception the policy doesn't allow, but broke answers about time windows. Asked again, 13
+  of 24 cases got a different result (a new answer each time, graded again).
+- **Rules about numbers belong in code, and code must decide when to use them.** Offered as a tool, the
+  code ruled right every time, but the model called it in only 13 of 30 cases. Run by code on every
+  message, the right rule was checked in 35 of 35 cases, time-window answers were right on every try,
+  and the judge's pass rate rose from 54% to 75%.
+- **One recording can mislead; repeats don't.** When code wrote the hand-over sentence, the hints
+  disappeared and one recording showed 6 more passes. Asked three more times, the hand-over cases
+  improved by one try in 27. Code can control how something is said, not whether the agent should hand
+  over at all. Next: code decides when to hand over.
 
 The full story, run by run, with the evidence and every open problem:
 **[`docs/quality-log.md`](docs/quality-log.md)**.
@@ -59,7 +64,7 @@ This repository is the **"quality of AI"** side of my work. Its sibling,
 
 The studies in [`demos/`](demos/) proved each technique on one agent. `aiquality` packages them
 into a self-serve platform: a team connects its agent and brings one config file (YAML or JSON) and a
-golden set (JSON, CSV or Excel). No test code. Two teams use it: [`teams/aeroassist/`](teams/aeroassist/),
+golden set (JSON, CSV or Excel). No test code. It is tested on two teams: [`teams/aeroassist/`](teams/aeroassist/),
 the real agent under test, and [`teams/post_order_support/`](teams/post_order_support/), a fictional
 grocery app's support desk onboarded with configuration only (four files and one CI step, no
 platform code; its agent is a stand-in).
@@ -187,17 +192,17 @@ Solid boxes are in the package today; the dashed box, monitoring, is studied in
 |---|---|---|
 | **Platform** | `aiquality/`, `teams/`, `examples/`, `tests/`, `docs/` | *Can another team use this without writing test code?* Agent adapters, team configs, golden sets from JSON/CSV/Excel, pluggable checks, a company floor, run records and a command line. See the section above. |
 | **Quality log** | `docs/quality-log.md` | *What did testing find, what changed, and what is still open?* Every run in order, the open problems, and the lessons that carry over to other agents. |
-| **Golden dataset** | `teams/aeroassist/golden_dataset.json` | *What is the human-verified source of truth?* 58 labelled cases (happy / edge / adversarial / out-of-scope, 22 of them held-out), versioned with a changelog, plus a schema validator (`demos/loader_cell.py`). |
-| **RAG evaluation** | `demos/rag_eval.py` | *Is the agent accurate and grounded?* Scores a policy-RAG with **RAGAS** — context precision/recall (retrieval) and faithfulness/answer-relevancy (generation), judged by Claude, embedded locally (no OpenAI). |
+| **Golden dataset** | `teams/aeroassist/golden_dataset.json` | *What is the human-verified source of truth?* 58 labelled cases (happy / edge / adversarial / out-of-scope; 22 were held out for the run they were written for), versioned with a changelog, plus a schema validator (`demos/loader_cell.py`). |
+| **RAG evaluation** | `demos/rag_eval.py` | *Is the agent accurate and grounded?* Scores a policy-RAG with **RAGAS** — context precision/recall (retrieval) and faithfulness/answer-relevancy (generation), graded by the judge model, embedded locally (no OpenAI). |
 | **Red-teaming** | `demos/red_team.py`, `demos/red_team_v2.py` | *Can I break it?* OWASP-LLM-mapped attacks — prompt injection (direct & indirect), jailbreak, data-leak, excessive agency — plus strengthened vectors (obfuscation, multi-turn, poisoned knowledge base). |
 | **The fix** | `demos/guardrail_fix.py` | *How do I close a breach?* A deterministic **policy-of-record at the execution gate** — money decisions live in code, not in the model. |
 | **Agentic testing** | `demos/aeroassist_agent.py`, `demos/trajectory_eval.py`, `demos/consistency_check.py` | *Is the agent's whole journey right, not just its answer?* A tool-using agent that emits a **trajectory**, graded on tool choice, arguments, termination and **multi-intent completeness** — run N times to measure a reliability rate (a probabilistic agent isn't certified by a single pass). |
 | **Completeness fix** | `demos/completeness_guardrail.py` | *How do I stop a silently dropped intent?* A code-owned **intent checklist** that re-asks for any missed request. Before/after: fully-complete rate `80% → 100%`. |
 | **CI gate** | `.github/workflows/eval-gate.yml`; the first study in `demos/eval_harness.py` | *How do I stop a regression shipping?* Every pull request runs `aiquality gate` for each team on recorded answers (no API key); a failing gate exits with **code** 1 and fails the build — evals become a **gate**, not a report. AeroAssist's gate is reported but not blocking while it fails on a real high-priority error. The live judge is measured against human labels on demand (`aiquality validate-judge`), and may only block a release once it has qualified (otherwise it's advisory). The first study, `demos/eval_harness.py` (a metric registry with per-metric thresholds and a mock judge), still runs in CI as a smoke test. |
 | **Model layer** | `aiquality/models`, `demos/llm.py` | *Can I switch models without touching every file?* One place for model clients: provider and model are settings (`LLM_PROVIDER`, `AGENT_MODEL`, `JUDGE_MODEL`); the judge uses a different, stronger model than the agent, so nothing grades its own work. |
-| **Judge validation** | `demos/answer_judge.py`, `demos/build_label_set.py`, `demos/judge_validation.py`; labels and results in `teams/aeroassist/` | *Can I trust the AI judge that gates my releases?* Thirty answers labelled blind by a person, split into a tuning half and a held-back half; two numbers against the human labels — **catches real failures** and **leaves good answers alone**; per-category breakdown; results saved per judge version. A judge that hasn't qualified runs in **advisory mode**. |
+| **Judge validation** | `demos/answer_judge.py`, `demos/build_label_set.py`, `demos/judge_validation.py`; labels and results in `teams/aeroassist/` | *Can I trust the AI judge that gates my releases?* Thirty answers labelled blind by a person (two tuning labels changed later, and say so), split into a tuning half and a held-back half; two numbers against the human labels — **catches real failures** and **leaves good answers alone**; per-category breakdown; results saved per judge version. A judge that hasn't qualified runs in **advisory mode**. |
 | **Tests for the test tools** | `tests/` | *Do the evaluation tools themselves work?* Key-free tests (fake judges, local servers, no network) run on every PR. |
-| **Observability** | `demos/observability/tracing.py`, `demos/observability/monitor.py`, `demos/observability/pii_guardrail.py` | *Is it still safe in production?* A structured per-run **trace** (evidence log), a **dashboard** (breach/refusal rate, latency, cost), a baseline-vs-recent **drift alert**, and a **triage→fix** loop. Before/after: PII breach-rate `1.7% → 0%` (fake PII only). |
+| **Observability** | `demos/observability/tracing.py`, `demos/observability/monitor.py`, `demos/observability/pii_guardrail.py` | *Is it still safe in production?* A structured per-run **trace** (evidence log), a **dashboard** (breach/refusal rate, latency, cost), a baseline-vs-recent **drift alert**, and a **triage→fix** loop. Before/after on simulated traffic with one seeded leak: PII breach-rate `1.7% → 0%` (fake PII only). |
 
 ---
 
@@ -228,7 +233,7 @@ examiner's papers.
 
 **The set-up.** Thirty answers: fifteen from the agent and fifteen deliberately broken (wrong
 fact, missing condition, invented rule, wrong refusal, unsafe agreement, long-but-wrong). I
-labelled all thirty **blind** — not knowing which were which — then split them into a **tuning
+labelled all thirty **blind** at first — not knowing which were which — then split them into a **tuning
 half** (to improve the judge) and a **held-back half** (measured once, never tuned on).
 
 | Run | Judge | Catches real failures | Leaves good answers alone |
@@ -237,7 +242,12 @@ half** (to improve the judge) and a **held-back half** (measured once, never tun
 | Tuning half | v2 (one rubric rule added) | 12 / 12 = 100% | 3 / 3 = 100% |
 | **Held-back half (run once)** | **v2, frozen** | **7 / 7 = 100%** | **5 / 8 = 62%** |
 
-**Verdict: not qualified** (bars: catches ≥ 85%, leaves good answers alone ≥ 80%) — so the
+**Two tuning labels changed.** After reading the v1 judge's reasons on the tuning half, I changed two
+of my tuning labels from PASS to FAIL (JV08 and JV18; each keeps its original label and the reason in
+`teams/aeroassist/judge_labels.json`). So part of v2's 100% on the tuning half is the labels moving,
+one more reason only the held-back half counts. No held-back label was changed.
+
+**Verdict: not qualified** (bars: catches ≥ 85%, leaves good answers alone ≥ 80%, at least 5 labels of each kind) — so the
 pipeline runs it in **advisory mode**: it reports, and what it fails goes to a person, but it
 can't block a release.
 
@@ -255,7 +265,7 @@ can't block a release.
    doesn't say whether a deadline boundary is inclusive. Anything ambiguous: fix the policy, or
    hand over — never guess.
 5. **Trust is per version.** A new judge model or rubric is unvalidated until it passes again.
-   Re-running the same judge twice gave identical verdicts on every case.
+   Re-running the same judge on the same answers gave identical verdicts on every case.
 
 *Small sample, one labeller: the numbers are a direction, not a verdict.*
 
@@ -309,7 +319,7 @@ Done items first, in the order they were built; then what is still open.
 - [x] **Platform core (done)** — `aiquality` package: one agent contract, three adapters, team configs in YAML or JSON, golden sets from JSON/CSV/Excel, pluggable checks, a company floor, run records, a command line.
 - [x] **Release gate per team and client (done)** — attack tests as plugins, accepted findings with expiry, exit codes 0/1/2, HTML / JUnit XML / GitHub summary reports.
 - [x] **Judges in the platform (done)** — judges registry, validation and status per version, an advisory-until-qualified judge check, recorded verdicts, a human review queue.
-- [x] **Decisions and repeats in the platform (done)** — a decision check (what an answer decided, read by rules and measured on 263 recorded answers before use), whether a difference between two runs is bigger than chance, and `aiquality repeat` to ask changed cases again.
+- [x] **Decisions and repeats in the platform (done)** — a decision check (what an answer decided, read by rules and measured on 263 recorded answers before use; the per-answer table was kept in the run's notebook, not here), whether a difference between two runs is bigger than chance, and `aiquality repeat` to ask changed cases again.
 - [x] **A second team (done)** — a fictional grocery app's post-order support onboarded with configuration only: four files, one CI step, no platform code. A reusable CI workflow waits until another repository, such as `api-qa-agent`, runs the gate.
 - [x] **Dashboard (done)** — one static page for every team: the latest gate, accepted findings and their expiry, and every saved run from oldest to newest, built in CI after every gate.
 - [x] **Tracing export (done)** — a run as OpenTelemetry traces (OTLP JSON, no new dependency): one trace per case, a span per tool call and per check; loaded into Phoenix as a check.
