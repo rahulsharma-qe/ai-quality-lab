@@ -132,6 +132,7 @@ flowchart TB
 | Model layer, judges registry, judge validation and status per version, answer_judge check (advisory until qualified), recorded verdicts, human review queue | In the package (the study scripts `demos/llm.py`, `demos/answer_judge.py` and `demos/judge_validation.py` now wrap it) |
 | Decision check (`expected_decision`), run comparison with noise statistics, `aiquality repeat` | In the package |
 | Dashboard (`aiquality dashboard`), OpenTelemetry trace export (`aiquality export-traces`) | In the package |
+| Evidence report against laws and standards (`aiquality evidence`), `ai_disclosure` and `counterfactual_fairness` checks, a bar per test type (`category_bars`) | In the package |
 | A second team onboarded with configuration only (`teams/post_order_support/`) | In the repository |
 | Monitoring | Studied in `demos/observability/`; moves into the package when there is live traffic |
 | Reusable CI workflow, agent tracing (the agent tracing its own steps) | Later: when another repository runs the gate; when there are live runs |

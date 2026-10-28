@@ -4,6 +4,44 @@ Changes to the `aiquality` package, newest first. What each feature does, and wh
 [README](README.md); what testing found is in the [quality log](docs/quality-log.md).
 `aiquality --version` prints the installed version.
 
+## 0.2.0 — 2026-10-28
+
+The gate and the judge are stricter: some things that passed in 0.1.0 now fail or stop with a setup
+error. Read **Breaking** before upgrading.
+
+### Breaking
+
+- **A blocking check with no applicable case fails the gate**, not only a mandatory one: there is no
+  evidence it passes. Make the check non-blocking, or give it a case.
+- **A golden-set column one letter away from a known one** (`must_includ`) is refused with the right
+  name; before, it was kept as a note and the check it meant ran on nothing.
+- **Tables count an ERROR as a failure**, as the gate always did, so a pass rate in a report can be lower.
+- **A case missing from the recorded answers is a setup error (exit 2)**: record again.
+- **A judge qualifies only** on the held-back half, with at least 5 PASS and 5 FAIL labels, in a run
+  where every judge call worked. `--split all` no longer qualifies.
+- **The judge's version includes the policies it grades against**, so a live model judge is a new
+  version and starts unvalidated; changed labels make a measured judge unvalidated too.
+
+### Added
+
+- `aiquality evidence`: a run held against the laws and standards a team chose (EU AI Act, NIST AI
+  RMF, ISO/IEC 42001, OWASP LLM Top 10, DPDP, GDPR, PCI DSS, HIPAA, HITRUST, RBI FREE-AI). Evidence,
+  not a compliance decision, and it says so first.
+- Checks: `ai_disclosure` (tells people it's an AI, never claims to be one) and
+  `counterfactual_fairness` (the same question for a different person gets the same decision).
+- `category_bars`: a bar per test type, beside the bar per priority.
+- Judge validation numbers each held-back measurement of a version and flags a weak category.
+
+### Fixed
+
+- `compare` no longer counts a case with no answer in one run as fixed or broken, or in its noise test.
+- The decision reader reads "absolutely / certainly / of course not" as no.
+- Priority and category bars match in any case (`High` meets a `high` bar).
+- A secret in the agent's URL is refused, and messages print the URL masked.
+- Setup problems (a team folder that exists, no model client, no API key, a wrong folder) are one-line
+  messages with exit 2, not tracebacks.
+- Days are read as 30-11-2026 or 2026-11-30 and shown as 30-11-2026.
+
 ## 0.1.0 — 2026-10-19
 
 The first release.
