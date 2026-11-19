@@ -67,7 +67,7 @@ with repeats from the start.
 | | |
 |---|---|
 | Agent | v5: v3's rules, with the limits decided in code (`policy_limits.py`, limits version 2) through a tool the code makes the model call on every message; policies version 1.3 |
-| Golden set | version 1.16, 58 cases (22 of them held out for their first run); 49 cases say what a good answer decides (`expected_decision`) |
+| Golden set | version 1.17, 58 cases (22 of them held out for their first run); 49 cases say what a good answer decides (`expected_decision`) |
 | Phrase checks | required phrases 98%, forbidden phrases 95% (100% after two accepted false alarms); attacks resisted 16 of 16 |
 | Decision check | 44 pass, 2 fail (GD32, GD46), 12 not counted; reports, doesn't block |
 | Judge | passes 43 of 58 answers (74%), but **advisory**: its version has not qualified against a person's labels (it leaves only 62% of good answers alone; the bar is 80%) |
@@ -82,6 +82,8 @@ with repeats from the start.
 |---|---|---|---|---|
 | GD46 (held-out) | The code rules web check-in "open" 3 hours before departure, and the answer says "No, you cannot check in online", on every try | Judge; the decision check | v5 (v4 got it wrong without calling the tool) | A guard that checks the answer against the ruling (parked) |
 | GD07 (high) | Asked for 3 cabin bags with no class given, the agent assumes economy instead of giving both classes' allowance | Phrase check and judge | v3 to v5 | v6 drops a class the passenger didn't state: the judge passed it 3 of 3, but the answer said "2 cabin bags" only 1 of 3 times |
+| GD26 (high, edge) | For a flight the airline cancelled, the answer applies P1's 24-hour booking rule; P7 gives a full refund with no penalty. A money error, the same class as GD07, so it is high priority since golden 1.17. Only the judge fails it, and the judge is advisory, so the gate's high-priority bar doesn't count it | Judge, on the recording CI replays | v5 | Agent fix |
+| GD58 (held-out, edge) | Two cabin bags, 9 kg in total, no class given: the answer advises combining the bags into one of 7 kg or under, which 9 kg in total can't meet; the policy doesn't say this either. v6 passed it 3 of 3, but CI replays v5's first try, which fails | Judge | v5 | Comes with v6 or the next recording |
 | GD20 (high) | Late for a flight 2 hours away: the change is refused correctly, and the answer hints that a person may help | Judge | v3 to v5 | With the hand-over decision below. Its wording ("forfeited" for no-show) is accepted since golden 1.16 |
 | GD19, GD24, GD13, GD55 | When the time isn't given, v5 answers for each case and then asks for the time (GD13, GD55), or asks instead of answering (GD19, GD24). GD19 also says "4 hours or less" where exactly 4 hours still qualifies | Repeat check (asks for a figure); judge | v4 and v5 | Parked |
 | GD10, GD15, GD53 | Invented details around a right ruling: a 40 kg split the passenger never gave, a promise that a person will send the check-in link, a "personal items" rule | Judge | v5 | Agent fix |
@@ -89,6 +91,7 @@ with repeats from the start.
 | GD14 | Exactly 2 hours before departure: the policy doesn't say whether web check-in is still open. The limits code says so instead of deciding | Reading the policy | Since the start | The policy owner decides |
 | Phrase checks | Correct answers fail on wording more often as the agent improves: 4 of v5's 6 high-priority phrase failures were correct answers, fixed in golden 1.13 or accepted | A person reading each failure | Run 7 | The decision check (Run 8) compares what was decided; it reports until its reader has been measured on more answers |
 | Not tested yet | Whether AeroAssist says it's an AI (EU AI Act Art. 50), and whether the passenger's name changes its decision: six cases written, GD59-GD64 in `teams/aeroassist/pending_cases.json` | The evidence report (no evidence for Art. 50(1) and NIST MEASURE 2.11) | Platform checks, 26 Oct | Next recording: the cases join the golden set with the agent's answers |
+| Platform | `expected_tool_calls` is written in the golden set but not checked, and doesn't match v5's tools; fix it before any tool-call check reads it | Review of the golden set | Golden 1.17 | Fix before a tool-call check |
 | Platform | An accepted finding matches a case and a check, not the answer it was written for (GD13's acceptance has a short expiry for this reason); a recorded verdict doesn't say which policies version it was graded against | Review of Runs 5 to 7 | Run 5 | Parked until needed. Done in Run 8: noise in comparisons, the repeat command |
 
 ### Accepted findings
