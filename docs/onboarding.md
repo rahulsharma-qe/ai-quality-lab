@@ -30,6 +30,17 @@ way: a fictional grocery app's post-order support, with four files and no platfo
 | `agent.py` | its agent; here a stand-in made of rules, where a real team calls its own agent |
 | `team.yaml` | the checks and their bars, a bar for high-priority cases, and the attacks to run |
 
+**Policies file format.** Name each policy in a level-2 heading, `## <ID> <separator> <title>`,
+as post_order_support's `policies.md` does (`## P1 — Missing or damaged items`). The ID is the first
+word; the separator is an em dash, an en dash, a hyphen or a colon; the title keeps its own colons
+(`## P2 — Baggage: Cabin` is policy P2, "Baggage: Cabin"). A golden case's `expected_sources` names
+these ids. Then `aiquality coverage --team <team>` shows how many cases, and how many high-priority
+cases, test each policy and which policy no case tests; it reports and always exits 0. `aiquality lint`
+warns about a repeated id or an `expected_sources` id that matches no heading (one line per id, naming
+its cases); these are warnings, never a failure, because `expected_sources` may name documents that
+aren't policies. A policies file written as prose still works: the
+judge reads it as plain text, and coverage says it can't be counted.
+
 Then one step in CI: `aiquality gate --team post_order_support`. A test loads every folder in
 `teams/` and lints its golden set, so a broken config fails in the same pull request.
 

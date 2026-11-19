@@ -4,6 +4,19 @@ Changes to the `aiquality` package, newest first. What each feature does, and wh
 [README](README.md); what testing found is in the [quality log](docs/quality-log.md).
 `aiquality --version` prints the installed version.
 
+## Unreleased
+
+### Added
+
+- **`aiquality coverage --team <team>`**: how many golden cases, and how many high-priority cases, test
+  each policy in the team's policies file (read from `expected_sources`), and which policies no case
+  tests. It reports and always exits 0, including when the policies file has no `## <ID> — <title>`
+  headings or the config has no `policies:` key.
+- **`aiquality lint`** warns about a repeated policy id or an `expected_sources` entry that matches no
+  policy heading, one line per id naming its cases. Warnings only: lint still exits 0, so no team
+  newly fails on upgrade, whether its policies file is prose or its `expected_sources` name other documents.
+- The policies file format, `## <ID> <separator> <title>`, is written in docs/onboarding.md.
+
 ## 0.2.0 — 2026-10-28
 
 The gate and the judge are stricter: some things that passed in 0.1.0 now fail or stop with a setup

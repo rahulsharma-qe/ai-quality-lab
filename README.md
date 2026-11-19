@@ -81,6 +81,7 @@ aiquality repeat   --team my_team --cases S02 --times 3   # ask again: which res
 aiquality validate-judge --team aeroassist --split holdout   # trust the AI judge only after it qualifies
 aiquality review   --team aeroassist                 # what a person should look at, and why
 aiquality evidence --team aeroassist [--as high]     # the latest run against the team's laws and standards
+aiquality coverage --team aeroassist                 # golden cases per policy; format in docs/onboarding.md §2
 aiquality dashboard                                  # one page: every team now, and run by run
 aiquality export-traces aiquality-runs              # a run as OpenTelemetry traces, for a tracing tool
 aiquality list-checks && aiquality list-attacks && aiquality list-judges
@@ -324,6 +325,7 @@ Done items first, in the order they were built; then what is still open.
 - [x] **Dashboard (done)** — one static page for every team: the latest gate, accepted findings and their expiry, and every saved run from oldest to newest, built in CI after every gate.
 - [x] **Tracing export (done)** — a run as OpenTelemetry traces (OTLP JSON, no new dependency): one trace per case, a span per tool call and per check; loaded into Phoenix as a check.
 - [x] **Fairness and disclosure checks (done)** — `counterfactual_fairness` (the same question per identity, decisions compared), `ai_disclosure` (says it's an AI, never claims to be a person), and bars per test type.
+- [ ] **Policy ids in team.yaml (later)** — for a policies file that can't use `## <ID> — <title>` headings.
 - [ ] **One model layer for every judge** — move the RAGAS, red-team and completeness judges onto the package's model layer (`aiquality/models`).
 - [ ] **Parallel runs** — worker limit, rate-limit retries and a per-run budget cap.
 - [ ] **Agent tracing (later)** — the agent traces its own steps (retrieval, model calls, tools), linked to the test case, so each trace shows where time and errors went; needs live runs.
