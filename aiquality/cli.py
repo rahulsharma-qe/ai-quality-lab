@@ -193,10 +193,24 @@ def _evidence(args) -> int:
 
 def _lint(args) -> int:
     from aiquality.test_data import load_golden_set
-    from aiquality.test_data.lint import lint_golden_set
+    from aiquality.test_data.lint import lint_team
+    from aiquality.test_data.policy_coverage import read_policies
     config = TeamConfig.load(_team_path(args.team, args.teams_dir))
-    warnings = lint_golden_set(load_golden_set(config.golden_set))
+    policies_file = read_policies(config.policies) if config.policies else None
+    warnings = lint_team(load_golden_set(config.golden_set), policies_file)
     print("\n".join(f"warning: {w}" for w in warnings) or "golden set: no warnings")
+    return EXIT_OK
+
+
+def _coverage(args) -> int:
+    from aiquality.test_data import load_golden_set
+    from aiquality.test_data.policy_coverage import count_policy_coverage, read_policies, render_policy_coverage
+    config = TeamConfig.load(_team_path(args.team, args.teams_dir))
+    if not config.policies:
+        print(f"{Path(config.source).name or 'team.yaml'} has no policies: key; coverage can't be counted")
+        return EXIT_OK
+    print(render_policy_coverage(count_policy_coverage(read_policies(config.policies),
+                                                       load_golden_set(config.golden_set))))
     return EXIT_OK
 
 
@@ -331,6 +345,10 @@ def _build_parser() -> argparse.ArgumentParser:
     lint = commands.add_parser("lint", help="check the team's golden set for mistakes that cause false alarms")
     add_team_arguments(lint)
     lint.set_defaults(handler=_lint)
+
+    coverage = commands.add_parser("coverage", help="how many golden cases test each policy, and which no case tests")
+    add_team_arguments(coverage)
+    coverage.set_defaults(handler=_coverage)
 
     ci_summary = commands.add_parser("ci-summary", help="one run page: an overview of every team's gate, then each team")
     ci_summary.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="where the run records are")

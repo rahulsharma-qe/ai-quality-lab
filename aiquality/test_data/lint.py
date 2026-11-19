@@ -11,12 +11,24 @@ action instead: '100 kg is approved', not '100'. Numbers glued to units ("100kg"
 Rule 2, model answer fails its own checks: the case's reference answer, the answer a person wrote
 as the right one, misses a must_include phrase or contains a must_not_include phrase. Then a
 correct agent answer can fail too: the phrase is wrong, or the reference is.
+
+Rule 3, policy ids (`lint_team`, when the team has a policies file and its golden set uses
+expected_sources): a repeated policy id, or an expected_sources id that matches no policy heading.
+Warnings only, like rules 1 and 2: expected_sources may name documents that aren't policies.
 """
 
 import re
+from typing import Optional
 
 from aiquality.checks.phrase_matching import find_any
 from aiquality.test_data.golden_case import GoldenSet
+from aiquality.test_data.policy_coverage import PoliciesFile, check_policy_ids
+
+
+def lint_team(golden_set: GoldenSet, policies_file: Optional[PoliciesFile] = None) -> list[str]:
+    """Rules 1 and 2 on the golden set, plus rule 3 when the team has a policies file."""
+    policy_warnings = check_policy_ids(policies_file, golden_set) if policies_file is not None else []
+    return lint_golden_set(golden_set) + policy_warnings
 
 
 def lint_golden_set(golden_set: GoldenSet) -> list[str]:

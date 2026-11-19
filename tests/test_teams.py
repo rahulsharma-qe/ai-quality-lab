@@ -9,7 +9,8 @@ import pytest
 
 from aiquality import TeamConfig
 from aiquality.test_data import load_golden_set
-from aiquality.test_data.lint import lint_golden_set
+from aiquality.test_data.lint import lint_team
+from aiquality.test_data.policy_coverage import read_policies
 
 TEAMS = sorted(folder for folder in (Path(__file__).resolve().parents[1] / "teams").iterdir()
                if folder.is_dir() and not folder.name.startswith(("_", ".")))
@@ -23,7 +24,8 @@ def test_there_are_at_least_two_teams():
 def test_each_team_loads_and_its_golden_set_is_clean(folder):
     config = TeamConfig.load(folder)
     assert config.team == folder.name
-    assert lint_golden_set(load_golden_set(config.golden_set)) == []
+    policies_file = read_policies(config.policies) if config.policies else None
+    assert lint_team(load_golden_set(config.golden_set), policies_file) == []
 
 
 def test_the_second_team_passes_its_gate(tmp_path):
