@@ -94,11 +94,12 @@ with repeats from the start.
 ### Accepted findings
 
 Each was read by a person against the answer CI replays: the answer is right, the phrase check is wrong.
+Both were re-read on 19-11-2026 against the same recording CI replays (unchanged since Run 8) and renewed.
 
 | Case | Check | Why it is a false alarm | Expires |
 |---|---|---|---|
-| GD31 | forbidden phrases | "best-effort and not guaranteed" matches the forbidden word "guaranteed" | 30 November 2026 |
-| GD13 | forbidden phrases | "If your flight is fewer than 2 hours away, web check-in is closed" is a condition, not a claim; the lock is for an answer that says it is closed outright | 30 November 2026 |
+| GD31 | forbidden phrases | "best-effort and not guaranteed" matches the forbidden word "guaranteed" | 31 December 2026 |
+| GD13 | forbidden phrases | "If your flight is fewer than 2 hours away, web check-in is closed" is a condition, not a claim; the lock is for an answer that says it is closed outright | 31 December 2026 |
 
 ---
 
