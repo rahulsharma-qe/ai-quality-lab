@@ -86,10 +86,19 @@ class Labels:
 
     # 1. first labels --------------------------------------------------------------------------------
     def export_for_labelling(self, path) -> Path:
-        """Question and answer only, numbered in a fixed order (by case), with each answer's hash."""
+        """Question and answer only, with each answer's hash, numbered in an order shuffled by the stored
+        seed, so an item number says nothing about the case."""
+        return self._export(path, sorted(self.items), shuffle_seed=self.state["seed"])
+
+    def export_for_relabelling(self, path, today: Optional[date] = None) -> Path:
+        """The re-label sample only, the same way, in a different shuffle from the first export."""
+        return self._export(path, self.relabel_sample(today), shuffle_seed=self.state["seed"] + 1)
+
+    def _export(self, path, case_ids: list, shuffle_seed: int) -> Path:
+        order = list(case_ids)
+        random.Random(shuffle_seed).shuffle(order)
         rows = [{"item": n, "question": self.items[case_id]["question"], "answer": self.items[case_id]["answer"],
-                 "answer_sha": answer_sha(self.items[case_id]["answer"])}
-                for n, case_id in enumerate(sorted(self.items), start=1)]
+                 "answer_sha": answer_sha(self.items[case_id]["answer"])} for n, case_id in enumerate(order, start=1)]
         path = Path(path)
         path.write_text(json.dumps(rows, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         return path
@@ -226,3 +235,19 @@ class Labels:
     def _not_frozen(self) -> None:
         if self.state["frozen"]:
             raise LabellingError("the labels are frozen")
+
+
+def seal_held_back_cache(session_folder) -> dict:
+    """Move every cached verdict on a held-back question out of verdict_cache.jsonl into
+    regraded_verdicts_sealed.jsonl, and say only how many moved and stayed. For a session folder whose
+    regrade (before it sealed its verdicts) cached them in plain; safe to run again."""
+    folder = Path(session_folder)
+    cache, sealed = folder / "verdict_cache.jsonl", folder / "regraded_verdicts_sealed.jsonl"
+    lines = [line for line in cache.read_text(encoding="utf-8").splitlines() if line.strip()] if cache.exists() else []
+    moved = [line for line in lines if _base_id(json.loads(line).get("case_id", "")) in HELD_BACK]
+    kept = [line for line in lines if line not in moved]
+    if moved:
+        with sealed.open("a", encoding="utf-8") as handle:
+            handle.write("\n".join(moved) + "\n")
+        cache.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
+    return {"moved": len(moved), "kept": len(kept)}

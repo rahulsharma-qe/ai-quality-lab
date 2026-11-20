@@ -6,7 +6,8 @@ from datetime import date, timedelta
 import pytest
 
 import live_session as ls
-from labelling import LabellingError, Labels
+from aiquality.judges.recorded import answer_sha
+from labelling import LabellingError, Labels, seal_held_back_cache
 
 DAY1 = date(2026, 12, 1)
 
@@ -92,6 +93,9 @@ def test_the_export_holds_only_number_question_answer_and_its_sha_in_a_fixed_ord
     path = labels.export_for_labelling(tmp_path / "to_label.json")
     rows = json.loads(path.read_text(encoding="utf-8"))
     assert [row["item"] for row in rows] == list(range(1, 28))
+    shas = [row["answer_sha"] for row in rows]
+    by_case = [answer_sha(labels.items[i]["answer"]) for i in sorted(labels.items)]
+    assert sorted(shas) == sorted(by_case) and shas != by_case          # shuffled by the stored seed
     assert all(set(row) == {"item", "question", "answer", "answer_sha"} for row in rows)
     assert "GD" not in path.read_text(encoding="utf-8").split('"question"')[0]      # no case ids
     assert rows == json.loads(labels.export_for_labelling(tmp_path / "again.json").read_text(encoding="utf-8"))
@@ -105,3 +109,28 @@ def test_a_label_names_the_answer_it_was_given_for_and_keeps_the_note_verbatim(l
     assert row["reason"] == "Answers from P4."
     with pytest.raises(LabellingError, match="no held-back answer"):
         labels.label_answer("0000000000000000", "PASS", "pass", "x", "x", today=DAY1)
+
+
+def test_the_relabel_export_is_the_sample_only_in_a_new_order_and_takes_second_labels(labels, tmp_path):
+    label_all(labels)
+    later = DAY1 + timedelta(days=7)
+    rows = json.loads(labels.export_for_relabelling(tmp_path / "again.json", today=later).read_text(encoding="utf-8"))
+    sample = labels.relabel_sample(today=later)
+    assert sorted(r["answer_sha"] for r in rows) == sorted(answer_sha(labels.items[i]["answer"]) for i in sample)
+    assert all(set(r) == {"item", "question", "answer", "answer_sha"} for r in rows)
+    first_order = [r["answer_sha"] for r in json.loads(labels.export_for_labelling(tmp_path / "x.json").read_text())
+                   if r["answer_sha"] in {x["answer_sha"] for x in rows}]
+    assert [r["answer_sha"] for r in rows] != first_order
+    labels.label_answer(rows[0]["answer_sha"], "PASS", "pass", "theek hai", "Fine.", today=later, second=True)
+    assert len(labels.state["second"]) == 1
+
+
+def test_the_cached_verdicts_on_held_back_questions_move_to_the_sealed_file(tmp_path):
+    cache = tmp_path / "verdict_cache.jsonl"
+    cache.write_text(json.dumps({"case_id": "GD23", "verdict": "PASS"}) + "\n" +
+                     json.dumps({"case_id": "GD01", "verdict": "FAIL"}) + "\n" +
+                     json.dumps({"case_id": "GD61~name=Satyam Dixit", "verdict": "PASS"}) + "\n", encoding="utf-8")
+    assert seal_held_back_cache(tmp_path) == {"moved": 2, "kept": 1}
+    assert "GD23" not in cache.read_text() and "GD01" in cache.read_text()
+    assert (tmp_path / "regraded_verdicts_sealed.jsonl").read_text().count("\n") == 2
+    assert seal_held_back_cache(tmp_path) == {"moved": 0, "kept": 1}               # safe to run again
