@@ -228,3 +228,15 @@ def test_the_pilot_cost_is_kept_so_a_resumed_session_still_applies_the_repeats_r
     again = ls.Session(tmp_path, dry_run=True, log=quiet)
     again._agents["v7"], client = fake_agent(again.ledger, "v7")
     assert ls.step_pilot(again) == 5.0 and again.pilot_cost == 5.0 and client.calls == 0
+
+
+def test_the_advisory_judge_doesnt_decide_pass_or_regression(tmp_path):
+    """A judge FAIL alone doesn't fail a case: until the judge qualifies, the measure is the decision check
+    and the blocking rule checks (as the gate counts them)."""
+    session = ls.Session(tmp_path, dry_run=True, log=quiet)
+    record = {"case_id": "GD01", "error": None,
+              "results": [{"check": "answer_judge", "status": "FAIL"}, {"check": "decision", "status": "PASS"},
+                          {"check": "required_phrases", "status": "PASS"}]}
+    assert ls.passes_answer_checks(session, record) is True
+    record["results"][2]["status"] = "FAIL"
+    assert ls.passes_answer_checks(session, record) is False

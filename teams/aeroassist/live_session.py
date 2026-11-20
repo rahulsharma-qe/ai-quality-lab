@@ -588,7 +588,9 @@ def _status(record: dict, check: str) -> Optional[str]:
 def passes_answer_checks(session: Session, record: dict) -> bool:
     """The decision check and every blocking check pass (a NOT_APPLICABLE doesn't fail)."""
     accepted = {(f.case, f.check) for f in session.config.accepted_findings}
-    blocking = [name for name, s in session.config.checks.items() if s.blocking] + ["decision"]
+    # The judge is advisory until it qualifies against a person's labels, so it is not counted here:
+    # the measure is the decision check and the blocking rule checks, as the gate counts them.
+    blocking = [name for name, s in session.config.checks.items() if s.blocking and name != JUDGE_CHECK] + ["decision"]
     for result in record.get("results") or []:
         if result["check"] in blocking and result["status"] in ("FAIL", "ERROR"):
             if (record["case_id"], result["check"]) not in accepted:
