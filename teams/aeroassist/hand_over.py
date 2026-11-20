@@ -15,6 +15,18 @@ last line), and code writes the hand-over:
         {"marker": True, "removed": ["A human agent may find options."]})
 
 The step is returned with the answer, so every recorded answer shows what code changed.
+
+Agent v7 goes one step further: code decides WHETHER to hand over (decide_hand_over). The model's
+marker is only a request, kept on the record. Code hands over only when
+
+  1. the passenger's question is out of scope: the understanding step named out_of_scope and no
+     other topic (policies.md: anything outside the 8 policies is out of scope, "abstain + escalate");
+  2. the passenger asks for a person, in their own words (PASSENGER_ASKS_FOR_A_PERSON);
+  3. a ruling gives the outcome to staff (RULINGS_THAT_NEED_A_PERSON): no policy in policies.md 1.3
+     does, so the list is empty. It is listed so the rule is visible, not invented.
+
+Otherwise the marker is dropped and the answer stands as the policy's answer. Sentences about what a
+person might do are removed as in v6, whatever code decides.
 """
 
 import re
@@ -23,6 +35,8 @@ import re
 # 1: Run 8's recording. 2: "escalat..." and "representative" narrowed after Run 8 removed two sentences
 # that weren't about handing over ("escalation threats", "their authorized representative").
 HAND_OVER_CODE_VERSION = "2"
+# Part of agent v7's version: code decides whether to hand over (decide_hand_over). v6 keeps version 2.
+HAND_OVER_DECISION_VERSION = "3"
 HAND_OVER_MARKER = "HAND_OVER"
 HAND_OVER_SENTENCE = "A human agent will take over from here."
 
@@ -39,8 +53,9 @@ _LINE_START = re.compile(r"^(\s*(?:[-*•]|\d+[.)])?\s*)(.*)$")
 _MARKDOWN_ONLY = re.compile(r"^[\s*_`#>•-]*$")
 
 
-def finish_hand_over(answer_text: str) -> tuple[str, dict]:
-    """The answer with the hand-over written by code, and what changed ({} when nothing did)."""
+def _without_person_sentences(answer_text: str) -> tuple[str, bool, list]:
+    """The answer without the marker and without sentences about what a person might do; whether the
+    marker was there; the sentences removed."""
     text = answer_text or ""
     marker = bool(_MARKER.search(text))
     text = _MARKER.sub("", text)
@@ -52,11 +67,52 @@ def finish_hand_over(answer_text: str) -> tuple[str, dict]:
         removed += [sentence.strip() for sentence in sentences if _ABOUT_A_PERSON.search(sentence)]
         if kept or not sentences:
             kept_lines.append(prefix + " ".join(kept))
-    hands_over = marker or any(_OFFERS_A_PERSON.search(sentence) for sentence in removed)
     text = "\n".join(line for line in kept_lines if not (line.strip() and _MARKDOWN_ONLY.match(line)))
-    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    return re.sub(r"\n{3,}", "\n\n", text).strip(), marker, removed
+
+
+def finish_hand_over(answer_text: str) -> tuple[str, dict]:
+    """The answer with the hand-over written by code, and what changed ({} when nothing did)."""
+    text, marker, removed = _without_person_sentences(answer_text)
+    hands_over = marker or any(_OFFERS_A_PERSON.search(sentence) for sentence in removed)
     if hands_over:
         text = f"{text}\n\n{HAND_OVER_SENTENCE}" if text else HAND_OVER_SENTENCE
     if not marker and not removed:
         return answer_text, {}
     return text, {"marker": marker, "removed": removed}
+
+
+# --- Agent v7: code decides whether to hand over ---------------------------------------------------
+
+OUT_OF_SCOPE_TOPIC = "out_of_scope"
+# A request for a person, in the passenger's words: a verb of asking with a person after it. Saying a
+# person exists ("am I talking to a real person?", "my manager booked this") is not a request.
+_A_PERSON = r"(?:a |an |the |your |some )?(?:real |live |actual )?(?:human|person|agent|representative|someone|supervisor)"
+PASSENGER_ASKS_FOR_A_PERSON = re.compile(
+    rf"\b(?:(?:speak|talk|chat)\s+(?:to|with)\s+{_A_PERSON}\b"
+    rf"|(?:connect|transfer|put)\s+me\s+(?:to|with|through)\b"
+    rf"|(?:want|need|get me)\s+{_A_PERSON}\b)", re.I)
+# Rule 3: a ruling whose outcome a person decides. No policy in policies.md 1.3 has one (P8 inside 48
+# hours is "best-effort and not guaranteed", not a person acting), so this stays empty.
+RULINGS_THAT_NEED_A_PERSON: tuple = ()
+
+
+def decide_hand_over(answer_text: str, topics_named: list, passenger_text: str) -> tuple[str, dict]:
+    """The answer as code decides it, and the decision: hand over only for an out-of-scope question
+    (out_of_scope the only topic named), a passenger who asks for a person, or a ruling that needs one."""
+    text, marker, removed = _without_person_sentences(answer_text)
+    topics = list(topics_named or [])
+    if topics == [OUT_OF_SCOPE_TOPIC]:
+        reason = "out_of_scope"
+    elif PASSENGER_ASKS_FOR_A_PERSON.search(passenger_text or ""):
+        reason = "passenger_asked"
+    elif any(topic in RULINGS_THAT_NEED_A_PERSON for topic in topics):
+        reason = "ruling_needs_person"
+    else:
+        reason = "none"
+    handed_over = reason != "none"
+    if handed_over:
+        text = f"{text}\n\n{HAND_OVER_SENTENCE}" if text else HAND_OVER_SENTENCE
+    return text, {"model_marked_hand_over": marker, "code_handed_over": handed_over, "hand_over_reason": reason,
+                  "topics_named": topics, "mixed_message": OUT_OF_SCOPE_TOPIC in topics and len(topics) > 1,
+                  "removed": removed}

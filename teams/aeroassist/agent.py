@@ -21,7 +21,9 @@ versions live side by side, so a change can be recorded and compared against the
       changed: removed_by_code in a tool call's arguments, and a hand_over_wording step
   v7  v6 with limits version 3: the tool also names no-shows and airline cancellations (P6, P7, whose
       rule it returns) and an explicit out_of_scope topic, and the understanding rule says to name them.
-      v5 and v6 keep limits version 2 and send what they always sent (a test checks it)
+      v5 and v6 keep limits version 2 and send what they always sent (a test checks it). Code decides
+      whether to hand over (hand_over.decide_hand_over): only for out_of_scope alone or a passenger who
+      asks for a person; the model's marker is kept on the record as a request
 
 Pick one with the environment variable AEROASSIST_AGENT_VERSION (default: v5, since Run 7). The choice is part
 of AGENT_VERSION, and so is the version of policies.md it answers from: the same code with new
@@ -43,7 +45,8 @@ if str(TEAM_FOLDER) not in sys.path:
 
 from aiquality.models import AGENT_MODEL  # noqa: E402  (light import: model name only)
 import policy_limits  # noqa: E402  (light import: no model, no network)
-from hand_over import HAND_OVER_CODE_VERSION, HAND_OVER_MARKER, finish_hand_over  # noqa: E402
+from hand_over import (HAND_OVER_CODE_VERSION, HAND_OVER_DECISION_VERSION, HAND_OVER_MARKER,  # noqa: E402
+                       decide_hand_over, finish_hand_over)
 from stated_facts import keep_stated_facts  # noqa: E402
 
 # General rules, written for kinds of error, never for one golden case (a test checks this).
@@ -165,7 +168,7 @@ VERSIONS = {
     "v6": {"system_prompt": PROMPT_V6, "top_n": 3, "use_conversation": True, "policy_limits_tool": True,
            "understanding_step": True, "code_steps": True},
     "v7": {"system_prompt": PROMPT_V7, "top_n": 3, "use_conversation": True, "policy_limits_tool": True,
-           "understanding_step": True, "code_steps": True, "limits_version": "3"},
+           "understanding_step": True, "code_steps": True, "limits_version": "3", "hand_over_decision": True},
 }
 TEMPERATURE = 0          # comparable runs: every version is recorded with the same setting
 
@@ -183,7 +186,8 @@ def limits_tool() -> "policy_limits.LimitsTool":
 
 
 LIMITS_PART = f":limits-{limits_tool().version}" if SETTINGS.get("policy_limits_tool") else ""
-LIMITS_PART += f":handover-{HAND_OVER_CODE_VERSION}" if SETTINGS.get("code_steps") else ""
+HAND_OVER_PART = HAND_OVER_DECISION_VERSION if SETTINGS.get("hand_over_decision") else HAND_OVER_CODE_VERSION
+LIMITS_PART += f":handover-{HAND_OVER_PART}" if SETTINGS.get("code_steps") else ""
 AGENT_VERSION = (f"aeroassist-rag:{AGENT_MODEL}:{VERSION}-top{SETTINGS['top_n']}{LIMITS_PART}"
                  f":policies-{POLICIES_VERSION}")
 
@@ -201,12 +205,27 @@ def answer(question: str, conversation: list = None) -> dict:
     From v6, code finishes the answer's hand-over, and that step is listed after the tool calls."""
     earlier_turns = conversation if SETTINGS["use_conversation"] else None
     answer_text, retrieved_policies, tool_calls = _get_agent().answer_with_tool_calls(question, earlier_turns)
-    if SETTINGS.get("code_steps"):
+    model_answer_text = answer_text
+    if SETTINGS.get("hand_over_decision"):
+        answer_text, step = decide_hand_over(answer_text, _topics_named(tool_calls), question)
+        tool_calls = list(tool_calls) + [{"name": "hand_over_decision", "arguments": step}]
+    elif SETTINGS.get("code_steps"):
         answer_text, step = finish_hand_over(answer_text)
         if step:
             tool_calls = list(tool_calls) + [{"name": "hand_over_wording", "arguments": step}]
-    return {"answer_text": answer_text, "retrieved_documents": retrieved_policies,
-            "tool_calls": tool_calls if SETTINGS.get("policy_limits_tool") else None}
+    reply = {"answer_text": answer_text, "retrieved_documents": retrieved_policies,
+             "tool_calls": tool_calls if SETTINGS.get("policy_limits_tool") else None}
+    if SETTINGS.get("hand_over_decision"):
+        reply["model_answer_text"] = model_answer_text          # the model's own words, before code edits them
+    return reply
+
+
+def _topics_named(tool_calls: list) -> list:
+    """The topics in the understanding step: the first call to the limits tool, which code forces."""
+    for call in tool_calls or []:
+        if call.get("name") == policy_limits.TOOL_NAME:
+            return list((call.get("arguments") or {}).get("topics") or [])
+    return []
 
 
 def _get_agent():

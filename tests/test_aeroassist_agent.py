@@ -181,3 +181,30 @@ def test_v7_understanding_rule_is_the_agreed_wording_then_v5s_rule(monkeypatch):
         "question, such as a greeting. Give the facts the conversation gives. " + tail)
     assert module.UNDERSTANDING_RULE_V7 in module.PROMPT_V7 and module.UNDERSTANDING_RULE not in module.PROMPT_V7
     assert module.limits_tool().version == "3"
+
+
+class OutOfScopeRAG:
+    def answer_with_tool_calls(self, question, conversation=None):
+        return ("I have no policy for pets.\nHAND_OVER", [],
+                [{"name": "check_policy_limits", "arguments": {"topics": ["out_of_scope"]}}])
+
+
+class CoveredButMarkedRAG:
+    def answer_with_tool_calls(self, question, conversation=None):
+        return ("No refund: the ticket is forfeited.\nHAND_OVER", [],
+                [{"name": "check_policy_limits", "arguments": {"topics": ["no_show"]}}])
+
+
+def test_v7_decides_the_hand_over_in_code_and_keeps_the_model_answer(monkeypatch):
+    module = load_agent_module(monkeypatch, "v7")
+    assert ":v7-top3:limits-3:handover-3:" in module.AGENT_VERSION
+    module._agent = OutOfScopeRAG()
+    reply = module.answer("Can my parrot fly with me?")
+    assert reply["answer_text"] == "I have no policy for pets.\n\nA human agent will take over from here."
+    assert reply["model_answer_text"] == "I have no policy for pets.\nHAND_OVER"
+    step = reply["tool_calls"][-1]
+    assert step["name"] == "hand_over_decision" and step["arguments"]["hand_over_reason"] == "out_of_scope"
+    module._agent = CoveredButMarkedRAG()
+    reply = module.answer("I missed my flight. Can I get a refund?")
+    assert reply["answer_text"] == "No refund: the ticket is forfeited."
+    assert reply["tool_calls"][-1]["arguments"]["code_handed_over"] is False
