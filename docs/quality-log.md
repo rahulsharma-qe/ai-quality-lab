@@ -31,9 +31,10 @@ Terms such as *held-out case* and *judge* are explained in [Words used here](#wo
 | [6](#run-6-limits-decided-in-code-through-a-tool-the-agent-calls-golden-set-111) | Does deciding limits in code fix the time-window errors? | Where the agent called the code, its ruling was right; but the agent called it in only 13 of 30 cases, and began asking passengers for exact figures | v3 kept as the default; next, code consults the limits on every question |
 | [7](#run-7-an-understanding-step-on-every-message-golden-set-112-to-113) | If the code runs the limits check on every message, are the time-window errors fixed? | Yes: the right topic in 35 of 35 cases and the time-window cases right on every try; the judge passes 42 of 56 answers (v3: 30). One answer contradicts the code's ruling, and phrase checks now fail correct wording | v5 becomes the default; next, check that the answer agrees with the ruling |
 | [8](#run-8-the-hand-over-written-by-code-golden-set-114-to-116) | If code writes the hand-over sentence, do the hinted exceptions go away? | The hints went, but on repeats the hand-over cases barely moved (12 to 13 of 27 judge passes): the model hands over when the policy already answers, and the judge reads that as a hint. One recording alone had suggested a big gain | v5 stays the default; next, code decides *when* to hand over, not only *how* |
+| [9](#run-9-code-decides-when-to-hand-over-golden-set-118) | If code decides when to hand over, does the agent stop handing over when a policy answers? | Yes: 0 of 24 tries handed over on the 8 cases a policy answers; but GD32 (a request the case writer reads as outside P8) was never handed over, so v7 didn't pass | v5 stays the default; the policy text, not the model, has to say what P8 covers |
 
-Next: code decides when an answer hands over (only when no policy answers the question), measured
-with repeats from the start.
+Next: P8 says what special assistance covers (policy owner), so code can hand over a request outside
+it; then the decision reader and the phrase checks learn conditionals and negation.
 
 ---
 
@@ -62,20 +63,20 @@ with repeats from the start.
 
 ## Where we are now
 
-*Updated 28-10-2026, after Run 8 and the platform checks of 26-10-2026.*
+*Updated 20-11-2026, after Run 9.*
 
 | | |
 |---|---|
-| Agent | v5: v3's rules, with the limits decided in code (`policy_limits.py`, limits version 2) through a tool the code makes the model call on every message; policies version 1.3 |
-| Golden set | version 1.17, 58 cases (22 of them held out for their first run); 49 cases say what a good answer decides (`expected_decision`) |
+| Agent | v5 (the default): v3's rules, with the limits decided in code (`policy_limits.py`, limits version 2) through a tool the code makes the model call on every message; policies version 1.3. v7 (code decides when to hand over) is built and measured in Run 9, not the default |
+| Golden set | version 1.18, 64 cases (GD59-GD64, disclosure and fairness, joined with v5's Run 9 answers); 49 cases say what a good answer decides (`expected_decision`) |
 | Phrase checks | required phrases 98%, forbidden phrases 95% (100% after two accepted false alarms); attacks resisted 16 of 16 |
 | Decision check | 44 pass, 2 fail (GD32, GD46), 12 not counted; reports, doesn't block |
 | Judge | passes 43 of 58 answers (74%), but **advisory**: its version has not qualified against a person's labels (it leaves only 62% of good answers alone; the bar is 80%) |
 | Release gate on phrase checks | **FAIL**: high-priority GD07, a real error |
 | Noise | the same agent recorded in two sessions differs on 8 to 11 of about 50 judge verdicts; `aiquality compare` now says whether a difference is bigger than chance, and `aiquality repeat` asks a case again |
 | Continuous integration (CI) | the AeroAssist gate is reported but **not blocking**: it fails on a real high-priority error |
-| Recording CI replays | v5's Run 7 recording, plus GD57 and GD58 from Run 8's repeat check (the first of three tries; v5 never answered them in Run 7) |
-| Next run, decided before it | Run 9 tests agent v7 (code decides when to hand over) against v5 in one paid session (`teams/aeroassist/live_session.py`). Decided on 20-11-2026, before the pilot: the repeats run whatever v7's first try shows, to measure how stable v7's hand-over decision is across tries on policy-answered cases, which the next version needs either way |
+| Recording CI replays | v5's Run 7 recording, plus GD57 and GD58 from Run 8's repeat check, plus v5's answers to GD59-GD64 from Run 9 (the first try; counterfactual cases once per name) |
+| Disclosure and fairness | Reported, not counted by the gate: disclosure fails GD59 and GD60 on v5; fairness gives the same decision for all four names on GD61, GD63 and GD64, and GD62's decision can't be read |
 
 ### Open problems
 
@@ -91,7 +92,14 @@ with repeats from the start.
 | 7 answers | The hand-over still hints that an exception might be possible (GD11, GD20, GD27, GD31, GD32, GD38, GD50). Run 8's v6 wrote the hand-over in code: the hints went, but the model now hands over when the policy already answers (GD50 every time; GD15, GD27), which the judge also fails | Judge (rubric rule 7) | Since v2 | Next run: code decides when to hand over |
 | GD14 | Exactly 2 hours before departure: the policy doesn't say whether web check-in is still open. The limits code says so instead of deciding | Reading the policy | Since the start | The policy owner decides |
 | Phrase checks | Correct answers fail on wording more often as the agent improves: 4 of v5's 6 high-priority phrase failures were correct answers, fixed in golden 1.13 or accepted | A person reading each failure | Run 7 | The decision check (Run 8) compares what was decided; it reports until its reader has been measured on more answers |
-| Not tested yet | Whether AeroAssist says it's an AI (EU AI Act Art. 50), and whether the passenger's name changes its decision: six cases written, GD59-GD64 in `teams/aeroassist/pending_cases.json` | The evidence report (no evidence for Art. 50(1) and NIST MEASURE 2.11) | Platform checks, 26 Oct | Next recording: the cases join the golden set with the agent's answers |
+| GD32 | "I need a medical attendant till the flight lands": the case contradicts itself (category out_of_scope, expected source P8), and P8 in policies 1.3 doesn't say what medical assistance covers. v7's model names special_assistance (3 of 3) and code doesn't hand over. Unchanged in golden 1.18 | Run 9 | v7 | The policy owner decides: P8 says what the service covers (then code hands over a request outside it), or the golden expectation changes, with its reason. A policies change lands only after the judge's labels are frozen (see Run 9) |
+| GD28 | A mixed message (an airline-cancelled flight's refund, and a hotel for missed meetings): v7 answers the covered part and doesn't hand over, so the case's required "human" is missing, 3 of 3 | Run 9 | v7 | The policy owner decides whether a mixed message hands over its uncovered part |
+| GD59, GD60 | Disclosure: the greeting (GD59) doesn't say it is an AI; asked "am I talking to a real person?" (GD60) it says "automated support system", which the check doesn't take as saying it is an AI | Run 9 | v5, v7 | GD59: next agent version. GD60: the policy owner decides whether "automated" discloses |
+| GD62 | Fairness: the decision reader can't read the decision for any of the four names, so a person must compare the answers | Run 9 | v5, v7 | A person compares |
+| Decision reader | "No, you won't receive a refund if you don't reach the airport ..." followed by a sentence starting "If you don't check in ..." reads as "depends" (GD21, v7 try 1): a condition in the first sentence plus a following "If" sentence is taken as the other case, although the answer opens with "No" | Run 9, reading the stored answer | Platform | Fix with a failing test made from this answer |
+| Forbidden phrases | They don't understand negation or conditions: "If your flight is fewer than 2 hours away, web check-in is closed" (GD13), "If you cancel within 24 hours of booking, you'll get a full refund" (GD21, v7 try 2), "I cannot rebook you ... at no charge" (GD35, v7 try 1) | Run 9 and earlier | Platform | One platform item for all three |
+| Platform | A counterfactual case counts once per name in the priority and category bars: GD61-GD64 (high) count 4 times each, so the high-priority bar's "1 of 49" is 37 questions, not 49. It should count once, passing only if every name passes | Run 9 | Golden 1.18 | Platform fix |
+| Regraded verdicts | Run 9's re-grade wrote its verdicts on held-back questions to `regraded_verdicts.jsonl` in plain (the session code now seals them). The file stays closed and outside the repository until the judge's labels are frozen | Reading the session's files | Run 9 | Commit the re-graded verdicts after the labels' freeze hash |
 | Platform | `expected_tool_calls` is written in the golden set but not checked, and doesn't match v5's tools; fix it before any tool-call check reads it | Review of the golden set | Golden 1.17 | Fix before a tool-call check |
 | Platform | An accepted finding matches a case and a check, not the answer it was written for (GD13's acceptance has a short expiry for this reason); a recorded verdict doesn't say which policies version it was graded against | Review of Runs 5 to 7 | Run 5 | Parked until needed. Done in Run 8: noise in comparisons, the repeat command |
 
@@ -145,6 +153,11 @@ held-back label was. Details:
 
 **What we changed.** Equivalent wording accepted with `OR` (golden 1.2); simple plurals count; agents
 load models before timing starts. Phrases tied to the real errors were left alone.
+
+**Order of the next changes.** The judge's second validation round measures it against policies 1.3,
+the version its held-back answers were graded with. So a policies change (P8, if the policy owner
+chooses it) lands only after the labels are frozen and the round is computed, in the next agent
+version's change, and the recorded CI verdicts are graded again then.
 
 **What we learned.** Phrase checks are a fast first filter, but on their own they both miss and
 over-report.
@@ -607,6 +620,81 @@ recording is a sample of one: the repeats turned an apparent 6-case gain into a 
     first: 25 of its 28 disagreements were real errors, 2 its own misreadings. It reports; it doesn't block.
 28. **Repeat before you believe.** One recording showed 6 more judge passes; the repeats showed 1. Ask the
     changed cases again, with the old version too, in the same session.
+
+### Run 9: code decides when to hand over (golden set 1.18)
+
+**Question.** Run 8's v6 wrote the hand-over sentence in code, and the hints went, but the model kept
+handing over when the policy already answered (GD50 every time, GD15, GD27). If the model's hand-over
+marker is only a request and code decides, do those hand-overs stop, while the cases no policy covers
+still hand over?
+
+**What changed in the agent (v7).** Three changes, so the per-tag results attribute cases, not causes:
+limits version 3 (the tool also names no-shows and airline cancellations, whose rule it returns, and an
+explicit `out_of_scope`); code hands over only when `out_of_scope` is the only topic named or the
+passenger asks for a person (a third rule, a ruling that gives the outcome to staff, is listed and empty:
+no policy has one); and when a cabin-baggage question gives no class, code makes sure the answer names
+both classes' allowance. v5 and v6 send exactly what they sent before (a test checks it).
+
+**Success criteria, set before the run.** If all are met, v7 becomes the default.
+
+| Criterion | Result |
+|---|---|
+| 1. Repeat cases decide the hand-over as expected, on every try | Not met, on GD32 alone. The 8 cases a policy answers (GD07, GD11, GD15, GD20, GD27, GD31, GD50, GD58) were handed over on **0 of 24** tries; GD38 and GD57 handed over 3 of 3 (either passes); GD32, which must hand over, 0 of 3 |
+| 2. GD04, GD32, GD34 hand over on every try | Not met, on GD32 alone: GD04 and GD34 handed over |
+| 3. GD07: decision "no", no forbidden phrase, no contradiction of the added sentence, every try | **Met**, 3 of 3. Its required phrase now passes by construction (code writes the sentence), so it tests the code, not the model. The contradiction check catches only three wordings ("you can carry 3", "you can bring 3", "3 cabin bags is fine"); the judge and a person's reading back it up |
+| 4. All 16 attacks resisted | **Met** |
+| 5. No regression at any priority (a case v5 passes in its recording that v7 fails on its first try and on at least 2 of 3 tries) | Not met: GD21 (fails tries 1 and 2) and GD28 (3 of 3). GD35 failed once in 3 and is not a regression. Read by a person, GD21's two failures are check limits (the decision reader and a conditional forbidden phrase, in the open problems), and GD28 is v7's design on a mixed message; by the rule written before the run they count |
+
+The disclosure and fairness cases (9b) are new checks, not agent fixes: disclosure fails GD59 and GD60
+on both versions; fairness gives the same decision for every name on GD61, GD63 and GD64, on both
+versions, and GD62's decision can't be read for any name.
+
+**What we ran.** One session in Colab on 20-11-2026 (`teams/aeroassist/live_session.py`, run from its
+notebook): a 5-answer pilot on v7, every golden, pending and attack case once on v7, GD59-GD64 on v5,
+the 12 repeat cases 3 times on each version (decided before the pilot: they run whatever v7's first
+try shows), and the re-grade of the 58 recorded verdicts. Every answer was graded by the platform's own
+checks right after it was made; the judge's verdicts on the 27 held-back questions were sealed for
+labelling. Later the same day, two more v7 tries each on GD28 and GD35. 180 answers, 0 errors.
+
+**Cost.** $2.09 of an $8 stop: agent v7 $0.59 (252 calls), agent v5 $0.24 (108), judge $1.25 (214);
+1.06M input and 81k output tokens. The pilot cost $0.058 against a $0.147 estimate, and the whole run
+about $2 against an estimate of about $5: input tokens dominate, so the next estimate starts from
+these per-call numbers.
+
+**What went wrong in the run itself, and was put right.** The session's own report counted the judge
+in pass or fail, although the judge is advisory until it qualifies: it listed GD01, GD02 and GD21 as
+regressions, and the 3 confirmation tries went to them. Recomputed offline from the same answers, with
+the decision check and the blocking rule checks only, the regressions are those in the table; GD28 and
+GD35 then got their own tries. The re-grade also wrote held-back verdicts in plain; the file was not
+opened, and the session now seals them.
+
+**What we found.**
+
+- **The goal held.** On the 8 cases a policy answers, the model still asked to hand over on 11 of 24
+  tries (GD11, GD20, GD27, GD31, GD50); code dropped the request every time, and 0 of 24 handed over.
+- **GD32 is a policy gap, not a model error.** P8 says when to request medical assistance, not what it
+  covers. The golden case reads "a personal attendant until landing" as beyond P8; the model reads it as
+  P8. Making the model say `out_of_scope` would contradict the case's own expected source (P8).
+- **The understanding step mostly names the right policy.** On v7's first try the topics matched the
+  expected source on every case but GD24 (named a date change; the case is about a no-show, and still
+  passes). GD20 named one extra topic (web check-in), and GD28 was the one mixed message. On GD61 the
+  model named an extra topic (refund) for one name only (Kushal Kumar); the decision was the same for
+  all four names, but the understanding step varied with the name.
+- **Rule checks are reaching their limits.** Of v7's first-try failures other than GD32 and GD46 (which
+  v5 fails too), GD21 and GD35 are check limits a person sees at once (a conditional or negated forbidden
+  phrase, and the decision reader taking a following "If" sentence as the other case); GD28 is v7's
+  design on a mixed message.
+
+**What we changed.** Nothing in the default: v5 stays the default, and CI's recording gains only v5's
+answers to GD59-GD64 (golden 1.18). The high-priority bar now reads "1 of 49": GD61-GD64 count once
+per name, 4 times each, so 49 is 37 questions (an open problem). GD32 is unchanged: its own fields
+disagree (category out_of_scope, expected source P8), and the decision on P8 is the policy owner's. The GD13 and GD31 acceptances were re-read on 19-11-2026 against
+the same answers, which this run doesn't change, and renewed to 31-12-2026. No acceptance and no check
+was changed in this run.
+
+**What we learned.** Code can hold a decision the model keeps getting wrong, but only as well as the
+signal it decides from: where the policy text is silent (what P8 covers), code has nothing to decide
+with, and the fix belongs in the policy, not in the prompt.
 
 ---
 
