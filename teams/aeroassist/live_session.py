@@ -536,15 +536,20 @@ def step_regrade(session: Session) -> Optional[Path]:
         session.log("regrade skipped: 9a passes, so the CI recording becomes v7's answers")
         return None
     judge, path = session.judge(), session.store.folder / "regraded_verdicts.jsonl"
+    sealed_path = session.store.folder / "regraded_verdicts_sealed.jsonl"      # held-back questions: sealed
     cases = {case.id: case for case in session.cases}
     for row in _read_jsonl(session.config.folder / session.config.agent["path"]):
         case = cases.get(row["case_id"])
         if case is not None:
+            sealed = _base_id(case.id) in HELD_BACK
+            judge.seal_next = sealed
             verdict = judge.verdict(case, row["answer_text"])
-            _append(path, {"case_id": case.id, "answer_sha": answer_sha(row["answer_text"]),
+            judge.seal_next = False
+            _append(sealed_path if sealed else path, {"case_id": case.id, "answer_sha": answer_sha(row["answer_text"]),
                            "verdict": "PASS" if verdict.passed else "FAIL", "reason": verdict.reason,
                            "judge_version": judge.version})
-    session.log(f"regrade: saved to {path.name}; spent ${session.ledger.total:.4f}")
+    session.log(f"regrade: saved to {path.name} (held-back cases sealed in {sealed_path.name}); "
+                f"spent ${session.ledger.total:.4f}")
     return path
 
 

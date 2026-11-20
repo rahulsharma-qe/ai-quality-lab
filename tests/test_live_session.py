@@ -240,3 +240,14 @@ def test_the_advisory_judge_doesnt_decide_pass_or_regression(tmp_path):
     assert ls.passes_answer_checks(session, record) is True
     record["results"][2]["status"] = "FAIL"
     assert ls.passes_answer_checks(session, record) is False
+
+
+def test_the_regrade_keeps_held_back_verdicts_sealed(tmp_path, monkeypatch):
+    """The regrade judges v5's recorded answers, held-back questions among them: those verdicts go to their
+    own sealed file, like every other verdict on a held-back case."""
+    session = ls.Session(tmp_path, dry_run=True, log=quiet)
+    monkeypatch.setattr(ls, "criteria_9a", lambda s: {"passes": False})
+    ls.step_regrade(session)
+    shown = (tmp_path / "regraded_verdicts.jsonl").read_text(encoding="utf-8")
+    sealed = (tmp_path / "regraded_verdicts_sealed.jsonl").read_text(encoding="utf-8")
+    assert '"GD23"' not in shown and '"GD23"' in sealed and '"GD01"' in shown
