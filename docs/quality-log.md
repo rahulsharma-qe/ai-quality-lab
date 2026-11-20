@@ -75,6 +75,7 @@ with repeats from the start.
 | Noise | the same agent recorded in two sessions differs on 8 to 11 of about 50 judge verdicts; `aiquality compare` now says whether a difference is bigger than chance, and `aiquality repeat` asks a case again |
 | Continuous integration (CI) | the AeroAssist gate is reported but **not blocking**: it fails on a real high-priority error |
 | Recording CI replays | v5's Run 7 recording, plus GD57 and GD58 from Run 8's repeat check (the first of three tries; v5 never answered them in Run 7) |
+| Next run, decided before it | Run 9 tests agent v7 (code decides when to hand over) against v5 in one paid session (`teams/aeroassist/live_session.py`). Decided on 20-11-2026, before the pilot: the repeats run whatever v7's first try shows, to measure how stable v7's hand-over decision is across tries on policy-answered cases, which the next version needs either way |
 
 ### Open problems
 
