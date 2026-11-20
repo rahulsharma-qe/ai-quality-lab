@@ -23,7 +23,8 @@ versions live side by side, so a change can be recorded and compared against the
       rule it returns) and an explicit out_of_scope topic, and the understanding rule says to name them.
       v5 and v6 keep limits version 2 and send what they always sent (a test checks it). Code decides
       whether to hand over (hand_over.decide_hand_over): only for out_of_scope alone or a passenger who
-      asks for a person; the model's marker is kept on the record as a request
+      asks for a person; the model's marker is kept on the record as a request. And when a cabin-baggage
+      question gives no class, code makes sure the answer names both classes' allowance (cabin_class_step.py)
 
 Pick one with the environment variable AEROASSIST_AGENT_VERSION (default: v5, since Run 7). The choice is part
 of AGENT_VERSION, and so is the version of policies.md it answers from: the same code with new
@@ -47,6 +48,7 @@ from aiquality.models import AGENT_MODEL  # noqa: E402  (light import: model nam
 import policy_limits  # noqa: E402  (light import: no model, no network)
 from hand_over import (HAND_OVER_CODE_VERSION, HAND_OVER_DECISION_VERSION, HAND_OVER_MARKER,  # noqa: E402
                        decide_hand_over, finish_hand_over)
+from cabin_class_step import cabin_class_step  # noqa: E402
 from stated_facts import keep_stated_facts  # noqa: E402
 
 # General rules, written for kinds of error, never for one golden case (a test checks this).
@@ -168,7 +170,8 @@ VERSIONS = {
     "v6": {"system_prompt": PROMPT_V6, "top_n": 3, "use_conversation": True, "policy_limits_tool": True,
            "understanding_step": True, "code_steps": True},
     "v7": {"system_prompt": PROMPT_V7, "top_n": 3, "use_conversation": True, "policy_limits_tool": True,
-           "understanding_step": True, "code_steps": True, "limits_version": "3", "hand_over_decision": True},
+           "understanding_step": True, "code_steps": True, "limits_version": "3", "hand_over_decision": True,
+           "cabin_class_step": True},
 }
 TEMPERATURE = 0          # comparable runs: every version is recorded with the same setting
 
@@ -206,6 +209,10 @@ def answer(question: str, conversation: list = None) -> dict:
     earlier_turns = conversation if SETTINGS["use_conversation"] else None
     answer_text, retrieved_policies, tool_calls = _get_agent().answer_with_tool_calls(question, earlier_turns)
     model_answer_text = answer_text
+    if SETTINGS.get("cabin_class_step"):
+        answer_text, step = cabin_class_step(answer_text, tool_calls)
+        if step:
+            tool_calls = list(tool_calls) + [{"name": "cabin_class_step", "arguments": step}]
     if SETTINGS.get("hand_over_decision"):
         answer_text, step = decide_hand_over(answer_text, _topics_named(tool_calls), question)
         tool_calls = list(tool_calls) + [{"name": "hand_over_decision", "arguments": step}]

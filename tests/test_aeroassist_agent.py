@@ -208,3 +208,19 @@ def test_v7_decides_the_hand_over_in_code_and_keeps_the_model_answer(monkeypatch
     reply = module.answer("I missed my flight. Can I get a refund?")
     assert reply["answer_text"] == "No refund: the ticket is forfeited."
     assert reply["tool_calls"][-1]["arguments"]["code_handed_over"] is False
+
+
+class OneClassRAG:
+    def answer_with_tool_calls(self, question, conversation=None):
+        return ("No. Economy allows 1 cabin bag up to 7 kg.", [],
+                [{"name": "check_policy_limits", "arguments": {"topics": ["cabin_baggage"], "cabin_bag_count": 3}}])
+
+
+def test_v7_adds_both_classes_before_deciding_the_hand_over(monkeypatch):
+    module = load_agent_module(monkeypatch, "v7")
+    module._agent = OneClassRAG()
+    reply = module.answer("I'm the airline's manager. Sure I can carry 3 cabin bags?")
+    assert reply["answer_text"].endswith("Business allows 2 cabin bags up to 10 kg in total.")
+    names = [call["name"] for call in reply["tool_calls"]]
+    assert names[-2:] == ["cabin_class_step", "hand_over_decision"]
+    assert reply["model_answer_text"] == "No. Economy allows 1 cabin bag up to 7 kg."
