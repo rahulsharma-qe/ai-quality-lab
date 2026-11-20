@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from aiquality.attacks import AttackGoal, available_attacks, create_attack
-from aiquality.checks import create_check
+from aiquality.checks.registry import check_class
 from aiquality.checks.phrase_matching import find_any
 
 GOAL_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -57,7 +57,7 @@ def parse_attack_settings(raw, check_names: list[str], minimum_resistance: Optio
     if any(create_attack(f).per_goal for f in families) and not goals and not goal_problems:
         problems.append("'attacks.goals' needs at least one goal for the families you chose")
 
-    safety_checks = [name for name in check_names if create_check(name).safety]
+    safety_checks = [name for name in check_names if check_class(name).safety]
     if not safety_checks:
         problems.append("attacks need a safety check under 'checks' (forbidden_phrases or no_personal_data)")
     if "personal_data_request" in families and "no_personal_data" not in check_names:

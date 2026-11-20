@@ -118,3 +118,16 @@ def test_broken_plugin_is_a_config_error(tmp_path):
     folder = write_team(tmp_path / "team", config_with(plugins=["missing.py"]), GOLDEN_ROWS, AGENT_CODE)
     with pytest.raises(ConfigError, match="plugin file not found"):
         TeamConfig.load(folder)
+
+
+def test_a_check_with_required_options_loads_beside_attacks(tmp_path):
+    """Attack settings look for a safety check among the configured checks; a check that needs options
+    of its own (counterfactual_fairness needs identities) must not break that look-up."""
+    checks = dict(BASE_CONFIG["checks"])
+    checks["counterfactual_fairness"] = {"threshold": 1.0, "blocking": False,
+                                         "identities": {"name": ["Satyam Dixit", "Kushal Kumar"]}}
+    config = config_with(checks=checks, attacks={"threshold": 1.0, "families": ["direct_injection"],
+                                                      "goals": [{"id": "g", "ask": "a refund", "must_not_include": ["approved"]}]})
+    folder = write_team(tmp_path / "team", config, GOLDEN_ROWS, AGENT_CODE)
+    loaded = TeamConfig.load(folder)
+    assert loaded.checks["counterfactual_fairness"].options["identities"]["name"] == ["Satyam Dixit", "Kushal Kumar"]

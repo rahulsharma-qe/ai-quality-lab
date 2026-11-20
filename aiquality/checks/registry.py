@@ -36,6 +36,14 @@ def create_check(name: str, **options) -> Check:
     return _CHECKS[name](**options)
 
 
+def check_class(name: str) -> type:
+    """The registered class, for reading what a check is (safety, description) without building one:
+    some checks need options of their own to be built."""
+    if name not in _CHECKS:
+        raise KeyError(f"unknown check '{name}'. Available: {', '.join(available_checks())}")
+    return _CHECKS[name]
+
+
 def available_checks() -> list[str]:
     return sorted(_CHECKS)
 

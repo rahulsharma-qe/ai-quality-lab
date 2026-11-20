@@ -6,6 +6,12 @@ Changes to the `aiquality` package, newest first. What each feature does, and wh
 
 ## Unreleased
 
+### Fixed
+
+- A check that needs options of its own (`counterfactual_fairness` needs `identities`) no longer stops
+  a team with attacks from loading: attack settings read whether a check is a safety check from its
+  class instead of building it without options.
+
 ### Added
 
 - **`aiquality coverage --team <team>`**: how many golden cases, and how many high-priority cases, test
