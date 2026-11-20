@@ -164,3 +164,58 @@ def test_the_tool_description_gives_the_model_no_golden_case_wording():
     import json
     text = json.dumps(limits.TOOL_SCHEMA).lower()
     assert [w for w in ("tomorrow", "two weeks", "last week", "few hours", "yesterday") if w in text] == []
+
+
+# --- Limits version 3 (agent v7): rules for the no-figure policies, and an explicit out_of_scope -----
+
+V3 = limits.LIMITS_TOOLS["3"]
+
+
+def test_version_2_is_unchanged_and_version_3_adds_three_topics():
+    assert limits.LIMITS_TOOLS["2"].schema is limits.TOOL_SCHEMA and limits.LIMITS_TOOLS["2"].topics == limits.TOPICS
+    assert "out_of_scope" not in limits.TOPICS and "no_show" not in limits.TOPICS
+    assert V3.topics == limits.TOPICS + ("no_show", "airline_cancellation", "out_of_scope")
+    assert V3.schema["input_schema"]["properties"]["topics"]["items"]["enum"] == list(V3.topics)
+    assert V3.schema["name"] == limits.TOOL_NAME
+
+
+def test_version_3_wording_is_the_agreed_wording():
+    assert V3.schema["description"] == (
+        "Decides the airline's policy questions: refunds by time since booking, web check-in and date changes "
+        "and special assistance by time until departure, and cabin and checked baggage by class and weight; for "
+        "no-shows and flights cancelled by the airline it returns the rule. Give every topic the passenger asks "
+        "about and whatever facts the conversation gives; leave out what it doesn't. Add out_of_scope for any "
+        "part of the question none of these policies cover; give no topic when the message asks no policy "
+        "question. It returns a ruling per topic, which may say the answer depends on a fact: then answer for "
+        "each case. Use its ruling instead of working it out yourself.")
+    assert V3.schema["input_schema"]["properties"]["topics"]["description"] == (
+        "The policy questions to decide. Add out_of_scope for any part of the question none of the policies "
+        "cover; empty only if the message asks no policy question.")
+
+
+@pytest.mark.parametrize("topic, policy, words", [
+    ("no_show", "P6", ["no refund", "forfeited", "full current fare"]),
+    ("airline_cancellation", "P7", ["full refund", "free rebooking", "next available flight", "same cabin class",
+                                    "no penalty"])])
+def test_no_show_and_airline_cancellation_return_their_policys_rule(topic, policy, words):
+    [ruling] = V3.run_tool(limits.TOOL_NAME, {"topics": [topic]})
+    assert ruling["policy"] == policy and ruling["topic"] == topic and "error" not in ruling
+    assert all(word in ruling["explanation"].lower() for word in words)
+    section = re.search(rf"## {policy} .*?(?=\n## |\Z)", POLICIES_FILE.read_text(encoding="utf-8"), re.S).group(0).lower()
+    assert all(word in section.replace("**", "") for word in words)         # the rule text is policies.md's
+
+
+def test_out_of_scope_alone_is_a_ruling_not_an_error():
+    assert V3.run_tool(limits.TOOL_NAME, {"topics": ["out_of_scope"]}) == [
+        {"topic": "out_of_scope", "outcome": "no policy covers this",
+         "explanation": "None of the airline's policies cover this; don't answer it from general knowledge."}]
+
+
+def test_out_of_scope_beside_a_covered_topic_rules_on_both():
+    rulings = V3.run_tool(limits.TOOL_NAME, {"topics": ["cabin_baggage", "out_of_scope"], "cabin_class": "economy"})
+    assert [r["topic"] for r in rulings] == ["cabin_baggage", "out_of_scope"]
+
+
+def test_version_2_still_calls_the_new_topics_unknown():
+    [ruling] = run_tool(limits.TOOL_NAME, {"topics": ["out_of_scope"]})
+    assert "error" in ruling

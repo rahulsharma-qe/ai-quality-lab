@@ -38,7 +38,9 @@ def test_agent_versions_and_default(monkeypatch):
     assert ":limits-" not in v3.AGENT_VERSION                         # a version without the tool doesn't name it
     v6 = load_agent_module(monkeypatch, "v6")
     assert ":v6-top3:limits-2:handover-2:policies-" in v6.AGENT_VERSION and v6.VERSIONS["v6"]["code_steps"] is True
-    with pytest.raises(ValueError, match="must be one of: v1, v2, v3, v4, v5, v6"):
+    v7 = load_agent_module(monkeypatch, "v7")
+    assert ":v7-top3:limits-3:" in v7.AGENT_VERSION and v7.VERSIONS["v7"]["limits_version"] == "3"
+    with pytest.raises(ValueError, match="must be one of: v1, v2, v3, v4, v5, v6, v7"):
         load_agent_module(monkeypatch, "v9")
 
 
@@ -50,7 +52,7 @@ CASE_SPECIFIC = ["vip", "influencer", "instagram", "social media", "attendant", 
                  "check-in", "web check", "no-show", "refund", "kg"]
 
 
-@pytest.mark.parametrize("prompt_name", ["PROMPT_V2", "PROMPT_V3", "PROMPT_V4", "PROMPT_V5", "PROMPT_V6"])
+@pytest.mark.parametrize("prompt_name", ["PROMPT_V2", "PROMPT_V3", "PROMPT_V4", "PROMPT_V5", "PROMPT_V6", "PROMPT_V7"])
 def test_prompt_rules_are_general_not_written_for_golden_cases(monkeypatch, prompt_name):
     """A fix tuned to the golden cases would pass them and fail real passengers."""
     module = load_agent_module(monkeypatch, "v3")
@@ -152,3 +154,30 @@ def test_each_version_builds_its_agent_with_the_right_tools(monkeypatch, version
     assert [tool["name"] for tool in built.get("tools") or []] == (expected_tools or [])
     assert built.get("force_first_tool") == expected_forced
     assert (built.get("check_tool_arguments") is not None) == (version == "v6")      # stated facts only, from v6
+
+
+SENT_ON_THE_BASE = Path(__file__).resolve().parent / "fixtures" / "aeroassist_v5_v6_sent.json"
+
+
+@pytest.mark.parametrize("version", ["v5", "v6"])
+def test_v5_and_v6_send_byte_for_byte_what_they_sent_before_v7(monkeypatch, version):
+    """v7's limits version, topics, tool wording and understanding rule are its own: v5 (the default,
+    whose answers CI replays) and v6 send the same prompt and tool schema, with the same version."""
+    import json
+    sent = json.loads(SENT_ON_THE_BASE.read_text(encoding="utf-8"))[version]
+    module = load_agent_module(monkeypatch, version)
+    assert module.AGENT_VERSION == sent["agent_version"]
+    assert module.SETTINGS["system_prompt"] == sent["system_prompt"]
+    assert module.limits_tool().schema == sent["tool_schema"]
+
+
+def test_v7_understanding_rule_is_the_agreed_wording_then_v5s_rule(monkeypatch):
+    module = load_agent_module(monkeypatch, "v7")
+    tail = module.UNDERSTANDING_RULE[module.UNDERSTANDING_RULE.index("If a time isn't exact"):]
+    assert module.UNDERSTANDING_RULE_V7 == (
+        "Before you answer, the check_policy_limits tool runs on every message: give it every topic the passenger "
+        "asks about, including no_show and airline_cancellation, which have no figures. Add out_of_scope for any "
+        "part of the question none of the airline's policies cover. Give no topic when the message asks no policy "
+        "question, such as a greeting. Give the facts the conversation gives. " + tail)
+    assert module.UNDERSTANDING_RULE_V7 in module.PROMPT_V7 and module.UNDERSTANDING_RULE not in module.PROMPT_V7
+    assert module.limits_tool().version == "3"

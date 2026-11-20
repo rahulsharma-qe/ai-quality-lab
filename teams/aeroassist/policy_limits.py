@@ -21,6 +21,8 @@ from dataclasses import asdict, dataclass
 
 # Part of the agent's version, like the policies' version: the same agent with different limits code
 # is a different agent. 1: Run 6 (exact facts only, "missing" otherwise). 2: Run 7 (ranges, partial facts).
+# 3: agent v7 only (see LIMITS_TOOLS): the rule for the two policies with no figure, and an explicit
+# out_of_scope topic. Versions 2 and 3 live side by side, so v5 and v6 still send what they always sent.
 LIMITS_VERSION = "2"
 
 # --- The limits (each one is checked against policies.md by tests/test_policy_limits.py) ---------
@@ -276,6 +278,81 @@ def run_tool(name: str, arguments: dict) -> list[dict]:
     if name != TOOL_NAME:
         return [{"error": f"unknown tool {name!r}"}]
     return check_policy_limits(arguments)
+
+
+# --- Limits version 3: the policies with no figure, and a question none of them covers ------------
+
+# P6 and P7 have no number to decide, but naming them tells code the question is covered. The rule
+# text is policies.md's (a test checks the words).
+NO_FIGURE_RULES = {
+    "no_show": ("P6", "No-show: no refund; the ticket is forfeited. Rebooking is only at the full current fare."),
+    "airline_cancellation": ("P7", "When the airline cancels a flight, the passenger chooses a full refund or free "
+                                   "rebooking on the next available flight, in the same cabin class, with no penalty."),
+}
+OUT_OF_SCOPE = "out_of_scope"
+OUT_OF_SCOPE_RULING = {"topic": OUT_OF_SCOPE, "outcome": "no policy covers this",
+                       "explanation": "None of the airline's policies cover this; don't answer it from general knowledge."}
+TOPICS_V3 = TOPICS + tuple(NO_FIGURE_RULES) + (OUT_OF_SCOPE,)
+
+TOOL_SCHEMA_V3 = {
+    "name": TOOL_NAME,
+    "description": (
+        "Decides the airline's policy questions: refunds by time since booking, web check-in and date changes "
+        "and special assistance by time until departure, and cabin and checked baggage by class and weight; for "
+        "no-shows and flights cancelled by the airline it returns the rule. Give every topic the passenger asks "
+        "about and whatever facts the conversation gives; leave out what it doesn't. Add out_of_scope for any "
+        "part of the question none of these policies cover; give no topic when the message asks no policy "
+        "question. It returns a ruling per topic, which may say the answer depends on a fact: then answer for "
+        "each case. Use its ruling instead of working it out yourself."
+    ),
+    "input_schema": {
+        **TOOL_SCHEMA["input_schema"],
+        "properties": {
+            **TOOL_SCHEMA["input_schema"]["properties"],
+            "topics": {"type": "array", "items": {"type": "string", "enum": list(TOPICS_V3)},
+                       "description": "The policy questions to decide. Add out_of_scope for any part of the "
+                                      "question none of the policies cover; empty only if the message asks no "
+                                      "policy question."},
+        },
+    },
+}
+
+
+def check_policy_limits_v3(facts: dict) -> list[dict]:
+    """Version 2's rulings, plus the rule for no_show and airline_cancellation and a ruling for out_of_scope,
+    in the order the topics were given."""
+    rulings = []
+    for topic in facts.get("topics") or []:
+        if topic in NO_FIGURE_RULES:
+            policy, rule = NO_FIGURE_RULES[topic]
+            rulings.append(Ruling(policy, topic, "the rule", rule).to_dict())
+        elif topic == OUT_OF_SCOPE:
+            rulings.append(dict(OUT_OF_SCOPE_RULING))
+        else:
+            rulings += check_policy_limits({**facts, "topics": [topic]})
+    return rulings
+
+
+def run_tool_v3(name: str, arguments: dict) -> list[dict]:
+    if name != TOOL_NAME:
+        return [{"error": f"unknown tool {name!r}"}]
+    return check_policy_limits_v3(arguments)
+
+
+@dataclass(frozen=True)
+class LimitsTool:
+    """One version of the tool: what the model is shown and what code runs. An agent version picks one."""
+
+    version: str
+    topics: tuple
+    schema: dict
+    run_tool: object
+
+
+LIMITS_TOOLS = {
+    "2": LimitsTool(LIMITS_VERSION, TOPICS, TOOL_SCHEMA, run_tool),
+    "3": LimitsTool("3", TOPICS_V3, TOOL_SCHEMA_V3, run_tool_v3),
+}
 
 
 # --- Wording helpers ------------------------------------------------------------------------------

@@ -19,6 +19,9 @@ versions live side by side, so a change can be recorded and compared against the
       kept only when the passenger stated it (stated_facts.py). Two rules change, the hand-over rule
       and the no-policy rule's "offer to connect" clause. Each answer's tool calls also list what code
       changed: removed_by_code in a tool call's arguments, and a hand_over_wording step
+  v7  v6 with limits version 3: the tool also names no-shows and airline cancellations (P6, P7, whose
+      rule it returns) and an explicit out_of_scope topic, and the understanding rule says to name them.
+      v5 and v6 keep limits version 2 and send what they always sent (a test checks it)
 
 Pick one with the environment variable AEROASSIST_AGENT_VERSION (default: v5, since Run 7). The choice is part
 of AGENT_VERSION, and so is the version of policies.md it answers from: the same code with new
@@ -140,6 +143,18 @@ RULES_V6[5] = RULES_V6[5].replace(_OFFER_CLAUSE, "and hand over")
 RULES_V6[8] = HAND_OVER_RULE
 PROMPT_V6 = _prompt(RULES_V6)
 
+# v7: the understanding rule names the new topics (limits version 3); the rest of it is v5's rule, word
+# for word, from "If a time isn't exact". Every other rule is v6's.
+_V5_RULE_TAIL = UNDERSTANDING_RULE[UNDERSTANDING_RULE.index("If a time isn't exact"):]
+UNDERSTANDING_RULE_V7 = (
+    "Before you answer, the check_policy_limits tool runs on every message: give it every topic the passenger "
+    "asks about, including no_show and airline_cancellation, which have no figures. Add out_of_scope for any "
+    "part of the question none of the airline's policies cover. Give no topic when the message asks no policy "
+    "question, such as a greeting. Give the facts the conversation gives. " + _V5_RULE_TAIL)
+RULES_V7 = list(RULES_V6)
+RULES_V7[3] = UNDERSTANDING_RULE_V7
+PROMPT_V7 = _prompt(RULES_V7)
+
 VERSIONS = {
     "v1": {"system_prompt": None, "top_n": 2, "use_conversation": False},       # None: the original prompt
     "v2": {"system_prompt": PROMPT_V2, "top_n": 3, "use_conversation": True},
@@ -149,6 +164,8 @@ VERSIONS = {
            "understanding_step": True},
     "v6": {"system_prompt": PROMPT_V6, "top_n": 3, "use_conversation": True, "policy_limits_tool": True,
            "understanding_step": True, "code_steps": True},
+    "v7": {"system_prompt": PROMPT_V7, "top_n": 3, "use_conversation": True, "policy_limits_tool": True,
+           "understanding_step": True, "code_steps": True, "limits_version": "3"},
 }
 TEMPERATURE = 0          # comparable runs: every version is recorded with the same setting
 
@@ -158,7 +175,14 @@ if VERSION not in VERSIONS:
 SETTINGS = VERSIONS[VERSION]
 POLICIES_PATH = TEAM_FOLDER / "policies.md"
 POLICIES_VERSION = re.search(r"_Version ([\d.]+)", POLICIES_PATH.read_text(encoding="utf-8")).group(1)
-LIMITS_PART = f":limits-{policy_limits.LIMITS_VERSION}" if SETTINGS.get("policy_limits_tool") else ""
+
+
+def limits_tool() -> "policy_limits.LimitsTool":
+    """The limits tool this version uses: version 2 unless the version says otherwise."""
+    return policy_limits.LIMITS_TOOLS[SETTINGS.get("limits_version", policy_limits.LIMITS_VERSION)]
+
+
+LIMITS_PART = f":limits-{limits_tool().version}" if SETTINGS.get("policy_limits_tool") else ""
 LIMITS_PART += f":handover-{HAND_OVER_CODE_VERSION}" if SETTINGS.get("code_steps") else ""
 AGENT_VERSION = (f"aeroassist-rag:{AGENT_MODEL}:{VERSION}-top{SETTINGS['top_n']}{LIMITS_PART}"
                  f":policies-{POLICIES_VERSION}")
@@ -196,7 +220,7 @@ def _get_agent():
         system_prompt = SETTINGS["system_prompt"] or DEFAULT_SYSTEM_PROMPT
         tools = {}
         if SETTINGS.get("policy_limits_tool"):
-            tools = {"tools": [policy_limits.TOOL_SCHEMA], "run_tool": policy_limits.run_tool}
+            tools = {"tools": [limits_tool().schema], "run_tool": limits_tool().run_tool}
         if SETTINGS.get("understanding_step"):
             tools["force_first_tool"] = policy_limits.TOOL_NAME
         if SETTINGS.get("code_steps"):
