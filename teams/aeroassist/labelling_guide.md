@@ -3,6 +3,11 @@
 You label each answer as the passenger would receive it, against `policies.md` and the judge's rubric
 (`judge_rubric.md`). The judge's verdicts stay hidden until the labels are frozen.
 
+## What the labels measure
+
+Label against the rubric only. Saying it is an AI, and treating names alike, are separate checks,
+not rubric rules; don't FAIL an answer for them.
+
 ## How to label
 
 1. Read the question, then the answer, then the policy sections it touches.

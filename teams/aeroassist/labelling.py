@@ -46,6 +46,14 @@ RULES = {"pass": "PASS", **{str(n): "FAIL" for n in range(1, 8)}}       # the ru
 RELABEL_AFTER_DAYS = 7
 RELABEL_SHARE = 0.2
 LABELS_FILE = "labels.json"
+TEAM_FOLDER = Path(__file__).resolve().parent
+# The texts the labels are given against: their hashes are kept at the first label, and the freeze is
+# refused if any changed since, so "labelled against a written guide" points to one exact text.
+FROZEN_TEXTS = {name: TEAM_FOLDER / name for name in ("labelling_guide.md", "policies.md", "judge_rubric.md")}
+
+
+def _text_hashes() -> dict:
+    return {name: hashlib.sha256(Path(path).read_bytes()).hexdigest() for name, path in FROZEN_TEXTS.items()}
 
 
 class LabellingError(ValueError):
@@ -132,6 +140,7 @@ class Labels:
         if second and case_id not in self.relabel_sample(today):
             raise LabellingError(f"{case_id} is not in the re-label sample")
         stage = "second" if second else "first"
+        self.state.setdefault("texts", _text_hashes())
         self.state[stage][case_id] = {"label": label, "rule": rule, "reason": reason,
                                       "on": shown_day(today or date.today())}
         self.save()
@@ -196,6 +205,11 @@ class Labels:
         sample = self.relabel_sample(today)
         if [i for i in sample if i not in self.state["second"]] or self.disagreements():
             raise LabellingError("re-label the whole sample and settle every disagreement before freezing")
+        now = _text_hashes()
+        changed = [name for name, digest in self.state.get("texts", {}).items() if now.get(name) != digest]
+        if changed:
+            raise LabellingError(f"{', '.join(changed)} changed since the first label; the labels were given "
+                                 "against the earlier text")
         labels = self.final_labels()
         sha = hashlib.sha256(json.dumps(labels, sort_keys=True).encode("utf-8")).hexdigest()
         agreed = sum(self.state["second"][i]["label"] == self.state["first"][i]["label"] for i in sample)

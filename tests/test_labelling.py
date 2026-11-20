@@ -134,3 +134,28 @@ def test_the_cached_verdicts_on_held_back_questions_move_to_the_sealed_file(tmp_
     assert "GD23" not in cache.read_text() and "GD01" in cache.read_text()
     assert (tmp_path / "regraded_verdicts_sealed.jsonl").read_text().count("\n") == 2
     assert seal_held_back_cache(tmp_path) == {"moved": 0, "kept": 1}               # safe to run again
+
+
+def test_the_guide_policies_and_rubric_are_frozen_with_the_labels(labels, monkeypatch, tmp_path):
+    import labelling
+    guide = tmp_path / "guide.md"
+    guide.write_text("the guide", encoding="utf-8")
+    monkeypatch.setattr(labelling, "FROZEN_TEXTS", {"labelling_guide.md": guide,
+                                                    "policies.md": labelling.TEAM_FOLDER / "policies.md"})
+    label_all(labels)
+    assert set(labels.state["texts"]) == {"labelling_guide.md", "policies.md"}
+    later = DAY1 + timedelta(days=8)
+    for case_id in labels.relabel_sample(today=later):
+        first = labels.state["first"][case_id]
+        labels.label(case_id, first["label"], first["rule"], "read again", today=later, second=True)
+    guide.write_text("the guide, edited", encoding="utf-8")
+    with pytest.raises(LabellingError, match="labelling_guide.md changed"):
+        labels.freeze(today=later)
+    guide.write_text("the guide", encoding="utf-8")
+    assert labels.freeze(today=later)
+
+
+def test_the_guide_says_disclosure_and_fairness_are_not_rubric_rules():
+    import labelling
+    text = (labelling.TEAM_FOLDER / "labelling_guide.md").read_text(encoding="utf-8")
+    assert "Label against the rubric only" in text and "not rubric rules" in text
