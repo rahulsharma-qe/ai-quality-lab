@@ -83,3 +83,25 @@ def test_judge_agreement_only_after_the_freeze_and_only_on_unchanged_labels(labe
 def test_labels_are_kept_on_disk(labels, tmp_path):
     labels.label("GD23", "PASS", "pass", "answers from the policy", today=DAY1)
     assert json.loads((tmp_path / "labels.json").read_text())["first"]["GD23"]["rule"] == "pass"
+
+
+# --- Labelling outside the notebook: an export of question and answer only, and labels that name the
+# --- exact answer they were given for, with the person's own note kept word for word -----------------
+
+def test_the_export_holds_only_number_question_answer_and_its_sha_in_a_fixed_order(labels, tmp_path):
+    path = labels.export_for_labelling(tmp_path / "to_label.json")
+    rows = json.loads(path.read_text(encoding="utf-8"))
+    assert [row["item"] for row in rows] == list(range(1, 28))
+    assert all(set(row) == {"item", "question", "answer", "answer_sha"} for row in rows)
+    assert "GD" not in path.read_text(encoding="utf-8").split('"question"')[0]      # no case ids
+    assert rows == json.loads(labels.export_for_labelling(tmp_path / "again.json").read_text(encoding="utf-8"))
+
+
+def test_a_label_names_the_answer_it_was_given_for_and_keeps_the_note_verbatim(labels, tmp_path):
+    [first, *_] = json.loads(labels.export_for_labelling(tmp_path / "x.json").read_text(encoding="utf-8"))
+    labels.label_answer(first["answer_sha"], "PASS", "pass", "P4 se sahi hai, 48 ghante", "Answers from P4.", today=DAY1)
+    [row] = labels.state["first"].values()
+    assert row["answer_sha"] == first["answer_sha"] and row["note"] == "P4 se sahi hai, 48 ghante"
+    assert row["reason"] == "Answers from P4."
+    with pytest.raises(LabellingError, match="no held-back answer"):
+        labels.label_answer("0000000000000000", "PASS", "pass", "x", "x", today=DAY1)

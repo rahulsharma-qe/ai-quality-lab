@@ -17,6 +17,11 @@ judge's verdicts on them. This module is how a person labels those answers, then
      agreement computed, with the platform's own scoring (aiquality/judges/validation.py). A label
      changed after the freeze doesn't count for this judge version.
 
+Labelling outside the notebook (for example in a separate chat): export_for_labelling writes only a
+number, the question, the answer and the answer's hash, in a fixed order, with no case id. A label
+given that way names the answer by its hash (label_answer), so it can only attach to the exact answer
+shown, and keeps the person's own note word for word beside the reason.
+
 Everything is kept in labels.json in the session folder.
 """
 
@@ -32,6 +37,8 @@ from aiquality.dates import parse_day, shown_day
 from aiquality.judges.base import JudgeVerdict
 from aiquality.judges.validation import MIN_CATCH_RATE, MIN_LEAVE_ALONE_RATE, LabelledAnswer, qualifies, score
 from aiquality.test_data import GoldenCase
+
+from aiquality.judges.recorded import answer_sha
 
 from live_session import HELD_BACK, V7, _base_id
 
@@ -78,6 +85,28 @@ class Labels:
         self.path.write_text(json.dumps(self.state, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
     # 1. first labels --------------------------------------------------------------------------------
+    def export_for_labelling(self, path) -> Path:
+        """Question and answer only, numbered in a fixed order (by case), with each answer's hash."""
+        rows = [{"item": n, "question": self.items[case_id]["question"], "answer": self.items[case_id]["answer"],
+                 "answer_sha": answer_sha(self.items[case_id]["answer"])}
+                for n, case_id in enumerate(sorted(self.items), start=1)]
+        path = Path(path)
+        path.write_text(json.dumps(rows, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        return path
+
+    def label_answer(self, sha: str, label: str, rule: str, note: str, reason: str,
+                     today: Optional[date] = None, second: bool = False) -> None:
+        """A label given for an exported answer, named by its hash; the person's note is kept verbatim."""
+        matches = [case_id for case_id, item in self.items.items() if answer_sha(item["answer"]) == sha]
+        if len(matches) != 1:
+            raise LabellingError(f"no held-back answer has the hash {sha!r}; label the answer as exported")
+        if not (note or "").strip():
+            raise LabellingError("keep the person's own note")
+        self.label(matches[0], label, rule, reason, today=today, second=second)
+        stage = "second" if second else "first"
+        self.state[stage][matches[0]].update({"answer_sha": sha, "note": note.strip()})
+        self.save()
+
     def label(self, case_id: str, label: str, rule: str, reason: str, today: Optional[date] = None,
               second: bool = False) -> None:
         self._not_frozen()
