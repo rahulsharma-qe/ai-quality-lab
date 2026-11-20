@@ -730,7 +730,10 @@ def topics_line(session: Session, records: list) -> str:
 
 def merged_golden_set(config: TeamConfig) -> GoldenSet:
     golden = load_golden_set(config.golden_set)
-    pending = load_golden_set(config.folder / "pending_cases.json")
+    path = config.folder / "pending_cases.json"
+    if not path.exists() or not json.loads(path.read_text(encoding="utf-8")).get("cases"):
+        return golden                   # nothing waiting: every case has joined the golden set
+    pending = load_golden_set(path)
     return GoldenSet(name=golden.name, version=golden.version, cases=list(golden.cases) + list(pending.cases))
 
 
