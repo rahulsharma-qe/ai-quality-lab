@@ -63,14 +63,14 @@ def test_judge_agreement_only_after_the_freeze_and_only_on_unchanged_labels(labe
         labels.judge_agreement()
     later = DAY1 + timedelta(days=8)
     sample = labels.relabel_sample(today=later)
+    opposite = {"PASS": ("FAIL", "1"), "FAIL": ("PASS", "pass")}
     for case_id in sample:
         first = labels.state["first"][case_id]
-        flipped = ("FAIL", "1") if first["label"] == "PASS" and case_id == sample[0] else (first["label"], first["rule"])
-        labels.label(case_id, flipped[0], flipped[1], "read again", today=later, second=True)
+        second = opposite[first["label"]] if case_id == sample[0] else (first["label"], first["rule"])
+        labels.label(case_id, second[0], second[1], "read again", today=later, second=True)
     with pytest.raises(LabellingError, match="settle every disagreement"):
         labels.freeze(today=later)
-    if labels.disagreements():
-        labels.settle(sample[0], "PASS", "the first reading was right")
+    labels.settle(sample[0], labels.state["first"][sample[0]]["label"], "the first reading was right")
     sha = labels.freeze(today=later)
     result = labels.judge_agreement()
     assert result["labels_sha"] == sha and result["n"] > 0 and result["relabel"].endswith(f"of {len(sample)}")
