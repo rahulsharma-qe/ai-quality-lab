@@ -188,3 +188,30 @@ def test_a_run_that_does_not_count_exits_2(tmp_path, monkeypatch):
     monkeypatch.setattr("aiquality.judges.phrase_judge.PhraseJudge.verdict",
                         lambda self, case, answer: (_ for _ in ()).throw(ConnectionError("down")))
     assert main(["validate-judge", "--team", str(config.folder), "--split", "holdout", "--kind", "phrase"]) == 2
+
+
+# --- a 95% Wilson interval beside each count, so a small sample shows how wide its rate is ------------
+
+from aiquality.judges.validation import _interval_lines, wilson_interval
+
+
+def test_the_wilson_interval_matches_a_known_value():
+    low, high = wilson_interval(25, 25)
+    assert round(low, 3) == 0.867 and high == 1.0
+    low, high = wilson_interval(5, 8)
+    assert round(low, 3) == 0.306 and round(high, 3) == 0.863
+
+
+def test_the_wilson_interval_keeps_a_width_at_none_and_at_all():
+    low, high = wilson_interval(0, 2)
+    assert low == 0.0 and round(high, 3) == 0.658
+    low, high = wilson_interval(2, 2)
+    assert round(low, 3) == 0.342 and high == 1.0
+    assert wilson_interval(0, 0) is None
+
+
+def test_the_report_gives_counts_with_their_interval_and_the_bars_are_unchanged():
+    lines = _interval_lines({"caught": 1, "human_fail": 2, "left_alone": 25, "human_pass": 25})
+    assert lines == ["failures caught: 1 of 2 (50%; 95% interval 9.5% to 90.5%)",
+                     "good answers left alone: 25 of 25 (100%; 95% interval 86.7% to 100.0%)"]
+    assert _interval_lines({"human_fail": 0, "human_pass": 0}) == []

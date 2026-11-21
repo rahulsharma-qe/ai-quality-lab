@@ -30,6 +30,7 @@ Label file format (JSON): {"cases": [{"id", "input", "answer", "human_label": "P
 
 import hashlib
 import json
+import math
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -149,6 +150,7 @@ def score(items, verdicts: dict) -> dict:
     caught = sum(1 for i in human_fail if not verdicts[i.id].passed)
     left_alone = sum(1 for i in human_pass if verdicts[i.id].passed)
     return {"n": len(scored), "human_fail": len(human_fail), "human_pass": len(human_pass),
+            "caught": caught, "left_alone": left_alone,
             "catch_rate": _rate(caught, len(human_fail)), "leave_alone_rate": _rate(left_alone, len(human_pass)),
             "agreement": _rate(caught + left_alone, len(scored))}
 
@@ -255,6 +257,7 @@ def render_validation(run: ValidationRun) -> str:
             lines.append("-" * 47)
         lines.append(f"{category:14} {s['n']:>3} {s['human_fail']:>6} {_percent(s['catch_rate']):>8} "
                      f"{_percent(s['leave_alone_rate']):>12}")
+    lines += [""] + _interval_lines(run.overall)
     if run.overall["human_fail"]:
         lines.append(f"\nsmall-sample note: {run.overall['human_fail']} human FAILs, so one case moves the catch "
                      f"rate by about {1 / run.overall['human_fail']:.0%}. A direction, not a verdict.")
@@ -289,6 +292,31 @@ def render_validation(run: ValidationRun) -> str:
             lines.append(f"too few labels to qualify: {run.too_few_labels}")
         lines.append(f"\nJUDGE: {'QUALIFIED to gate' if run.qualified else 'NOT QUALIFIED to gate'} ({bars})")
     return "\n".join(lines)
+
+
+def wilson_interval(successes: int, total: int, z: float = 1.96) -> Optional[tuple[float, float]]:
+    """The 95% Wilson score interval for successes out of total: how wide a small-sample rate really is.
+    Unlike the plain rate plus or minus an error, it stays inside 0 to 1 and still has a width at 0 of n and
+    n of n. Shown in the report only; the bars and what qualifies use the rates."""
+    if not total:
+        return None
+    rate, z2 = successes / total, z * z
+    centre = (rate + z2 / (2 * total)) / (1 + z2 / total)
+    half = z * math.sqrt(rate * (1 - rate) / total + z2 / (4 * total * total)) / (1 + z2 / total)
+    return max(0.0, centre - half), min(1.0, centre + half)
+
+
+def _interval_lines(overall: dict) -> list[str]:
+    """'caught Y of N' and 'left X of N good answers alone', each with its 95% interval: counts first, so a
+    reader sees the sample before the rate."""
+    lines = []
+    for count, total, words in ((overall.get("caught"), overall["human_fail"], "failures caught"),
+                                (overall.get("left_alone"), overall["human_pass"], "good answers left alone")):
+        interval = wilson_interval(count, total) if count is not None else None
+        if interval:
+            lines.append(f"{words}: {count} of {total} ({count / total:.0%}; 95% interval "
+                         f"{interval[0]:.1%} to {interval[1]:.1%})")
+    return lines
 
 
 def _rate(numerator: int, denominator: int) -> Optional[float]:
