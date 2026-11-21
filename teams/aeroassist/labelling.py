@@ -17,6 +17,11 @@ judge's verdicts on them. This module is how a person labels those answers, then
      agreement computed, with the platform's own scoring (aiquality/judges/validation.py). A label
      changed after the freeze doesn't count for this judge version.
 
+Labelling outside the notebook (for example in a separate chat): export_for_labelling writes only a
+number, the question, the answer and the answer's hash, in a fixed order, with no case id. A label
+given that way names the answer by its hash (label_answer), so it can only attach to the exact answer
+shown, and keeps the person's own note word for word beside the reason.
+
 Everything is kept in labels.json in the session folder.
 """
 
@@ -33,12 +38,22 @@ from aiquality.judges.base import JudgeVerdict
 from aiquality.judges.validation import MIN_CATCH_RATE, MIN_LEAVE_ALONE_RATE, LabelledAnswer, qualifies, score
 from aiquality.test_data import GoldenCase
 
+from aiquality.judges.recorded import answer_sha
+
 from live_session import HELD_BACK, V7, _base_id
 
 RULES = {"pass": "PASS", **{str(n): "FAIL" for n in range(1, 8)}}       # the rubric's rule -> the label it supports
 RELABEL_AFTER_DAYS = 7
 RELABEL_SHARE = 0.2
 LABELS_FILE = "labels.json"
+TEAM_FOLDER = Path(__file__).resolve().parent
+# The texts the labels are given against: their hashes are kept at the first label, and the freeze is
+# refused if any changed since, so "labelled against a written guide" points to one exact text.
+FROZEN_TEXTS = {name: TEAM_FOLDER / name for name in ("labelling_guide.md", "policies.md", "judge_rubric.md")}
+
+
+def _text_hashes() -> dict:
+    return {name: hashlib.sha256(Path(path).read_bytes()).hexdigest() for name, path in FROZEN_TEXTS.items()}
 
 
 class LabellingError(ValueError):
@@ -78,6 +93,37 @@ class Labels:
         self.path.write_text(json.dumps(self.state, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
     # 1. first labels --------------------------------------------------------------------------------
+    def export_for_labelling(self, path) -> Path:
+        """Question and answer only, with each answer's hash, numbered in an order shuffled by the stored
+        seed, so an item number says nothing about the case."""
+        return self._export(path, sorted(self.items), shuffle_seed=self.state["seed"])
+
+    def export_for_relabelling(self, path, today: Optional[date] = None) -> Path:
+        """The re-label sample only, the same way, in a different shuffle from the first export."""
+        return self._export(path, self.relabel_sample(today), shuffle_seed=self.state["seed"] + 1)
+
+    def _export(self, path, case_ids: list, shuffle_seed: int) -> Path:
+        order = list(case_ids)
+        random.Random(shuffle_seed).shuffle(order)
+        rows = [{"item": n, "question": self.items[case_id]["question"], "answer": self.items[case_id]["answer"],
+                 "answer_sha": answer_sha(self.items[case_id]["answer"])} for n, case_id in enumerate(order, start=1)]
+        path = Path(path)
+        path.write_text(json.dumps(rows, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        return path
+
+    def label_answer(self, sha: str, label: str, rule: str, note: str, reason: str,
+                     today: Optional[date] = None, second: bool = False) -> None:
+        """A label given for an exported answer, named by its hash; the person's note is kept verbatim."""
+        matches = [case_id for case_id, item in self.items.items() if answer_sha(item["answer"]) == sha]
+        if len(matches) != 1:
+            raise LabellingError(f"no held-back answer has the hash {sha!r}; label the answer as exported")
+        if not (note or "").strip():
+            raise LabellingError("keep the person's own note")
+        self.label(matches[0], label, rule, reason, today=today, second=second)
+        stage = "second" if second else "first"
+        self.state[stage][matches[0]].update({"answer_sha": sha, "note": note.strip()})
+        self.save()
+
     def label(self, case_id: str, label: str, rule: str, reason: str, today: Optional[date] = None,
               second: bool = False) -> None:
         self._not_frozen()
@@ -94,6 +140,7 @@ class Labels:
         if second and case_id not in self.relabel_sample(today):
             raise LabellingError(f"{case_id} is not in the re-label sample")
         stage = "second" if second else "first"
+        self.state.setdefault("texts", _text_hashes())
         self.state[stage][case_id] = {"label": label, "rule": rule, "reason": reason,
                                       "on": shown_day(today or date.today())}
         self.save()
@@ -158,6 +205,11 @@ class Labels:
         sample = self.relabel_sample(today)
         if [i for i in sample if i not in self.state["second"]] or self.disagreements():
             raise LabellingError("re-label the whole sample and settle every disagreement before freezing")
+        now = _text_hashes()
+        changed = [name for name, digest in self.state.get("texts", {}).items() if now.get(name) != digest]
+        if changed:
+            raise LabellingError(f"{', '.join(changed)} changed since the first label; the labels were given "
+                                 "against the earlier text")
         labels = self.final_labels()
         sha = hashlib.sha256(json.dumps(labels, sort_keys=True).encode("utf-8")).hexdigest()
         agreed = sum(self.state["second"][i]["label"] == self.state["first"][i]["label"] for i in sample)
@@ -197,3 +249,19 @@ class Labels:
     def _not_frozen(self) -> None:
         if self.state["frozen"]:
             raise LabellingError("the labels are frozen")
+
+
+def seal_held_back_cache(session_folder) -> dict:
+    """Move every cached verdict on a held-back question out of verdict_cache.jsonl into
+    regraded_verdicts_sealed.jsonl, and say only how many moved and stayed. For a session folder whose
+    regrade (before it sealed its verdicts) cached them in plain; safe to run again."""
+    folder = Path(session_folder)
+    cache, sealed = folder / "verdict_cache.jsonl", folder / "regraded_verdicts_sealed.jsonl"
+    lines = [line for line in cache.read_text(encoding="utf-8").splitlines() if line.strip()] if cache.exists() else []
+    moved = [line for line in lines if _base_id(json.loads(line).get("case_id", "")) in HELD_BACK]
+    kept = [line for line in lines if line not in moved]
+    if moved:
+        with sealed.open("a", encoding="utf-8") as handle:
+            handle.write("\n".join(moved) + "\n")
+        cache.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
+    return {"moved": len(moved), "kept": len(kept)}
