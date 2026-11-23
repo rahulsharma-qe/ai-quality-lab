@@ -38,7 +38,7 @@ _NO_OPENING = re.compile(
 _NEGATIVE = re.compile(r"\b(can'?t|cannot|can not|not allowed|not possible|isn'?t|is not|aren'?t|not eligible|"
                        r"not open|not yet|no longer|won'?t|unable|not available|not guaranteed|no refund|"
                        r"forfeit(ed)?|doesn'?t qualify|does not qualify|(is|'s|are|'re) closed|has closed|exceeds?|"
-                       r"over the (allowance|limit))\b", re.I)
+                       r"over the (allowance|limit)|no [a-z -]+? (is|are) allowed)\b", re.I)
 _POSITIVE = re.compile(r"\b(you can|is open|are open|is allowed|are allowed|eligible|qualif(y|ies)|"
                        r"is fine|no extra charge|free of charge)\b", re.I)
 _HAND_OVER = re.compile(r"\b(human agent|connect you|transfer you|escalate|take over)\b", re.I)
@@ -70,6 +70,8 @@ def read_decision(answer_text: str) -> ReadDecision:
         return ReadDecision("hand_over", amounts, first)
     for number, sentence in enumerate(opening):
         following = sentences[number + 1] if number + 1 < len(sentences) else ""
+        if following.endswith(":") and number + 2 < len(sentences):     # "If ..., you'll be a no-show: the ticket ..."
+            following = f"{following} {sentences[number + 2]}"
         decision = _sentence_decision(sentence, following)
         if decision:
             return ReadDecision(decision, amounts, sentence)
@@ -82,8 +84,12 @@ def _sentence_decision(sentence: str, following: str = "") -> Optional[str]:
     """yes, no or depends, as this sentence states it; None if it states no decision. A condition counts
     as 'depends' only when the other case follows, in the next sentence ("If ... you can. If not, ...") or
     after a semicolon or comma ("If ... you can; after that, ..."), so
-    "If you miss your flight, the ticket is forfeited" still reads as a decision."""
+    "If you miss your flight, the ticket is forfeited" still reads as a decision. A following sentence
+    that opens with a plain "If" and states the same decision as this one only adds a detail, so it
+    isn't the other case ("No refund if you miss it. If you don't board, the ticket is forfeited.")."""
     other_case = _OTHER_CASE.match(following) or _OTHER_CASE_INSIDE.search(sentence)
+    if other_case and not _OTHER_CASE_INSIDE.search(sentence) and _repeats_the_decision(sentence, following):
+        other_case = None
     if _DEPENDS.search(sentence) or (_CONDITION.search(sentence) and other_case):
         return "depends"
     if sentence.endswith(":"):          # an introduction ("Here's why:", "If it's more than 2 hours away:")
@@ -119,6 +125,16 @@ class DecisionCheck(Check):
             return _unreadable(self, case, read)
         expected = " or ".join(a.describe() for a in alternatives)
         return self.failed(case, f"expected {expected}; the answer reads as {_describe(read)}", evidence=read.evidence)
+
+
+def _repeats_the_decision(sentence: str, following: str) -> bool:
+    """True when the following sentence opens with a plain "If" (not "If not", "Otherwise" or another
+    marker of the other case) and both sentences state the same decision, read without looking further.
+    A following sentence whose decision can't be read keeps today's reading: the other case."""
+    if not re.match(r"^if\b(?! not\b)", following, re.I):
+        return False
+    first, second = _sentence_decision(sentence), _sentence_decision(following.replace(":", ","))
+    return first is not None and first == second and first != "depends"
 
 
 def _matches(alternative, read: ReadDecision) -> bool:
