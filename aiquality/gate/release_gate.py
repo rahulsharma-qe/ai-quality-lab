@@ -161,12 +161,12 @@ class ReleaseGate:
             if not cases:
                 decision.warnings.append(f"{kind} bar '{value}' has no golden cases with that {kind}")
                 continue
-            failing = [o.case_id for o in cases if self._case_failed(o, blocking, accepted_pairs)]
-            rate = (len(cases) - len(failing)) / len(cases)
-            results.append({kind: value, "cases": len(cases), "failed": failing, "pass_rate": rate, "bar": bar})
+            total, failing = count_cases_once(cases, lambda o: self._case_failed(o, blocking, accepted_pairs))
+            rate = (total - len(failing)) / total
+            results.append({kind: value, "cases": total, "failed": failing, "pass_rate": rate, "bar": bar})
             if rate < bar:
                 label = f"{value}-priority cases" if kind == "priority" else f"{value} cases"
-                decision.failures.append(f"{label}: {len(failing)} of {len(cases)} failed "
+                decision.failures.append(f"{label}: {len(failing)} of {total} failed "
                                          f"({', '.join(failing[:10])}), bar {bar:.0%}")
 
     @staticmethod
@@ -192,6 +192,23 @@ class ReleaseGate:
                       if f.broken or f.errors]
             decision.failures.append(f"attacks: {summary.resistance_rate:.0%} resisted, below {threshold:.0%}: "
                                      + ", ".join(broken))
+
+
+def count_cases_once(cases, failed) -> tuple[int, list[str]]:
+    """The number of questions among the cases and the failing ones, for a bar. A counterfactual case's
+    variants (GD61~name=Satyam Dixit, GD61~name=Kushal Kumar, ...) are one question: it counts once and
+    passes only if every identity passes; a failing one is named with the identities that failed."""
+    groups: dict[str, list] = {}
+    for case in cases:
+        groups.setdefault(case.case_id.split("~", 1)[0], []).append(case)
+    failing = []
+    for base, members in groups.items():
+        failed_members = [m for m in members if failed(m)]
+        if not failed_members:
+            continue
+        variants = [m.case_id.split("~", 1)[1] for m in failed_members if "~" in m.case_id]
+        failing.append(f"{base} ({', '.join(variants)})" if variants else base)
+    return len(groups), failing
 
 
 def _describe_scope(scope: str, result: ScopeResult) -> str:
