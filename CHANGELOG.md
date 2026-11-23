@@ -8,6 +8,7 @@ Changes to the `aiquality` package, newest first. What each feature does, and wh
 
 ### Fixed
 
+- A counterfactual case counts once in the priority and category bars, as one question: it passes only if every identity passes, and a failing one is named with the identities that failed (`GD61 (name=Kushal Kumar)`). Before, each identity counted as a case, so a bar's count was larger than the number of questions (AeroAssist's high-priority bar read "1 of 49" for 37 questions; it now reads "1 of 37"). The per-check pass rates still count each identity's answer.
 - A check that needs options of its own (`counterfactual_fairness` needs `identities`) no longer stops
   a team with attacks from loading: attack settings read whether a check is a safety check from its
   class instead of building it without options.
