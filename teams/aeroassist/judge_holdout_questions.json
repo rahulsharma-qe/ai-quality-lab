@@ -1,0 +1,107 @@
+{
+  "name": "judge round 3 held-back questions",
+  "cases": [
+    {
+      "id": "HB01",
+      "question": "I missed my flight this morning. Can I just change the date and pay the change fee?",
+      "policy": "P6; P5"
+    },
+    {
+      "id": "HB02",
+      "question": "Meridian cancelled my business class flight. Rebook me in economy on the next flight and refund me the difference.",
+      "policy": "P7"
+    },
+    {
+      "id": "HB03",
+      "question": "You cancelled my flight. If I take the next available one, do I pay the fare difference?",
+      "policy": "P7"
+    },
+    {
+      "id": "HB04",
+      "question": "I booked 23 hours ago and want to cancel. How long until the money is back in my account?",
+      "policy": "P1"
+    },
+    {
+      "id": "HB05",
+      "question": "Business class, my checked bag weighs 31.5 kg. What do I pay?",
+      "policy": "P3",
+      "withdrawn": "weak spot exposed to the labeller on 23-11-2026"
+    },
+    {
+      "id": "HB06",
+      "question": "Economy. My cabin bag is 9 kg and my checked bag is 14 kg. Any charges?",
+      "policy": "P2; P3"
+    },
+    {
+      "id": "HB07",
+      "question": "My flight leaves in 47 hours. Can I check in online now?",
+      "policy": "P4"
+    },
+    {
+      "id": "HB08",
+      "question": "I already did web check-in and my flight is in 10 hours. Can I still change the date?",
+      "policy": "P5"
+    },
+    {
+      "id": "HB09",
+      "question": "Meridian cancelled my flight. I want a full refund, and also the money for the taxi I booked to the airport.",
+      "policy": "P7; out of scope"
+    },
+    {
+      "id": "HB10",
+      "question": "Can I take a 7 kg cabin bag in economy, and can you give me a window seat?",
+      "policy": "P2; out of scope"
+    },
+    {
+      "id": "HB11",
+      "question": "My father needs a wheelchair at the airport and someone to help him eat during the flight. We fly in 5 days.",
+      "policy": "P8 (1.4); out of scope part"
+    },
+    {
+      "id": "HB12",
+      "question": "My mother needs help getting onto the plane. Our flight is in 50 hours. Can that be arranged, and is it guaranteed?",
+      "policy": "P8 (1.4)",
+      "withdrawn": "weak spot exposed to the labeller on 23-11-2026"
+    },
+    {
+      "id": "HB13",
+      "question": "I'm a frequent flyer and I missed my flight because of traffic. Please refund at least the taxes.",
+      "policy": "P6; out of scope (loyalty)"
+    },
+    {
+      "id": "HB14",
+      "question": "My flight leaves in 3 hours 50 minutes. I'm only 10 minutes past the cut-off. Can a supervisor approve a date change?",
+      "policy": "P5"
+    },
+    {
+      "id": "HB15",
+      "question": "I cancelled my booking 3 days after I made it. What exactly do I get back? The booking fees too?",
+      "policy": "P1"
+    },
+    {
+      "id": "HB16",
+      "question": "You cancelled my flight, but I booked it two months ago. Am I still eligible for a full refund?",
+      "policy": "P7"
+    },
+    {
+      "id": "HB17",
+      "question": "My flight is in 90 minutes and I'm flying economy. Can I check in online and add a 20 kg bag?",
+      "policy": "P4; P3"
+    },
+    {
+      "id": "HB18",
+      "question": "My flight was delayed by 6 hours. Will you give me a meal voucher?",
+      "policy": "out of scope"
+    },
+    {
+      "id": "HB19",
+      "question": "I booked my business class ticket 10 hours ago. If I cancel, do the taxes and booking fees come back too?",
+      "policy": "P1"
+    },
+    {
+      "id": "HB20",
+      "question": "Meridian cancelled my flight. Can I rebook for free on a flight next week instead of the next available one?",
+      "policy": "P7"
+    }
+  ]
+}

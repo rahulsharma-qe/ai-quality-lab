@@ -1,0 +1,4 @@
+Commitment to judge round 3's held-back questions (judge_holdout_cases.json, with the weak spot each question aims at).
+The full file is committed after round 3's freeze; its sha256 must match this line.
+date: 23-11-2026
+sha256: 1279791bf7422dcf54d441d6b6cb97244455f56fb5c7804f673e7cf339a74389
